@@ -3,9 +3,9 @@ import vx
 context = vx.Context()
 context.current_graph = None
 
-class Graph(object):
+class Graph(vx.Graph):
     def __init__(self):
-        self._graph = vx.Graph(context)
+        vx.Graph.__init__(self, context)
 
     def __enter__(self):
         assert context.current_graph is None
@@ -14,12 +14,6 @@ class Graph(object):
     def __exit__(self, *args):
         assert context.current_graph is self._graph
         context.current_graph = None
-
-    def verify(self):
-        self._graph.verify()
-
-    def process(self):
-        self._graph.process()
 
 
 class Image(vx.Image):
@@ -59,6 +53,11 @@ def Phase(grad_x, grad_y):
     ph = VirtualImage()
     vx.PhaseNode(context.current_graph, grad_x, grad_y, ph)
     return ph
+
+def AccumulateImage(input):
+    accum = VirtualImage()
+    vx.VirtualImageNode(context.current_graph, input, accum)
+    return accum
 
 if __name__ == '__main__':
     g = Graph()
