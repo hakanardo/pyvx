@@ -25,8 +25,8 @@ class Image(vx.Image):
     def channel_y(self):
         return ChannelExtract(self, vx.CHANNEL_Y)
 
-def VirtualImage():
-    return Image(0, 0, vx.FOURCC_VIRT, True, context.current_graph)
+def VirtualImage(w=0, h=0):
+    return Image(w, h, vx.FOURCC_VIRT, True, context.current_graph)
 
 def ChannelExtract(input, channel):
     output = VirtualImage()
