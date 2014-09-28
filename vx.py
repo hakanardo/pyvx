@@ -64,7 +64,7 @@ class Graph(object):
                 if d.producer is not node:
                     raise MultipleWritersError
 
-            # Bidirection data bot virtual
+            # Bidirection data not virtual
             for d in node.inouts:
                 if d.virtual:
                     raise InvalidGraphError("Bidirection data cant be virtual.")
