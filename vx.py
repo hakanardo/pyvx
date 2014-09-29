@@ -83,20 +83,20 @@ class Image(object):
         if data is not None:
             self.set_data_pointer(data)
         else:
-            self.cdata = None
+            self.data = None
 
     def set_data_pointer(self, data):
         if hasattr(data, 'typecode'):
             assert data.typecode == self.color.typecode
         if hasattr(data, 'to_cffi'):
-            self.cdata = data.to_cffi(base_ffi)
+            self.data = data.to_cffi(base_ffi)
         elif hasattr(data, 'buffer_info'):
             addr, l = data.buffer_info()
             assert l == self.width * self.height * self.color.items
-            self.cdata = base_ffi.cast(self.color.base_type + ' *', addr)
+            self.data = base_ffi.cast(self.color.base_type + ' *', addr)
         else:
             raise NotImplementedError("Dont know how to convert %r to a cffi buffer" % data)
-        self._keep_alive_data = data
+        self._keep_alive_original_data = data
 
     def force(self, data=None):
         if data is not None:
@@ -114,10 +114,10 @@ class Image(object):
             raise InvalidFormatError
 
     def alloc(self):
-        if self.cdata is None:
+        if self.data is None:
             items = self.width * self.height * self.color.items
-            self.cdata = base_ffi.new(self.color.base_type + '[]', items)
-        addr = base_ffi.cast('long', self.cdata)
+            self.data = base_ffi.new(self.color.base_type + '[]', items)
+        addr = base_ffi.cast('long', self.data)
         self.csym = "((%s *) 0x%x)" % (self.color.base_type, addr)
         self.ctype = self.color.base_type + " *"
 
@@ -130,6 +130,16 @@ class Image(object):
                    name, y, self.height-1, self.width, x, self.width-1)
         else:
             raise NotImplementedError
+
+    def getattr(self, node, name, attr):
+        if attr == "width":
+            return str(self.width)
+        elif attr == "height":
+            return str(self.height)
+        elif attr == "data":
+            return name
+        else:
+            raise AttributeError
 
 
 class Graph(object):
@@ -218,9 +228,8 @@ class MagicCGenerator(CGenerator):
         assert isinstance(node.name, c_ast.ID)
         assert isinstance(node.field, c_ast.ID)
         if node.name.name in self.magic_vars:
-            if node.field.name == 'data':
-                return node.name.name
-            return getattr(self.magic_vars[node.name.name], node.field.name)
+            var = self.magic_vars[node.name.name]
+            return var.getattr(self.cxnode, node.name.name, node.field.name)
         return CGenerator.visit_StructRef(self, node)
 
     def visit_ArrayRef(self, node):

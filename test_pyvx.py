@@ -10,8 +10,8 @@ class TestPyVx(object):
             gimg.force()
         g.verify()
         g.process()
-        assert gimg.cdata[4] == 4
-        assert gimg.cdata[7] == 7
+        assert gimg.data[4] == 4
+        assert gimg.data[7] == 7
 
     def test_replicate_border(self):
         g = Graph()
@@ -22,6 +22,6 @@ class TestPyVx(object):
             gimg.force()
         g.verify()
         g.process()
-        assert gimg.cdata[0] == 1
-        assert gimg.cdata[1] == 1
-        assert gimg.cdata[11] == 10
+        assert gimg.data[0] == 1
+        assert gimg.data[1] == 1
+        assert gimg.data[11] == 10
