@@ -294,6 +294,31 @@ class InvalidFormatError(Exception):
 
 class Node(object):
 
+    def __init__(self, graph, *args, **kwargs):
+        self.graph = graph
+        self.inputs, self.outputs, self.inouts = [], [], []
+        for i, v in enumerate(self.signature.split(',')):
+            v = v.strip().split(' ')
+            direction, name = v[0], v[-1]
+            if i < len(args):
+                val = args[i]
+                if name in kwargs:
+                    raise TypeError("Got multiple values for keyword argument '%s'" % name)
+            elif name in kwargs:
+                val = kwargs[name]
+            else:
+                raise TypeError("Required argument missing")
+            if direction == 'in':
+                self.inputs.append(val)
+            elif direction == 'out':
+                self.outputs.append(val)
+            elif direction == 'inout':
+                self.inouts.append(val)
+            else:
+                raise TypeError("Bad direction '%s' of argument '%s'" % (direction, name))
+            setattr(self, name, val)
+        self.setup()
+
     def setup(self):
         self.graph._add_node(self)
         self.border_mode = BORDER_MODE_UNDEFINED
@@ -322,42 +347,29 @@ class Node(object):
 
 
 class ChannelExtractNode(Node):
-
-    def __init__(self, graph, input, channel, output):
-        self.graph = graph
-        self.channel = channel
-        self.inputs = [input]
-        self.outputs = [output]
-        self.inouts = []
-        self.setup()
+    signature = "in input, in channel, out output"
 
     def verify(self):
-        i = self.inputs[0]
+        i = self.input
         if i.color == FOURCC_UYVY and self.channel == CHANNEL_Y:
             pass
         else:
             raise InvalidFormatError(
                 'Cant extract channel %s from %s image.' % (self.channel,
                                                             i.color))
-        self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
+        self.output.ensure(i.width, i.height, FOURCC_U8)
 
 
 class Gaussian3x3Node(Node):
-
-    def __init__(self, graph, input, output):
-        self.graph = graph
-        self.inputs = [input]
-        self.outputs = [output]
-        self.inouts = []
-        self.setup()
+    signature = "in input, out output"
 
     def verify(self):
-        i = self.inputs[0]
-        self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
+        i = self.input
+        self.output.ensure(i.width, i.height, FOURCC_U8)
 
     def compile(self, code):
-        code.new_block(img=self.inputs[0],
-                       res=self.outputs[0],
+        code.new_block(img=self.input,
+                       res=self.output,
                        x=0, y=0)
         code.push_code(self, """
             for (y = 0; y < img.height; y++) {
@@ -371,13 +383,7 @@ class Gaussian3x3Node(Node):
 
 
 class Sobel3x3Node(Node):
-
-    def __init__(self, graph, input, output_x, output_y):
-        self.graph = graph
-        self.inputs = [input]
-        self.outputs = [output_x, output_y]
-        self.inouts = []
-        self.setup()
+    signature = 'in input, out output_x, out output_y'
 
     def verify(self):
         i = self.inputs[0]
@@ -385,13 +391,7 @@ class Sobel3x3Node(Node):
 
 
 class MagnitudeNode(Node):
-
-    def __init__(self, graph, grad_x, grad_y, mag):
-        self.graph = graph
-        self.inputs = [grad_x, grad_y]
-        self.outputs = [mag]
-        self.inouts = []
-        self.setup()
+    signature = 'in grad_x, in grad_y, out mag'
 
     def verify(self):
         i = self.inputs[0]
@@ -399,13 +399,7 @@ class MagnitudeNode(Node):
 
 
 class PhaseNode(Node):
-
-    def __init__(self, graph, grad_x, grad_y, orientation):
-        self.graph = graph
-        self.inputs = [grad_x, grad_y]
-        self.outputs = [orientation]
-        self.inouts = []
-        self.setup()
+    signature = 'in grad_x, in grad_y, out orientation'
 
     def verify(self):
         i = self.inputs[0]
@@ -414,13 +408,7 @@ class PhaseNode(Node):
 
 
 class AccumulateImageNode(Node):
-
-    def __init__(self, graph, input, accum):
-        self.graph = graph
-        self.inputs = [input]
-        self.outputs = []
-        self.inouts = [accum]
-        self.setup()
+    signature = 'in input, inout accum'
 
     def verify(self):
         pass
