@@ -242,7 +242,7 @@ class Graph(object):
         ffi.cdef("void func(void);")
         #print str(code)
         lib = ffi.verify("void func(void) {" + str(code) + "}",
-                         extra_compile_args=["-O3", "-march=native"])
+                         extra_compile_args=["-O3", "-march=native", "-std=c99"])
         self.compiled_func = lib.func
 
     def process(self):
@@ -292,14 +292,7 @@ class Code(object):
         self.open_block = True
         self.magic_vars = {}
         self.code += '{\n'
-        for var, val in kwargs.items():
-            if isinstance(val, int):
-                self.code += '  long %s = %d;\n' % (var, val)
-            elif isinstance(val, Image):
-                #self.code += '  %s %s = %s;\n' % (val.ctype, var, val.csym)
-                self.magic_vars[var] = val
-            else:
-                raise NotImplementedError
+        self.magic_vars = kwargs
 
     def push_code(self, cxnode, code):
         ast = cparse(code)
@@ -421,11 +414,10 @@ class Gaussian3x3Node(Node):
 
     def compile(self, code):
         code.new_block(img=self.input,
-                       res=self.output,
-                       x=0, y=0)
+                       res=self.output)
         code.push_code(self, """
-            for (y = 0; y < img.height; y++) {
-                for (x = 0; x < img.width; x++) {
+            for (long y = 0; y < img.height; y++) {
+                for (long x = 0; x < img.width; x++) {
                     res[x, y] = (1*img[x-1, y-1] + 2*img[x, y-1] + 1*img[x+1, y-1] +
                                  2*img[x-1, y]   + 4*img[x, y]   + 2*img[x+1, y]   +
                                  1*img[x-1, y+1] + 2*img[x, y+1] + 1*img[x+1, y+1]) / 16;
