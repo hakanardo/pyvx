@@ -57,11 +57,11 @@ class Image(object):
 
 
 class Graph(object):
-    def __init__(self, context):
+    def __init__(self, context, early_verify=True):
         self.context = context
         self.nodes = []
         self.data_objects = set()
-        self.early_verify = True
+        self.early_verify = early_verify
 
     def _add_node(self, node):
         self.nodes.append(node)
@@ -69,6 +69,8 @@ class Graph(object):
             self.data_objects.add(d)
 
     def verify(self):
+        self.nodes = self.schedule()
+
         for node in self.nodes:
             node.do_verify()
 
@@ -77,8 +79,6 @@ class Graph(object):
             if d.virtual and d.producer is None:
                 raise InvalidGraphError("Virtual data never produced.")
 
-        self.schedule()
-
     def schedule(self):
         for d in self.data_objects:
             d.present = not d.virtual
@@ -86,12 +86,12 @@ class Graph(object):
             for d in n.outputs + n.inouts:
                 d.present = False
         worklist = self.nodes[:]
-        order = []
+        inorder = []
         while worklist:
             remaining = []
             for n in worklist:
                 if all(d.present for d in n.inputs):
-                    order.append(n)
+                    inorder.append(n)
                     for d in n.outputs:
                         d.present = True
                 else:
@@ -99,6 +99,7 @@ class Graph(object):
             if len(worklist) == len(remaining):
                 raise InvalidGraphError("Loops not allowed in the graph.")
             worklist = remaining
+        return inorder
 
     def process(self):
         pass
@@ -118,15 +119,17 @@ class InvalidFormatError(Exception):
 class Node(object):
     def setup(self):
         self.graph._add_node(self)
+        for d in self.outputs + self.inouts:
+            if d.producer is None:
+                d.producer = self
         if self.graph.early_verify:
             self.do_verify()
 
     def do_verify(self):
         # Signle writer
         for d in self.outputs + self.inouts:
-            if d.producer not in (self, None):
+            if d.producer is not self:
                 raise MultipleWritersError
-            d.producer = self
         
         # Bidirection data not virtual
         for d in self.inouts:

@@ -47,5 +47,11 @@ class TestVerify(object):
         with py.test.raises(vx.InvalidGraphError):
             g.verify()
 
-
-        
+    def test_verification_order(self):
+        g = vx.Graph(context, False)
+        img = Image(640, 480, vx.FOURCC_U8)
+        out = VirtualImage()
+        out2 = VirtualImage()
+        vx.Gaussian3x3Node(g, out, out2)
+        vx.Gaussian3x3Node(g, img, out)
+        g.verify()
