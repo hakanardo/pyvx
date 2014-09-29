@@ -70,12 +70,24 @@ def AccumulateImage(input):
     return accum
 
 if __name__ == '__main__':
+    from imgpy.io import Mplayer, view
+    from array import array
+    video = Mplayer("/usr/share/cognimatics/data/facit/events/passanger/bustst1-M3014-180.mjpg", True)
+    frame = video.next()
+    w, h = frame.width, frame.height    
+
     g = Graph()
     with g:
-        img = Image(640, 480, vx.FOURCC_U8)
+        img = Image(w, h, vx.FOURCC_U8)
         gimg = Gaussian3x3(img)
+        gimg.force()
         # dx, dy = Sobel3x3(gimg)
         # mag = Magnitude(dx, dy)
         # phi = Phase(dx, dy)
     g.verify()
-    g.process()
+
+    for frame in video:
+        img.cdata[0:len(frame.data)] = frame.data[:]
+        g.process()
+        frame.data[:] = array('B', gimg.cdata[0:len(frame.data)])
+        view(frame)

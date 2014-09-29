@@ -168,10 +168,13 @@ class Graph(object):
         code = Code()
         for n in self.nodes:
             n.compile(code)
-        print code
+        ffi = FFI()
+        ffi.cdef("void func(void);")
+        lib = ffi.verify("void func(void) {" + str(code) + "}")
+        self.compiled_func = lib.func
 
     def process(self):
-        pass
+        self.compiled_func()
 
 def cparse(code):
     parser = c_parser.CParser()
