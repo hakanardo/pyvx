@@ -286,13 +286,13 @@ class Code(object):
         self.open_block = False
 
 
-    def new_block(self, **kwargs):
+    def new_block(self, **magic_vars):
         if self.open_block:
             self.code += '}\n'
         self.open_block = True
         self.magic_vars = {}
         self.code += '{\n'
-        self.magic_vars = kwargs
+        self.magic_vars = magic_vars
 
     def push_code(self, cxnode, code):
         ast = cparse(code)
