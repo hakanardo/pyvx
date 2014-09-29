@@ -1,39 +1,71 @@
 def CreateContext():
     return Context()
 
+
 def CreateImage(context, width, height, color):
     return Image(context, width, height, color, False)
+
 
 def CreateGraph(context):
     return Graph(context)
 
+
 def CreateVirtualImage(graph, width, height, color):
     return Image(graph.context, width, height, color, True, graph)
+
 
 def VerifyGraph(graph):
     return graph.verify()
 
+
 def ProcessGraph(graph):
     return graph.process()
 
-class FOURCC_VIRT: pass
-class FOURCC_RGB: pass
-class FOURCC_UYVY: pass
-class FOURCC_U8: pass
+
+class FOURCC_VIRT:
+    pass
 
 
-class CHANNEL_0: pass
-class CHANNEL_1: pass
-class CHANNEL_2: pass
-class CHANNEL_3: pass
-class CHANNEL_Y: pass
+class FOURCC_RGB:
+    pass
 
 
-class Context(object):   
-    pass         
+class FOURCC_UYVY:
+    pass
+
+
+class FOURCC_U8:
+    pass
+
+
+class CHANNEL_0:
+    pass
+
+
+class CHANNEL_1:
+    pass
+
+
+class CHANNEL_2:
+    pass
+
+
+class CHANNEL_3:
+    pass
+
+
+class CHANNEL_Y:
+    pass
+
+
+class Context(object):
+    pass
+
 
 class Image(object):
-    def __init__(self, context, width, height, color, virtual=False, graph=None):
+
+    def __init__(self, context, width, height, color, 
+                 virtual=False, graph=None):
         self.context = context
         self.width = width
         self.height = height
@@ -57,6 +89,7 @@ class Image(object):
 
 
 class Graph(object):
+
     def __init__(self, context, early_verify=True):
         self.context = context
         self.nodes = []
@@ -104,19 +137,25 @@ class Graph(object):
     def process(self):
         pass
 
+
 class MultipleWritersError(Exception):
     pass
+
 
 class InvalidGraphError(Exception):
     pass
 
+
 class InvalidValueError(Exception):
     pass
+
 
 class InvalidFormatError(Exception):
     pass
 
+
 class Node(object):
+
     def setup(self):
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
@@ -130,7 +169,7 @@ class Node(object):
         for d in self.outputs + self.inouts:
             if d.producer is not self:
                 raise MultipleWritersError
-        
+
         # Bidirection data not virtual
         for d in self.inouts:
             if d.virtual:
@@ -141,7 +180,9 @@ class Node(object):
                 raise InvalidFormatError
         self.verify()
 
+
 class ChannelExtractNode(Node):
+
     def __init__(self, graph, input, channel, output):
         self.graph = graph
         self.channel = channel
@@ -155,10 +196,14 @@ class ChannelExtractNode(Node):
         if i.color == FOURCC_UYVY and self.channel == CHANNEL_Y:
             pass
         else:
-            raise InvalidFormatError('Cant extract channel %s from %s image.' % (self.channel, i.color))
+            raise InvalidFormatError(
+                'Cant extract channel %s from %s image.' % (self.channel,
+                                                            i.color))
         self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
 
+
 class Gaussian3x3Node(Node):
+
     def __init__(self, graph, input, output):
         self.graph = graph
         self.inputs = [input]
@@ -170,7 +215,9 @@ class Gaussian3x3Node(Node):
         i = self.inputs[0]
         self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
 
+
 class Sobel3x3Node(Node):
+
     def __init__(self, graph, input, output_x, output_y):
         self.graph = graph
         self.inputs = [input]
@@ -184,6 +231,7 @@ class Sobel3x3Node(Node):
 
 
 class MagnitudeNode(Node):
+
     def __init__(self, graph, grad_x, grad_y, mag):
         self.graph = graph
         self.inputs = [grad_x, grad_y]
@@ -195,7 +243,9 @@ class MagnitudeNode(Node):
         i = self.inputs[0]
         self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
 
+
 class PhaseNode(Node):
+
     def __init__(self, graph, grad_x, grad_y, orientation):
         self.graph = graph
         self.inputs = [grad_x, grad_y]
@@ -208,13 +258,15 @@ class PhaseNode(Node):
         self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
         self.outputs[1].ensure(i.width, i.height, FOURCC_U8)
 
+
 class AccumulateImageNode(Node):
+
     def __init__(self, graph, input, accum):
         self.graph = graph
         self.inputs = [input]
         self.outputs = []
         self.inouts = [accum]
         self.setup()
-        
+
     def verify(self):
-        pass        
+        pass

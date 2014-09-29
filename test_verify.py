@@ -1,7 +1,9 @@
 import py.test
 from pyvx import *
 
+
 class TestVerify(object):
+
     def test_single_writer(self):
         g = Graph()
         img = Image(640, 480, vx.FOURCC_U8)
