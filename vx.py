@@ -1,3 +1,4 @@
+
 def CreateContext():
     return Context()
 
@@ -27,15 +28,21 @@ class FOURCC_VIRT:
 
 
 class FOURCC_RGB:
-    pass
+    name = "ImageRGB"
+    base_type = "uint8_t"
+    items = 3
 
 
 class FOURCC_UYVY:
-    pass
+    name = "ImageUYVY"
+    base_type = "uint8_t"
+    items = 2
 
 
 class FOURCC_U8:
-    pass
+    name = "ImageU8"
+    base_type = "uint8_t"
+    items = 1
 
 
 class CHANNEL_0:
@@ -62,9 +69,25 @@ class Context(object):
     pass
 
 
+from cffi import FFI
+from weakref import WeakKeyDictionary
+from collections import defaultdict
+
+keepalive = WeakKeyDictionary()
+
+base_ffi = FFI()
+for t in [FOURCC_RGB, FOURCC_UYVY, FOURCC_U8]:
+    base_ffi.cdef("""
+                  typedef struct {
+                    %s * data;
+                    int dim_x, dim_y, stride_x, stride_y;
+                  } %s;
+                  """ % (t.base_type, t.name))
+
+
 class Image(object):
 
-    def __init__(self, context, width, height, color, 
+    def __init__(self, context, width, height, color,
                  virtual=False, graph=None):
         self.context = context
         self.width = width
@@ -73,6 +96,7 @@ class Image(object):
         self.virtual = virtual
         self.graph = graph
         self.producer = None
+        self.cdata = None
 
     def force(self):
         self.virtual = False
@@ -86,6 +110,22 @@ class Image(object):
             self.color = color
         if self.width != width or self.height != height or self.color != color:
             raise InvalidFormatError
+
+    def alloc(self):
+        if self.cdata is not None:
+            return
+        cdata = self.cdata = base_ffi.new(self.color.name + '*')
+        cdata.dim_x = self.width
+        cdata.dim_y = self.height
+        cdata.stride_x = self.color.items
+        cdata.stride_y = self.width * self.color.items
+        items = self.width * self.height * self.color.items
+        buf = base_ffi.new(self.color.base_type + '[]', items)
+        keepalive[cdata] = buf
+        cdata.data = buf
+        addr = base_ffi.cast('long', cdata)
+        self.csym = "((%s *) 0x%x)" % (self.color.name, addr)
+        self.ctype = self.color.name + " *"
 
 
 class Graph(object):
@@ -112,6 +152,8 @@ class Graph(object):
             if d.virtual and d.producer is None:
                 raise InvalidGraphError("Virtual data never produced.")
 
+        self.compile()
+
     def schedule(self):
         for d in self.data_objects:
             d.present = not d.virtual
@@ -134,9 +176,47 @@ class Graph(object):
             worklist = remaining
         return inorder
 
+    def compile(self):
+        for d in self.data_objects:
+            d.alloc()
+        code = Code()
+        for n in self.nodes:
+            n.compile(code)
+        print code
+
     def process(self):
         pass
 
+class Code(object):
+    var_count = defaultdict(int)
+    
+    def __init__(self):
+        self.code = ''
+        self.open_block = False
+
+
+    def new_block(self, **kwargs):
+        if self.open_block:
+            self.code += '}\n'
+        self.open_block = True
+        self.code += '{\n'
+        for var, val in kwargs.items():
+            #self.var_count[var] += 1
+            #var += str(self.var_count[var])
+            if isinstance(val, int):
+                self.code += '            long %s = %d;\n' % (var, val)
+            else:
+                self.code += '            %s %s = %s;\n' % (val.ctype, var, val.csym)
+
+    #     
+    #     self.name = name + str(self.count[name])
+    def push_code(self, code):
+        self.code += code+"\n";
+
+    def __str__(self):
+        if self.open_block:
+            return self.code + '}'
+        return self.code
 
 class MultipleWritersError(Exception):
     pass
@@ -214,6 +294,20 @@ class Gaussian3x3Node(Node):
     def verify(self):
         i = self.inputs[0]
         self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
+
+    def compile(self, code):
+        code.new_block(img=self.inputs[0],
+                       res=self.outputs[0],
+                       x=0, y=0)
+        code.push_code("""
+            for (y = 1; y < img.dim_y-1; y++) {
+                for (x = 1; x < img.dim_x-1; x++) {
+                    res[x, y] = (1*img[x-1, y-1] + 2*img[x, y-1] + 1*img[x+1, y-1] +
+                                 2*img[x-1, y]   + 4*img[x, y]   + 2*img[x+1, y]   +
+                                 1*img[x-1, y+1] + 2*img[x, y+1] + 1*img[x+1, y+1]) / 16;
+                }
+            }
+        """)
 
 
 class Sobel3x3Node(Node):

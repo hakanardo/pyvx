@@ -11,10 +11,10 @@ class Graph(vx.Graph):
 
     def __enter__(self):
         assert context.current_graph is None
-        context.current_graph = self._graph
+        context.current_graph = self
 
     def __exit__(self, *args):
-        assert context.current_graph is self._graph
+        assert context.current_graph is self
         context.current_graph = None
 
 
@@ -72,9 +72,10 @@ def AccumulateImage(input):
 if __name__ == '__main__':
     g = Graph()
     with g:
-        img = Image(640, 480, vx.FOURCC_UYVY)
-        dx, dy = Sobel3x3(Gaussian3x3(img))
-        mag = Magnitude(dx, dy)
-        phi = Phase(dx, dy)
+        img = Image(640, 480, vx.FOURCC_U8)
+        gimg = Gaussian3x3(img)
+        # dx, dy = Sobel3x3(gimg)
+        # mag = Magnitude(dx, dy)
+        # phi = Phase(dx, dy)
     g.verify()
     g.process()
