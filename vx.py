@@ -4,7 +4,7 @@ def CreateContext():
 
 
 def CreateImage(context, width, height, color):
-    return Image(context, width, height, color, False)
+    return Image(context, width, height, color, None, False)
 
 
 def CreateGraph(context):
@@ -12,7 +12,7 @@ def CreateGraph(context):
 
 
 def CreateVirtualImage(graph, width, height, color):
-    return Image(graph.context, width, height, color, True, graph)
+    return Image(graph.context, width, height, color, None, True, graph)
 
 
 def VerifyGraph(graph):
@@ -31,39 +31,33 @@ class FOURCC_RGB:
     name = "ImageRGB"
     base_type = "uint8_t"
     items = 3
+    typecode = "B"
 
 
 class FOURCC_UYVY:
     name = "ImageUYVY"
     base_type = "uint8_t"
     items = 2
+    typecode = "B"
 
 
 class FOURCC_U8:
     name = "ImageU8"
     base_type = "uint8_t"
     items = 1
+    typecode = "B"
 
 
-class CHANNEL_0:
-    pass
+class CHANNEL_0: pass
+class CHANNEL_1: pass
+class CHANNEL_2: pass
+class CHANNEL_3: pass
+class CHANNEL_Y: pass
 
 
-class CHANNEL_1:
-    pass
-
-
-class CHANNEL_2:
-    pass
-
-
-class CHANNEL_3:
-    pass
-
-
-class CHANNEL_Y:
-    pass
-
+class BORDER_MODE_UNDEFINED: pass
+class BORDER_MODE_CONSTANT: pass
+class BORDER_MODE_REPLICATE: pass
 
 class Context(object):
     pass
@@ -78,7 +72,7 @@ base_ffi = FFI()
 class Image(object):
 
     def __init__(self, context, width, height, color,
-                 virtual=False, graph=None, data=None):
+                 data=None, virtual=False, graph=None):
         self.context = context
         self.width = width
         self.height = height
@@ -92,13 +86,19 @@ class Image(object):
             self.cdata = None
 
     def set_data_pointer(self, data):
+        if hasattr(data, 'typecode'):
+            assert data.typecode == self.color.typecode
         if hasattr(data, 'to_cffi'):
             self.cdata = data.to_cffi(base_ffi)
+        elif hasattr(data, 'buffer_info'):
+            addr, l = data.buffer_info()
+            assert l == self.width * self.height * self.color.items
+            self.cdata = base_ffi.cast(self.color.base_type + ' *', addr)
         else:
             raise NotImplementedError("Dont know how to convert %r to a cffi buffer" % data)
+        self._keep_alive_data = data
 
     def force(self, data=None):
-        print data
         if data is not None:
             self.set_data_pointer(data)
         self.virtual = False
@@ -121,8 +121,15 @@ class Image(object):
         self.csym = "((%s *) 0x%x)" % (self.color.base_type, addr)
         self.ctype = self.color.base_type + " *"
 
-    def getitem(self, name, x, y):
-        return "%s[(%s) * %d + (%s)]" % (name, y, self.width, x)
+    def getitem(self, node, name, x, y):
+        if node.border_mode == BORDER_MODE_UNDEFINED:
+            l = self.width * self.height - 1
+            return "%s[clamp((%s) * %d + (%s), 0, %d)]" % (name, y, self.width, x, l)
+        elif node.border_mode == BORDER_MODE_REPLICATE:
+            return "%s[clamp(%s, 0, %d) * %d + clamp(%s, 0, %d)]" % (
+                   name, y, self.height-1, self.width, x, self.width-1)
+        else:
+            raise NotImplementedError
 
 
 class Graph(object):
@@ -176,11 +183,18 @@ class Graph(object):
     def compile(self):
         for d in self.data_objects:
             d.alloc()
-        code = Code()
+        code = Code('''
+                    long clamp(long val, long min_val, long max_val) {
+                        if (val < min_val) return min_val;
+                        if (val > max_val) return max_val;
+                        return val;
+                    }
+                    ''')
         for n in self.nodes:
             n.compile(code)
         ffi = FFI()
         ffi.cdef("void func(void);")
+        #print str(code)
         lib = ffi.verify("void func(void) {" + str(code) + "}")
         self.compiled_func = lib.func
 
@@ -195,8 +209,9 @@ def cparse(code):
     return func.body
 
 class MagicCGenerator(CGenerator):
-    def __init__(self, magic_vars):
+    def __init__(self, cxnode, magic_vars):
         CGenerator.__init__(self)
+        self.cxnode = cxnode
         self.magic_vars = magic_vars
 
     def visit_StructRef(self, node):
@@ -209,18 +224,19 @@ class MagicCGenerator(CGenerator):
         return CGenerator.visit_StructRef(self, node)
 
     def visit_ArrayRef(self, node):
-        assert isinstance(node.name, c_ast.ID)
+        if not isinstance(node.name, c_ast.ID):
+            return CGenerator.visit_ArrayRef(self, node)
         assert isinstance(node.subscript, c_ast.ExprList)
         if node.name.name in self.magic_vars:
             x, y = node.subscript.exprs
             var = self.magic_vars[node.name.name]
-            return var.getitem(node.name.name, self.visit(x), self.visit(y))
+            return var.getitem(self.cxnode, node.name.name, self.visit(x), self.visit(y))
         return CGenerator.visit_ArrayRef(self, node)
 
 class Code(object):
     
-    def __init__(self):
-        self.code = ''
+    def __init__(self, code=''):
+        self.code = code
         self.open_block = False
 
 
@@ -238,14 +254,13 @@ class Code(object):
             if isinstance(val, Image):
                 self.magic_vars[var] = val
 
-    def push_code(self, code):
+    def push_code(self, cxnode, code):
         ast = cparse(code)
         #ast.show()
-        generator = MagicCGenerator(self.magic_vars)
+        generator = MagicCGenerator(cxnode, self.magic_vars)
         generator.indent_level = 2
-        self.code +=  '\n  ' + '\n'.join(generator.visit(i) 
-                                         for i in ast.block_items)
-        
+        self.code += ''.join(generator._generate_stmt(stmt) 
+                             for stmt in ast.block_items)
 
     def __str__(self):
         if self.open_block:
@@ -272,6 +287,8 @@ class Node(object):
 
     def setup(self):
         self.graph._add_node(self)
+        self.border_mode = BORDER_MODE_UNDEFINED
+        self.border_mode_value = 0
         for d in self.outputs + self.inouts:
             if d.producer is None:
                 d.producer = self
@@ -333,9 +350,9 @@ class Gaussian3x3Node(Node):
         code.new_block(img=self.inputs[0],
                        res=self.outputs[0],
                        x=0, y=0)
-        code.push_code("""
-            for (y = 1; y < img.height-1; y++) {
-                for (x = 1; x < img.width-1; x++) {
+        code.push_code(self, """
+            for (y = 0; y < img.height; y++) {
+                for (x = 0; x < img.width; x++) {
                     res[x, y] = (1*img[x-1, y-1] + 2*img[x, y-1] + 1*img[x+1, y-1] +
                                  2*img[x-1, y]   + 4*img[x, y]   + 2*img[x+1, y]   +
                                  1*img[x-1, y+1] + 2*img[x, y+1] + 1*img[x+1, y+1]) / 16;

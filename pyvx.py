@@ -29,7 +29,7 @@ class Image(vx.Image):
 
 
 def VirtualImage(w=0, h=0):
-    return Image(w, h, vx.FOURCC_VIRT, True, context.current_graph)
+    return Image(w, h, vx.FOURCC_VIRT, None, True, context.current_graph)
 
 
 def ChannelExtract(input, channel):
@@ -79,6 +79,7 @@ if __name__ == '__main__':
     with g:
         img = Image(w, h, vx.FOURCC_U8, data=frame)
         gimg = Gaussian3x3(img)
+        gimg.producer.border_mode = vx.BORDER_MODE_REPLICATE
         gimg.force(res)
         # dx, dy = Sobel3x3(gimg)
         # mag = Magnitude(dx, dy)
