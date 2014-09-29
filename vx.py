@@ -216,7 +216,8 @@ class Graph(object):
         ffi = FFI()
         ffi.cdef("void func(void);")
         #print str(code)
-        lib = ffi.verify("void func(void) {" + str(code) + "}")
+        lib = ffi.verify("void func(void) {" + str(code) + "}",
+                         extra_compile_args=["-O3", "-march=native"])
         self.compiled_func = lib.func
 
     def process(self):
