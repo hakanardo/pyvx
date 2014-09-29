@@ -78,7 +78,7 @@ base_ffi = FFI()
 class Image(object):
 
     def __init__(self, context, width, height, color,
-                 virtual=False, graph=None):
+                 virtual=False, graph=None, data=None):
         self.context = context
         self.width = width
         self.height = height
@@ -86,9 +86,21 @@ class Image(object):
         self.virtual = virtual
         self.graph = graph
         self.producer = None
-        self.cdata = None
+        if data is not None:
+            self.set_data_pointer(data)
+        else:
+            self.cdata = None
 
-    def force(self):
+    def set_data_pointer(self, data):
+        if hasattr(data, 'to_cffi'):
+            self.cdata = data.to_cffi(base_ffi)
+        else:
+            raise NotImplementedError("Dont know how to convert %r to a cffi buffer" % data)
+
+    def force(self, data=None):
+        print data
+        if data is not None:
+            self.set_data_pointer(data)
         self.virtual = False
 
     def ensure(self, width, height, color):
@@ -102,10 +114,9 @@ class Image(object):
             raise InvalidFormatError
 
     def alloc(self):
-        if self.cdata is not None:
-            return
-        items = self.width * self.height * self.color.items
-        self.cdata = base_ffi.new(self.color.base_type + '[]', items)
+        if self.cdata is None:
+            items = self.width * self.height * self.color.items
+            self.cdata = base_ffi.new(self.color.base_type + '[]', items)
         addr = base_ffi.cast('long', self.cdata)
         self.csym = "((%s *) 0x%x)" % (self.color.base_type, addr)
         self.ctype = self.color.base_type + " *"
@@ -220,8 +231,6 @@ class Code(object):
         self.magic_vars = {}
         self.code += '{\n'
         for var, val in kwargs.items():
-            #self.var_count[var] += 1
-            #var += str(self.var_count[var])
             if isinstance(val, int):
                 self.code += '  long %s = %d;\n' % (var, val)
             else:

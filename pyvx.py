@@ -20,9 +20,8 @@ class Graph(vx.Graph):
 
 class Image(vx.Image):
 
-    def __init__(self, width, height, color, virtual=False, graph=None):
-        vx.Image.__init__(self, context, width, height, color,
-                          virtual, graph)
+    def __init__(self, *args, **kwargs):
+        vx.Image.__init__(self, context, *args, **kwargs)
 
     @property
     def channel_y(self):
@@ -71,23 +70,22 @@ def AccumulateImage(input):
 
 if __name__ == '__main__':
     from imgpy.io import Mplayer, view
-    from array import array
     video = Mplayer("/usr/share/cognimatics/data/facit/events/passanger/bustst1-M3014-180.mjpg", True)
     frame = video.next()
-    w, h = frame.width, frame.height    
+    w, h = frame.width, frame.height
+    res = frame.new()    
 
     g = Graph()
     with g:
-        img = Image(w, h, vx.FOURCC_U8)
+        img = Image(w, h, vx.FOURCC_U8, data=frame)
         gimg = Gaussian3x3(img)
-        gimg.force()
+        gimg.force(res)
         # dx, dy = Sobel3x3(gimg)
         # mag = Magnitude(dx, dy)
         # phi = Phase(dx, dy)
     g.verify()
 
-    for frame in video:
-        img.cdata[0:len(frame.data)] = frame.data[:]
+    for new_frame in video:
+        frame.data[:] = new_frame.data
         g.process()
-        frame.data[:] = array('B', gimg.cdata[0:len(frame.data)])
-        view(frame)
+        view(res)
