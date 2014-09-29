@@ -103,24 +103,32 @@ class Image(object):
             self.set_data_pointer(data)
         self.virtual = False
 
-    def ensure_shape(self, org):
-        self.ensure(org.width, org.height)
-
-    def suggest_color(self, color):
-        if self.color == FOURCC_VIRT:
-            self.color = color
-
-    def ensure(self, width, height, color=None):
+    def ensure_shape(self, width_or_image, height=None):
+        if height is None:
+            width, height = width_or_image.width, width_or_image.height
+        else:
+            width = width_or_image
         if self.width == 0:
             self.width = width
         if self.height == 0:
             self.height = height
         if self.width != width or self.height != height:
             raise InvalidFormatError
-        if color is not None:
-            if self.color == FOURCC_VIRT:
-                self.color = color
-            self.color != color
+
+    def ensure_color(self, color):
+        self.suggest_color(color)
+        if  self.color != color:
+            raise InvalidFormatError            
+
+    def suggest_color(self, color):
+        if self.color == FOURCC_VIRT:
+            self.color = color
+
+    def ensure_similar(self, image):
+        self.ensure_shape(image)
+        self.suggest_color(image.color)
+        if self.color.items != image.color.items:
+            raise InvalidFormatError
 
     def alloc(self):
         if self.data is None:
@@ -366,14 +374,13 @@ class ChannelExtractNode(Node):
     signature = "in input, in channel, out output"
 
     def verify(self):
-        i = self.input
-        if i.color == FOURCC_UYVY and self.channel == CHANNEL_Y:
+        if self.input.color == FOURCC_UYVY and self.channel == CHANNEL_Y:
             pass
         else:
             raise InvalidFormatError(
                 'Cant extract channel %s from %s image.' % (self.channel,
                                                             i.color))
-        self.output.ensure(i.width, i.height, FOURCC_U8)
+        self.output.ensure_similar(self.input)
 
 
 class Gaussian3x3Node(Node):
@@ -381,9 +388,7 @@ class Gaussian3x3Node(Node):
 
     def verify(self):
         self.ensure(self.input.color.items == 1)
-        self.output.ensure_shape(self.input)
-        self.output.suggest_color(FOURCC_U8)
-        self.ensure(self.output.color.items == 1)
+        self.output.ensure_similar(self.input)
 
     def compile(self, code):
         code.new_block(img=self.input,
@@ -404,26 +409,25 @@ class Sobel3x3Node(Node):
     signature = 'in input, out output_x, out output_y'
 
     def verify(self):
-        i = self.inputs[0]
-        self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
-
+        self.ensure(self.input.color.items == 1)
+        self.output_x.ensure_similar(self.input)
+        self.output_y.ensure_similar(self.input)
 
 class MagnitudeNode(Node):
     signature = 'in grad_x, in grad_y, out mag'
 
     def verify(self):
-        i = self.inputs[0]
-        self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
-
+        self.ensure(self.grad_x.color.items == 1)
+        self.ensure(self.grad_y.color.items == 1)
+        self.mag.ensure_similar(self.input)
 
 class PhaseNode(Node):
     signature = 'in grad_x, in grad_y, out orientation'
 
     def verify(self):
-        i = self.inputs[0]
-        self.outputs[0].ensure(i.width, i.height, FOURCC_U8)
-        self.outputs[1].ensure(i.width, i.height, FOURCC_U8)
-
+        self.ensure(self.grad_x.color.items == 1)
+        self.ensure(self.grad_y.color.items == 1)
+        self.orientation.ensure_similar(self.input)
 
 class AccumulateImageNode(Node):
     signature = 'in input, inout accum'
