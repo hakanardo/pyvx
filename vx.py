@@ -70,6 +70,7 @@ from pycparser.c_generator import CGenerator
 base_ffi = FFI()
 
 class Image(object):
+    count = 0
 
     def __init__(self, context, width, height, color,
                  data=None, virtual=False, graph=None):
@@ -84,6 +85,8 @@ class Image(object):
             self.set_data_pointer(data)
         else:
             self.data = None
+        Image.count += 1
+        self.count = Image.count
 
     def set_data_pointer(self, data):
         if hasattr(data, 'typecode'):
@@ -135,10 +138,13 @@ class Image(object):
             items = self.width * self.height * self.color.items
             self.data = base_ffi.new(self.color.base_type + '[]', items)
         addr = base_ffi.cast('long', self.data)
-        self.csym = "((%s *) 0x%x)" % (self.color.base_type, addr)
         self.ctype = self.color.base_type + " *"
+        self.csym = "__img%d" % self.count
+        self.cdeclaration = "%s __restrict__ %s = ((%s) 0x%x);\n" % (
+                self.ctype, self.csym, self.ctype, addr)
 
-    def getitem(self, node, name, x, y):
+    def getitem(self, node, x, y):
+        name = self.csym
         if node.border_mode == BORDER_MODE_UNDEFINED:
             l = self.width * self.height - 1
             return "%s[clamp((%s) * %d + (%s), 0, %d)]" % (name, y, self.width, x, l)
@@ -148,7 +154,8 @@ class Image(object):
         else:
             raise NotImplementedError
 
-    def getattr(self, node, name, attr):
+    def getattr(self, node, attr):
+        name = self.csym
         if attr == "width":
             return str(self.width)
         elif attr == "height":
@@ -212,13 +219,14 @@ class Graph(object):
     def compile(self):
         for d in self.data_objects:
             d.alloc()
+        imgs = ''.join(d.cdeclaration for d in self.data_objects)
         code = Code('''
                     long clamp(long val, long min_val, long max_val) {
                         if (val < min_val) return min_val;
                         if (val > max_val) return max_val;
                         return val;
                     }
-                    ''')
+                    \n''' + imgs)
         for n in self.nodes:
             n.compile(code)
         ffi = FFI()
@@ -249,7 +257,7 @@ class MagicCGenerator(CGenerator):
         assert isinstance(node.field, c_ast.ID)
         if node.name.name in self.magic_vars:
             var = self.magic_vars[node.name.name]
-            return var.getattr(self.cxnode, node.name.name, node.field.name)
+            return var.getattr(self.cxnode, node.field.name)
         return CGenerator.visit_StructRef(self, node)
 
     def visit_ArrayRef(self, node):
@@ -259,7 +267,7 @@ class MagicCGenerator(CGenerator):
         if node.name.name in self.magic_vars:
             x, y = node.subscript.exprs
             var = self.magic_vars[node.name.name]
-            return var.getitem(self.cxnode, node.name.name, self.visit(x), self.visit(y))
+            return var.getitem(self.cxnode, self.visit(x), self.visit(y))
         return CGenerator.visit_ArrayRef(self, node)
 
 class Code(object):
@@ -278,10 +286,11 @@ class Code(object):
         for var, val in kwargs.items():
             if isinstance(val, int):
                 self.code += '  long %s = %d;\n' % (var, val)
-            else:
-                self.code += '  %s %s = %s;\n' % (val.ctype, var, val.csym)
-            if isinstance(val, Image):
+            elif isinstance(val, Image):
+                #self.code += '  %s %s = %s;\n' % (val.ctype, var, val.csym)
                 self.magic_vars[var] = val
+            else:
+                raise NotImplementedError
 
     def push_code(self, cxnode, code):
         ast = cparse(code)
