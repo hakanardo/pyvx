@@ -70,20 +70,10 @@ class Context(object):
 
 
 from cffi import FFI
-from weakref import WeakKeyDictionary
-from collections import defaultdict
-
-keepalive = WeakKeyDictionary()
+from pycparser import c_parser, c_ast
+from pycparser.c_generator import CGenerator
 
 base_ffi = FFI()
-for t in [FOURCC_RGB, FOURCC_UYVY, FOURCC_U8]:
-    base_ffi.cdef("""
-                  typedef struct {
-                    %s * data;
-                    int dim_x, dim_y, stride_x, stride_y;
-                  } %s;
-                  """ % (t.base_type, t.name))
-
 
 class Image(object):
 
@@ -114,18 +104,14 @@ class Image(object):
     def alloc(self):
         if self.cdata is not None:
             return
-        cdata = self.cdata = base_ffi.new(self.color.name + '*')
-        cdata.dim_x = self.width
-        cdata.dim_y = self.height
-        cdata.stride_x = self.color.items
-        cdata.stride_y = self.width * self.color.items
         items = self.width * self.height * self.color.items
-        buf = base_ffi.new(self.color.base_type + '[]', items)
-        keepalive[cdata] = buf
-        cdata.data = buf
-        addr = base_ffi.cast('long', cdata)
-        self.csym = "((%s *) 0x%x)" % (self.color.name, addr)
-        self.ctype = self.color.name + " *"
+        self.cdata = base_ffi.new(self.color.base_type + '[]', items)
+        addr = base_ffi.cast('long', self.cdata)
+        self.csym = "((%s *) 0x%x)" % (self.color.base_type, addr)
+        self.ctype = self.color.base_type + " *"
+
+    def getitem(self, name, x, y):
+        return "%s[(%s) * %d + (%s)]" % (name, y, self.width, x)
 
 
 class Graph(object):
@@ -187,8 +173,37 @@ class Graph(object):
     def process(self):
         pass
 
+def cparse(code):
+    parser = c_parser.CParser()
+    ast = parser.parse("void f() {" + code + "}")
+    func = ast.ext[0]
+    assert func.decl.name == 'f'
+    return func.body
+
+class MagicCGenerator(CGenerator):
+    def __init__(self, magic_vars):
+        CGenerator.__init__(self)
+        self.magic_vars = magic_vars
+
+    def visit_StructRef(self, node):
+        assert isinstance(node.name, c_ast.ID)
+        assert isinstance(node.field, c_ast.ID)
+        if node.name.name in self.magic_vars:
+            if node.field.name == 'data':
+                return node.name.name
+            return getattr(self.magic_vars[node.name.name], node.field.name)
+        return CGenerator.visit_StructRef(self, node)
+
+    def visit_ArrayRef(self, node):
+        assert isinstance(node.name, c_ast.ID)
+        assert isinstance(node.subscript, c_ast.ExprList)
+        if node.name.name in self.magic_vars:
+            x, y = node.subscript.exprs
+            var = self.magic_vars[node.name.name]
+            return var.getitem(node.name.name, self.visit(x), self.visit(y))
+        return CGenerator.visit_ArrayRef(self, node)
+
 class Code(object):
-    #var_count = defaultdict(int)
     
     def __init__(self):
         self.code = ''
@@ -199,17 +214,26 @@ class Code(object):
         if self.open_block:
             self.code += '}\n'
         self.open_block = True
+        self.magic_vars = {}
         self.code += '{\n'
         for var, val in kwargs.items():
             #self.var_count[var] += 1
             #var += str(self.var_count[var])
             if isinstance(val, int):
-                self.code += '            long %s = %d;\n' % (var, val)
+                self.code += '  long %s = %d;\n' % (var, val)
             else:
-                self.code += '            %s %s = %s;\n' % (val.ctype, var, val.csym)
+                self.code += '  %s %s = %s;\n' % (val.ctype, var, val.csym)
+            if isinstance(val, Image):
+                self.magic_vars[var] = val
 
     def push_code(self, code):
-        self.code += code+"\n";
+        ast = cparse(code)
+        #ast.show()
+        generator = MagicCGenerator(self.magic_vars)
+        generator.indent_level = 2
+        self.code +=  '\n  ' + '\n'.join(generator.visit(i) 
+                                         for i in ast.block_items)
+        
 
     def __str__(self):
         if self.open_block:
@@ -298,8 +322,8 @@ class Gaussian3x3Node(Node):
                        res=self.outputs[0],
                        x=0, y=0)
         code.push_code("""
-            for (y = 1; y < img.dim_y-1; y++) {
-                for (x = 1; x < img.dim_x-1; x++) {
+            for (y = 1; y < img.height-1; y++) {
+                for (x = 1; x < img.width-1; x++) {
                     res[x, y] = (1*img[x-1, y-1] + 2*img[x, y-1] + 1*img[x+1, y-1] +
                                  2*img[x-1, y]   + 4*img[x, y]   + 2*img[x+1, y]   +
                                  1*img[x-1, y+1] + 2*img[x, y+1] + 1*img[x+1, y+1]) / 16;
