@@ -188,7 +188,7 @@ class Graph(object):
         pass
 
 class Code(object):
-    var_count = defaultdict(int)
+    #var_count = defaultdict(int)
     
     def __init__(self):
         self.code = ''
@@ -208,8 +208,6 @@ class Code(object):
             else:
                 self.code += '            %s %s = %s;\n' % (val.ctype, var, val.csym)
 
-    #     
-    #     self.name = name + str(self.count[name])
     def push_code(self, code):
         self.code += code+"\n";
 
