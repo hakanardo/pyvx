@@ -103,15 +103,24 @@ class Image(object):
             self.set_data_pointer(data)
         self.virtual = False
 
-    def ensure(self, width, height, color):
+    def ensure_shape(self, org):
+        self.ensure(org.width, org.height)
+
+    def suggest_color(self, color):
+        if self.color == FOURCC_VIRT:
+            self.color = color
+
+    def ensure(self, width, height, color=None):
         if self.width == 0:
             self.width = width
         if self.height == 0:
             self.height = height
-        if self.color == FOURCC_VIRT:
-            self.color = color
-        if self.width != width or self.height != height or self.color != color:
+        if self.width != width or self.height != height:
             raise InvalidFormatError
+        if color is not None:
+            if self.color == FOURCC_VIRT:
+                self.color = color
+            self.color != color
 
     def alloc(self):
         if self.data is None:
@@ -165,6 +174,8 @@ class Graph(object):
         for d in self.data_objects:
             if d.virtual and d.producer is None:
                 raise InvalidGraphError("Virtual data never produced.")
+            if d.color == FOURCC_VIRT:
+                raise InvalidFormatError("FOURCC_VIRT not resolved into specific type.")
 
         self.compile()
 
@@ -345,6 +356,10 @@ class Node(object):
                 raise InvalidFormatError
         self.verify()
 
+    def ensure(self, condition):
+        if not condition:
+            raise InvalidFormatError
+
 
 class ChannelExtractNode(Node):
     signature = "in input, in channel, out output"
@@ -364,8 +379,10 @@ class Gaussian3x3Node(Node):
     signature = "in input, out output"
 
     def verify(self):
-        i = self.input
-        self.output.ensure(i.width, i.height, FOURCC_U8)
+        self.ensure(self.input.color.items == 1)
+        self.output.ensure_shape(self.input)
+        self.output.suggest_color(FOURCC_U8)
+        self.ensure(self.output.color.items == 1)
 
     def compile(self, code):
         code.new_block(img=self.input,

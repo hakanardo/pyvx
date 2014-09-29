@@ -28,8 +28,8 @@ class Image(vx.Image):
         return ChannelExtract(self, vx.CHANNEL_Y)
 
 
-def VirtualImage(w=0, h=0):
-    return Image(w, h, vx.FOURCC_VIRT, None, True, context.current_graph)
+def VirtualImage(w=0, h=0, color=vx.FOURCC_VIRT):
+    return Image(w, h, color, None, True, context.current_graph)
 
 
 def ChannelExtract(input, channel):

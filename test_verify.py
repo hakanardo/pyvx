@@ -26,7 +26,7 @@ class TestVerify(object):
 
     def test_no_producer(self):
         g = Graph()
-        img = VirtualImage(640, 480)
+        img = VirtualImage(640, 480, vx.FOURCC_U8)
         out2 = VirtualImage()
         vx.Gaussian3x3Node(g, img, out2)
         with py.test.raises(vx.InvalidGraphError):
@@ -34,7 +34,7 @@ class TestVerify(object):
 
     def test_loop(self):
         g = Graph()
-        out1 = VirtualImage(640, 480)
+        out1 = VirtualImage(640, 480, vx.FOURCC_U8)
         out2 = VirtualImage()
         vx.Gaussian3x3Node(g, out1, out2)
         vx.Gaussian3x3Node(g, out2, out1)
