@@ -57,3 +57,15 @@ class TestVerify(object):
         Gaussian3x3Node(g, out, out2)
         Gaussian3x3Node(g, img, out)
         g.verify()
+
+    def test_channel_extract(self):
+        g = Graph()
+        with g:
+            img = Image(640, 480, FOURCC_U8)
+            with py.test.raises(InvalidFormatError):
+                ChannelExtract(img, CHANNEL_R)
+            img = Image(640, 480, FOURCC_RGB)
+            with py.test.raises(InvalidFormatError):
+                ChannelExtract(img, CHANNEL_U)
+            ChannelExtract(img, CHANNEL_R)
+

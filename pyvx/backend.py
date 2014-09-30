@@ -88,7 +88,9 @@ class Image(object):
         self.cdeclaration = "%s __restrict__ %s = ((%s) 0x%x);\n" % (
                 self.ctype, self.csym, self.ctype, addr)
 
-    def getitem2d(self, node, x, y):
+    def getitem2d(self, node, channel, x, y):
+        if channel is not None:
+            raise NotImplementedError
         name = self.csym
         if node.border_mode == BORDER_MODE_UNDEFINED:
             l = self.width * self.height - 1
@@ -99,8 +101,12 @@ class Image(object):
         else:
             raise NotImplementedError
 
-    def getitem1d(self, node, idx):
+    def getitem1d(self, node, channel, idx):
         name = self.csym
+        if channel == 'data':
+            return '%s[%s]' % (name, idx)
+        if channel is not None:
+            raise NotImplementedError
         if node.border_mode == BORDER_MODE_UNDEFINED:
             l = self.width * self.height - 1
             return "%s[clamp(%s, 0, %d)]" % (name, idx, l)
@@ -113,13 +119,59 @@ class Image(object):
             return str(self.width)
         elif attr == "height":
             return str(self.height)
-        elif attr == "data":
-            return name
         elif attr == "len":
             return str(self.width * self.height)
         else:
             raise AttributeError
 
+    @property
+    def channel_r(self):
+        return ChannelExtract(self, CHANNEL_R)
+        
+    @property
+    def channel_g(self):
+        return ChannelExtract(self, CHANNEL_G)
+        
+    @property
+    def channel_b(self):
+        return ChannelExtract(self, CHANNEL_B)
+        
+    @property
+    def channel_u(self):
+        return ChannelExtract(self, CHANNEL_U)
+        
+    @property
+    def channel_y(self):
+        return ChannelExtract(self, CHANNEL_Y)
+        
+    @property
+    def channel_v(self):
+        return ChannelExtract(self, CHANNEL_V)
+        
+    @property
+    def channel_a(self):
+        return ChannelExtract(self, CHANNEL_A)
+        
+    @property
+    def channel_0(self):
+        return ChannelExtract(self, CHANNEL_0)
+        
+    @property
+    def channel_1(self):
+        return ChannelExtract(self, CHANNEL_1)
+        
+    @property
+    def channel_2(self):
+        return ChannelExtract(self, CHANNEL_2)
+
+    @property
+    def channel_3(self):
+        return ChannelExtract(self, CHANNEL_3)
+        
+    @property
+    def channel_r(self):
+        return ChannelExtract(self, CHANNEL_R)
+        
     def __add__(self, other):
         return Add(self, other, CONVERT_POLICY_TRUNCATE)
 
@@ -300,13 +352,21 @@ class ChannelExtractNode(Node):
     signature = "in input, in channel, out output"
 
     def verify(self):
-        if self.input.color == FOURCC_UYVY and self.channel == CHANNEL_Y:
-            pass
-        else:
+        if self.channel not in self.input.color.channels:
             raise InvalidFormatError(
-                'Cant extract channel %s from %s image.' % (self.channel,
-                                                            self.input.color))
-        self.output.ensure_similar(self.input)
+                'Cant extract channel %s from %s image.' % (
+                    self.channel.__name__, self.input.color.name))
+        self.output.ensure_color(FOURCC_U8)        
+        self.output.ensure_shape(self.input)
+
+    def compile(self, code):
+        code.add_block(self, """
+            for (long i = 0; i < out.len; i++) {
+                out[i] = input.%s[i];
+            }
+            """ % self.channel.__name__.lower(), 
+            input=self.input, out=self.output)
+
 
 def ChannelExtract(input, channel):
     output = Image()
