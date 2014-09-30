@@ -1,7 +1,6 @@
 from pyvx.types import *
+from pyvx.codegen import Code
 from cffi import FFI
-from pycparser import c_parser, c_ast
-from pycparser.c_generator import CGenerator
 from collections import defaultdict
 
 class Context(object):
@@ -214,55 +213,6 @@ class Graph(object):
     def process(self):
         self.compiled_func()
 
-def cparse(code):
-    parser = c_parser.CParser()
-    ast = parser.parse("void f() {" + code + "}")
-    func = ast.ext[0]
-    assert func.decl.name == 'f'
-    return func.body
-
-class MagicCGenerator(CGenerator):
-    def __init__(self, cxnode, magic_vars):
-        CGenerator.__init__(self)
-        self.cxnode = cxnode
-        self.magic_vars = magic_vars
-
-    def visit_StructRef(self, node):
-        assert isinstance(node.name, c_ast.ID)
-        assert isinstance(node.field, c_ast.ID)
-        if node.name.name in self.magic_vars:
-            var = self.magic_vars[node.name.name]
-            return var.getattr(self.cxnode, node.field.name)
-        return CGenerator.visit_StructRef(self, node)
-
-    def visit_ArrayRef(self, node):
-        if not isinstance(node.name, c_ast.ID):
-            return CGenerator.visit_ArrayRef(self, node)
-        if isinstance(node.subscript, c_ast.ExprList):
-            if node.name.name in self.magic_vars:
-                x, y = node.subscript.exprs
-                var = self.magic_vars[node.name.name]
-                return var.getitem2d(self.cxnode, self.visit(x), self.visit(y))
-        else:
-            if node.name.name in self.magic_vars:
-                var = self.magic_vars[node.name.name]
-                return var.getitem1d(self.cxnode, self.visit(node.subscript))                
-        return CGenerator.visit_ArrayRef(self, node)
-
-class Code(object):
-    
-    def __init__(self, code=''):
-        self.code = code
-
-    def add_block(self, cxnode, code, **magic_vars):
-        ast = cparse(code)
-        #ast.show()
-        generator = MagicCGenerator(cxnode, magic_vars)
-        self.code += generator.visit(ast)
-
-    def __str__(self):
-        return self.code
-
 class Node(object):
 
     def __init__(self, graph, *args, **kwargs):
@@ -441,27 +391,3 @@ def AccumulateImage(input):
     accum = Image()
     AccumulateImageNode(Graph.current_graph, input, accum)
     return accum
-
-
-if __name__ == '__main__':
-    from imgpy.io import Mplayer, view
-    video = Mplayer("/usr/share/cognimatics/data/facit/events/passanger/bustst1-M3014-180.mjpg", True)
-    frame = video.next()
-    w, h = frame.width, frame.height
-    res = frame.new()    
-
-    g = Graph()
-    with g:
-        img = Image(w, h, FOURCC_U8, data=frame)
-        gimg = Gaussian3x3(img)
-        gimg.producer.border_mode = BORDER_MODE_REPLICATE
-        gimg.force(res)
-        # dx, dy = Sobel3x3(gimg)
-        # mag = Magnitude(dx, dy)
-        # phi = Phase(dx, dy)
-    g.verify()
-
-    for new_frame in video:
-        frame.data[:] = new_frame.data
-        g.process()
-        view(res)
