@@ -1,81 +1,8 @@
-import numpy
 from cffi import FFI
 from pycparser import c_parser, c_ast
 from pycparser.c_generator import CGenerator
 from collections import defaultdict
-
-base_ffi = FFI()
-
-def CreateContext():
-    return Context()
-
-
-def CreateImage(context, width, height, color):
-    return Image(context, width, height, color, None, False)
-
-
-def CreateGraph(context):
-    return Graph(context)
-
-
-def CreateVirtualImage(graph, width, height, color):
-    return Image(graph.context, width, height, color, None, True, graph)
-
-
-def VerifyGraph(graph):
-    return graph.verify()
-
-
-def ProcessGraph(graph):
-    return graph.process()
-
-dtype2fourcc = {}
-
-def make_fourcc(i, t, ctype=None):
-    if ctype is None:
-        ctype = t + '_t'
-    class T:
-        base_type = ctype
-        items = i
-        dtype = numpy.dtype(t)
-    if T.items == 1:
-        dtype2fourcc[T.dtype] = T
-    assert base_ffi.sizeof(ctype) == T.dtype.itemsize
-    return T
-
-class FOURCC_VIRT: pass
-FOURCC_RGB  = make_fourcc(3, 'uint8')
-FOURCC_RGBX = make_fourcc(4, 'uint8')
-FOURCC_UYVY = make_fourcc(2, 'uint8')
-FOURCC_YUYV = make_fourcc(2, 'uint8')
-FOURCC_U8   = make_fourcc(1, 'uint8')
-FOURCC_S8   = make_fourcc(1, 'int8')
-FOURCC_U16  = make_fourcc(1, 'uint16')
-FOURCC_S16  = make_fourcc(1, 'int16')
-FOURCC_U32  = make_fourcc(1, 'uint32')
-FOURCC_S32  = make_fourcc(1, 'int32')
-FOURCC_U64  = make_fourcc(1, 'uint64')
-FOURCC_S64  = make_fourcc(1, 'int64')
-FOURCC_F32  = make_fourcc(1, 'float32', 'float')
-FOURCC_F64  = make_fourcc(1, 'float64', 'double')
-FOURCC_F128 = make_fourcc(1, 'float128', 'long double')
-
-def binop_type(a, b):
-    dt = (numpy.array([], a) + numpy.array([], b)).dtype
-    return dtype2fourcc[dt]
-
-class CHANNEL_0: pass
-class CHANNEL_1: pass
-class CHANNEL_2: pass
-class CHANNEL_3: pass
-class CHANNEL_Y: pass
-
-class BORDER_MODE_UNDEFINED: pass
-class BORDER_MODE_CONSTANT: pass
-class BORDER_MODE_REPLICATE: pass
-
-class CONVERT_POLICY_TRUNCATE: pass
-class CONVERT_POLICY_SATURATE: pass
+from .types import *
 
 class Context(object):
     pass
@@ -83,8 +10,16 @@ class Context(object):
 class Image(object):
     count = 0
 
-    def __init__(self, context, width, height, color,
-                 data=None, virtual=False, graph=None):
+    def __init__(self, width=0, height=0, color=FOURCC_VIRT,
+                 data=None, context=None, virtual=None, graph=None):
+        if graph is None:
+            graph = Graph.current_graph
+        if context is None:
+            context = graph.context
+        if virtual is None:
+            virtual = (color == FOURCC_VIRT)
+        if virtual:
+            assert graph is not None
         self.context = context
         self.width = width
         self.height = height
@@ -103,11 +38,11 @@ class Image(object):
         if hasattr(data, 'typecode'):
             assert data.typecode == self.color.dtype
         if hasattr(data, 'to_cffi'):
-            self.data = data.to_cffi(base_ffi)
+            self.data = data.to_cffi(FFI())
         elif hasattr(data, 'buffer_info'):
             addr, l = data.buffer_info()
             assert l == self.width * self.height * self.color.items
-            self.data = base_ffi.cast(self.color.base_type + ' *', addr)
+            self.data = FFI().cast(self.color.base_type + ' *', addr)
         else:
             raise NotImplementedError("Dont know how to convert %r to a cffi buffer" % data)
         self._keep_alive_original_data = data
@@ -147,8 +82,8 @@ class Image(object):
     def alloc(self):
         if self.data is None:
             items = self.width * self.height * self.color.items
-            self.data = base_ffi.new(self.color.base_type + '[]', items)
-        addr = base_ffi.cast('long', self.data)
+            self.data = FFI().new(self.color.base_type + '[]', items)
+        addr = FFI().cast('long', self.data)
         self.ctype = self.color.base_type + " *"
         self.csym = "__img%d" % self.count
         self.cdeclaration = "%s __restrict__ %s = ((%s) 0x%x);\n" % (
@@ -187,19 +122,30 @@ class Image(object):
             raise AttributeError
 
     def __add__(self, other):
-        g = self.context.current_graph
-        res = CreateVirtualImage(g, 0, 0, FOURCC_VIRT)
-        AddNode(g, self, other, CONVERT_POLICY_TRUNCATE, res)
-        return res
+        return Add(self, other, CONVERT_POLICY_TRUNCATE)
 
 
 class Graph(object):
+    default_context = None
+    current_graph = None
 
-    def __init__(self, context, early_verify=True):
+    def __init__(self, context=None, early_verify=True):
+        if context is None:
+            if Graph.default_context is None:
+                Graph.default_context = Context()
+            context = Graph.default_context
         self.context = context
         self.nodes = []
         self.data_objects = set()
         self.early_verify = early_verify
+
+    def __enter__(self):
+        assert Graph.current_graph is None
+        Graph.current_graph = self
+
+    def __exit__(self, *args):
+        assert Graph.current_graph is self
+        Graph.current_graph = None
 
     def _add_node(self, node):
         self.nodes.append(node)
@@ -317,22 +263,6 @@ class Code(object):
     def __str__(self):
         return self.code
 
-class MultipleWritersError(Exception):
-    pass
-
-
-class InvalidGraphError(Exception):
-    pass
-
-
-class InvalidValueError(Exception):
-    pass
-
-
-class InvalidFormatError(Exception):
-    pass
-
-
 class Node(object):
 
     def __init__(self, graph, *args, **kwargs):
@@ -409,6 +339,13 @@ class AddNode(Node):
             }
             """, in1=self.in1, in2=self.in2, out=self.out)
 
+def Add(in1, in2, policy):
+    res = Image()
+    AddNode(Graph.current_graph, in1, in2, CONVERT_POLICY_TRUNCATE, res)
+    return res
+
+
+
 class ChannelExtractNode(Node):
     signature = "in input, in channel, out output"
 
@@ -420,6 +357,12 @@ class ChannelExtractNode(Node):
                 'Cant extract channel %s from %s image.' % (self.channel,
                                                             self.input.color))
         self.output.ensure_similar(self.input)
+
+def ChannelExtract(input, channel):
+    output = Image()
+    ChannelExtractNode(Graph.current_graph,
+                          input, channel, output)
+    return output
 
 
 class Gaussian3x3Node(Node):
@@ -440,6 +383,11 @@ class Gaussian3x3Node(Node):
             }
             """, img=self.input, res=self.output)
 
+def Gaussian3x3(input):
+    output = Image()
+    Gaussian3x3Node(Graph.current_graph, input, output)
+    return output
+
 
 class Sobel3x3Node(Node):
     signature = 'in input, out output_x, out output_y'
@@ -449,6 +397,12 @@ class Sobel3x3Node(Node):
         self.output_x.ensure_similar(self.input)
         self.output_y.ensure_similar(self.input)
 
+def Sobel3x3(input):
+    dx, dy = Image(), Image()
+    Sobel3x3Node(Graph.current_graph, input, dx, dy)
+    return dx, dy
+
+
 class MagnitudeNode(Node):
     signature = 'in grad_x, in grad_y, out mag'
 
@@ -456,6 +410,12 @@ class MagnitudeNode(Node):
         self.ensure(self.grad_x.color.items == 1)
         self.ensure(self.grad_y.color.items == 1)
         self.mag.ensure_similar(self.input)
+
+def Magnitude(grad_x, grad_y):
+    mag = Image()
+    MagnitudeNode(Graph.current_graph, grad_x, grad_y, mag)
+    return mag
+
 
 class PhaseNode(Node):
     signature = 'in grad_x, in grad_y, out orientation'
@@ -465,8 +425,43 @@ class PhaseNode(Node):
         self.ensure(self.grad_y.color.items == 1)
         self.orientation.ensure_similar(self.input)
 
+def Phase(grad_x, grad_y):
+    ph = Image()
+    PhaseNode(Graph.current_graph, grad_x, grad_y, ph)
+    return ph
+
+
 class AccumulateImageNode(Node):
     signature = 'in input, inout accum'
 
     def verify(self):
         pass
+
+def AccumulateImage(input):
+    accum = Image()
+    AccumulateImageNode(Graph.current_graph, input, accum)
+    return accum
+
+
+if __name__ == '__main__':
+    from imgpy.io import Mplayer, view
+    video = Mplayer("/usr/share/cognimatics/data/facit/events/passanger/bustst1-M3014-180.mjpg", True)
+    frame = video.next()
+    w, h = frame.width, frame.height
+    res = frame.new()    
+
+    g = Graph()
+    with g:
+        img = Image(w, h, FOURCC_U8, data=frame)
+        gimg = Gaussian3x3(img)
+        gimg.producer.border_mode = BORDER_MODE_REPLICATE
+        gimg.force(res)
+        # dx, dy = Sobel3x3(gimg)
+        # mag = Magnitude(dx, dy)
+        # phi = Phase(dx, dy)
+    g.verify()
+
+    for new_frame in video:
+        frame.data[:] = new_frame.data
+        g.process()
+        view(res)
