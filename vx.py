@@ -283,28 +283,14 @@ class Code(object):
     
     def __init__(self, code=''):
         self.code = code
-        self.open_block = False
 
-
-    def new_block(self, **magic_vars):
-        if self.open_block:
-            self.code += '}\n'
-        self.open_block = True
-        self.magic_vars = {}
-        self.code += '{\n'
-        self.magic_vars = magic_vars
-
-    def push_code(self, cxnode, code):
+    def add_block(self, cxnode, code, **magic_vars):
         ast = cparse(code)
         #ast.show()
-        generator = MagicCGenerator(cxnode, self.magic_vars)
-        generator.indent_level = 2
-        self.code += ''.join(generator._generate_stmt(stmt) 
-                             for stmt in ast.block_items)
+        generator = MagicCGenerator(cxnode, magic_vars)
+        self.code += generator.visit(ast)
 
     def __str__(self):
-        if self.open_block:
-            return self.code + '}'
         return self.code
 
 class MultipleWritersError(Exception):
@@ -413,9 +399,7 @@ class Gaussian3x3Node(Node):
         self.output.ensure_similar(self.input)
 
     def compile(self, code):
-        code.new_block(img=self.input,
-                       res=self.output)
-        code.push_code(self, """
+        code.add_block(self, """
             for (long y = 0; y < img.height; y++) {
                 for (long x = 0; x < img.width; x++) {
                     res[x, y] = (1*img[x-1, y-1] + 2*img[x, y-1] + 1*img[x+1, y-1] +
@@ -423,7 +407,7 @@ class Gaussian3x3Node(Node):
                                  1*img[x-1, y+1] + 2*img[x, y+1] + 1*img[x+1, y+1]) / 16;
                 }
             }
-        """)
+            """, img=self.input, res=self.output)
 
 
 class Sobel3x3Node(Node):
