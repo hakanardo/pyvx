@@ -1,11 +1,11 @@
-from pyvx.pyvx import Image, Graph, Context
+from pyvx.backend import Image, Graph, Context
 
 def CreateContext():
     return Context()
 
 
 def CreateImage(context, width, height, color):
-    return Image(context, width, height, color, None, False)
+    return Image(width, height, color, virtual=False, context=context)
 
 
 def CreateGraph(context):
@@ -13,7 +13,7 @@ def CreateGraph(context):
 
 
 def CreateVirtualImage(graph, width, height, color):
-    return Image(graph.context, width, height, color, None, True, graph)
+    return Image(width, height, color, virtual=True, graph=graph)
 
 
 def VerifyGraph(graph):
