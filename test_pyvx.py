@@ -25,3 +25,14 @@ class TestPyVx(object):
         assert gimg.data[0] == 1
         assert gimg.data[1] == 1
         assert gimg.data[11] == 10
+
+    def test_add(self):
+        g = Graph()
+        img = Image(3, 4, vx.FOURCC_U8, array('B', range(12)))
+        with g:
+            sa = img + img
+            sa.force()
+        g.verify()
+        g.process()
+        for i in range(12):
+            assert sa.data[i] == 2*i
