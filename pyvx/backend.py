@@ -102,11 +102,11 @@ class Image(object):
         stride_x = self.color.items
         if node.border_mode == BORDER_MODE_UNDEFINED:
             l = self.width * self.height - 1
-            return "%s[clamp( (((%s)>>%d)<<%d) * %d + (((%s)>>%d)<<%d) * %d + %d, 0, %d )]" % (
-                    name,        y,   ss,  ss, stride_y, x,   ss,  ss,   stride_x, off,    l)
+            return "%s[clamp( %s(%s) * %d + %s(%s) * %d + %d, 0, %d )]" % (
+                    name,     ss, y,stride_y, ss,x,  stride_x, off,    l)
         elif node.border_mode == BORDER_MODE_REPLICATE:
-            return "%s[((clamp(%s, 0, %d)>>%s)<<%s) * %d + ((clamp(%s, 0, %d)>>%d)<<%d) * %d + %d]" % (
-                   name, y, self.height-1, ss, ss, stride_y, x, self.width-1, ss, ss, stride_x, off)
+            return "%s[%s(clamp(%s, 0, %d)) * %d + %s(clamp(%s, 0, %d)) * %d + %d]" % (
+                   name, ss, y, self.height-1, stride_y, ss, x, self.width-1, stride_x, off)
         else:
             raise NotImplementedError
 
@@ -126,8 +126,8 @@ class Image(object):
             off =  self.color.offset(channel)
             stride_x = self.color.items
             l = self.width * self.height * self.color.items - 1
-            return "%s[((clamp(%s, 0, %d)>>%d)<<%d) * %d + %d]" % (
-                    name,      idx,   l,   ss,  ss, stride_x, off)
+            return "%s[%s(clamp(%s, 0, %d)) * %d + %d]" % (
+                    name,  ss, idx,   l,  stride_x, off)
 
     def getattr(self, node, attr):
         name = self.csym
@@ -270,12 +270,15 @@ class Graph(object):
                         if (val > max_val) return max_val;
                         return val;
                     }
+                    long subsample(long val) {
+                        return ((val) >> 1) << 1;
+                    }
                     \n''' + imgs)
         for n in self.nodes:
             n.compile(code)
         ffi = FFI()
         ffi.cdef("void func(void);")
-        #print str(code)
+        print str(code)
         lib = ffi.verify("void func(void) {" + str(code) + "}",
                          extra_compile_args=["-O3", "-march=native", "-std=c99"])
         self.compiled_func = lib.func

@@ -28,7 +28,9 @@ def make_fourcc(n_items, t, ctype=None):
 
         @classmethod
         def subsamp(cls, channel):
-            return cls.channel_subsamp[cls.channels.index(channel)]
+            if cls.channel_subsamp[cls.channels.index(channel)]:
+                return 'subsample'
+            return ''
 
         @classmethod
         def offset(cls, channel):
