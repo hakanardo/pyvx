@@ -89,15 +89,24 @@ class Image(object):
                 self.ctype, self.csym, self.ctype, addr)
 
     def getitem2d(self, node, channel, x, y):
-        if channel is not None:
-            raise NotImplementedError
+        if channel is None:
+            if self.color.items != 1:
+                raise InvalidFormatError("Cant access pixel of multi channel image without specifying channel.")
+            channel = CHANNEL_0
+        else:                
+            channel = eval(channel.upper())
         name = self.csym
+        ss = self.color.subsamp(channel)
+        off =  self.color.offset(channel)
+        stride_y = self.width * self.color.items
+        stride_x = self.color.items
         if node.border_mode == BORDER_MODE_UNDEFINED:
             l = self.width * self.height - 1
-            return "%s[clamp((%s) * %d + (%s), 0, %d)]" % (name, y, self.width, x, l)
+            return "%s[clamp( (((%s)>>%d)<<%d) * %d + (((%s)>>%d)<<%d) * %d + %d, 0, %d )]" % (
+                    name,        y,   ss,  ss, stride_y, x,   ss,  ss,   stride_x, off,    l)
         elif node.border_mode == BORDER_MODE_REPLICATE:
-            return "%s[clamp(%s, 0, %d) * %d + clamp(%s, 0, %d)]" % (
-                   name, y, self.height-1, self.width, x, self.width-1)
+            return "%s[((clamp(%s, 0, %d)>>%s)<<%s) * %d + ((clamp(%s, 0, %d)>>%d)<<%d) * %d + %d]" % (
+                   name, y, self.height-1, ss, ss, stride_y, x, self.width-1, ss, ss, stride_x, off)
         else:
             raise NotImplementedError
 
@@ -105,13 +114,20 @@ class Image(object):
         name = self.csym
         if channel == 'data':
             return '%s[%s]' % (name, idx)
-        if channel is not None:
-            raise NotImplementedError
-        if node.border_mode == BORDER_MODE_UNDEFINED:
-            l = self.width * self.height - 1
-            return "%s[clamp(%s, 0, %d)]" % (name, idx, l)
+        if channel is None:
+            if node.border_mode == BORDER_MODE_UNDEFINED:
+                l = self.width * self.height * self.color.items - 1
+                return "%s[clamp(%s, 0, %d)]" % (name, idx, l)
+            else:
+                raise NotImplementedError
         else:
-            raise NotImplementedError
+            channel = eval(channel.upper())
+            ss = self.color.subsamp(channel)
+            off =  self.color.offset(channel)
+            stride_x = self.color.items
+            l = self.width * self.height * self.color.items - 1
+            return "%s[((clamp(%s, 0, %d)>>%d)<<%d) * %d + %d]" % (
+                    name,      idx,   l,   ss,  ss, stride_x, off)
 
     def getattr(self, node, attr):
         name = self.csym
@@ -119,8 +135,10 @@ class Image(object):
             return str(self.width)
         elif attr == "height":
             return str(self.height)
-        elif attr == "len":
+        elif attr == "pixels":
             return str(self.width * self.height)
+        elif attr == "values":
+            return str(self.width * self.height * self.color.items)
         else:
             raise AttributeError
 
@@ -336,7 +354,7 @@ class AddNode(Node):
 
     def compile(self, code):
         code.add_block(self, """
-            for (long i = 0; i < out.len; i++) {
+            for (long i = 0; i < out.values; i++) {
                 out[i] = in1[i] + in2[i];
             }
             """, in1=self.in1, in2=self.in2, out=self.out)
@@ -355,13 +373,13 @@ class ChannelExtractNode(Node):
         if self.channel not in self.input.color.channels:
             raise InvalidFormatError(
                 'Cant extract channel %s from %s image.' % (
-                    self.channel.__name__, self.input.color.name))
+                    self.channel.__name__, self.input.color.__name__))
         self.output.ensure_color(FOURCC_U8)        
         self.output.ensure_shape(self.input)
 
     def compile(self, code):
         code.add_block(self, """
-            for (long i = 0; i < out.len; i++) {
+            for (long i = 0; i < out.pixels; i++) {
                 out[i] = input.%s[i];
             }
             """ % self.channel.__name__.lower(), 
