@@ -1,8 +1,8 @@
+from pyvx.types import *
 from cffi import FFI
 from pycparser import c_parser, c_ast
 from pycparser.c_generator import CGenerator
 from collections import defaultdict
-from .types import *
 
 class Context(object):
     pass
