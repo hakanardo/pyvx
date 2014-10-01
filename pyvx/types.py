@@ -27,9 +27,11 @@ class FourccMeta(type):
             try:
                 cls.maxval = numpy.iinfo(cls.dtype).max
                 cls.minval = numpy.iinfo(cls.dtype).min
+                cls.inttype = True
             except ValueError:
                 cls.maxval = numpy.finfo(cls.dtype).max
                 cls.minval = numpy.finfo(cls.dtype).min
+                cls.inttype = False
         return cls
 
 class FOURCC(object):
@@ -114,6 +116,9 @@ class BORDER_MODE_REPLICATE: pass
 
 class CONVERT_POLICY_TRUNCATE: pass
 class CONVERT_POLICY_SATURATE: pass
+
+class ROUND_POLICY_TO_ZERO: pass
+class ROUND_POLICY_TO_NEAREST_EVEN: pass
 
 class MultipleWritersError(Exception): pass
 class InvalidGraphError(Exception): pass

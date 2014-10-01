@@ -299,6 +299,10 @@ class Graph(object):
         self.compiled_func()
 
 class Node(object):
+    border_mode = BORDER_MODE_UNDEFINED
+    border_mode_value = 0
+    convert_policy = CONVERT_POLICY_TRUNCATE
+    round_policy = ROUND_POLICY_TO_NEAREST_EVEN
 
     def __init__(self, graph, *args, **kwargs):
         self.graph = graph
@@ -334,9 +338,6 @@ class Node(object):
 
     def setup(self):
         self.graph._add_node(self)
-        self.border_mode = BORDER_MODE_UNDEFINED
-        self.border_mode_value = 0
-        self.convert_policy = CONVERT_POLICY_TRUNCATE
         for d in self.outputs + self.inouts:
             if d.producer is None:
                 d.producer = self
@@ -403,9 +404,9 @@ class AddNode(ElementwiseNode):
     signature = "in in1, in in2, in convert_policy, out out"
     body = "out = in1 + in2;"
 
-def Add(in1, in2, policy):
+def Add(in1, in2, policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    AddNode(Graph.current_graph, in1, in2, CONVERT_POLICY_TRUNCATE, res)
+    AddNode(Graph.current_graph, in1, in2, policy, res)
     return res
 
 
