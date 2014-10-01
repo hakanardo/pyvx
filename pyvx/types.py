@@ -110,6 +110,10 @@ def result_color(t0, *color):
     dt = numpy.result_type(*[c.dtype for c in color])
     return FOURCC.dtype2fourcc[dt]
 
+def value_color_type(val):
+    dt = numpy.array([val]).dtype
+    return FOURCC.dtype2fourcc[dt]
+
 class BORDER_MODE_UNDEFINED: pass
 class BORDER_MODE_CONSTANT: pass
 class BORDER_MODE_REPLICATE: pass

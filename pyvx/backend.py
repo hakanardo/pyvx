@@ -197,17 +197,51 @@ class Image(object):
     @property
     def channel_3(self):
         return ChannelExtract(self, CHANNEL_3)
-        
-    @property
-    def channel_r(self):
-        return ChannelExtract(self, CHANNEL_R)
-        
+                
+    def make_similar_image(self, other):
+        if isinstance(other, Image):
+            return other
+        return ConstantImage(self.width, self.height, other)
+
     def __add__(self, other):
-        return Add(self, other)
+        return Add(self, self.make_similar_image(other))
+
+    def __sub__(self, other):
+        return Subtract(self, self.make_similar_image(other))
 
     def __mul__(self, other):
-        return Multiply(self, other)
+        return Multiply(self, self.make_similar_image(other))
 
+    def __div__(self, other):
+        return Divide(self, self.make_similar_image(other))
+
+    __radd__ = __add__
+    __rmul__ = __mul__
+
+    def __rsub__(self, other):
+        return Subtract(self.make_similar_image(other), self)
+
+    def __rdiv__(self, other):
+        return Divide(self.make_similar_image(other), self)
+
+
+class ConstantImage(Image):
+    def __init__(self, width, height, value):
+        self.width = width
+        self.height = height
+        self.value = value
+        self.color = value_color_type(value)
+        self.virtual = False
+        self.producer = None
+
+    def getitem(self, node, channel, idx):
+        return str(self.value)
+
+    def setitem(self, node, channel, idx, op, value):
+        raise InvalidGraphError("ConstantImage's are not writeable.")
+
+    def alloc(self):
+        self.cdeclaration = ''
 
 class Graph(object):
     default_context = None
@@ -412,6 +446,15 @@ def Add(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     AddNode(Graph.current_graph, in1, in2, convert_policy, res)
     return res
 
+class SubtractNode(ElementwiseNode):
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = in1 - in2;"
+
+def Subtract(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+    res = Image()
+    SubtractNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
 class MultiplyNode(ElementwiseNode):
     signature = "in in1, in in2, in scale, in convert_policy, in round_policy, out out"
 
@@ -427,6 +470,23 @@ class MultiplyNode(ElementwiseNode):
 def Multiply(in1, in2, scale=1, convert_policy=CONVERT_POLICY_TRUNCATE, round_policy=ROUND_POLICY_TO_ZERO):
     res = Image()
     MultiplyNode(Graph.current_graph, in1, in2, scale, convert_policy, round_policy, res)
+    return res
+
+class DivideNode(ElementwiseNode):
+    signature = "in in1, in in2, in scale, in convert_policy, in round_policy, out out"
+
+    @property
+    def body(self):
+        if self.round_policy is ROUND_POLICY_TO_ZERO:
+            return "out = (in1 * %r) / in2;" % self.scale
+        elif self.round_policy is ROUND_POLICY_TO_NEAREST_EVEN:
+            return "out = rint((in1 * %r) / in2);" % self.scale
+        else:
+            raise NotImplementedError
+
+def Divide(in1, in2, scale=1, convert_policy=CONVERT_POLICY_TRUNCATE, round_policy=ROUND_POLICY_TO_ZERO):
+    res = Image()
+    DivideNode(Graph.current_graph, in1, in2, scale, convert_policy, round_policy, res)
     return res
 
 
