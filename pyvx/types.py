@@ -102,17 +102,36 @@ class FOURCC_F64(FOURCC):
     dtype = 'float64'
     ctype = 'double'
 
-class FOURCC_F128(FOURCC):
-    dtype = 'float128'
-    ctype = 'long double'
+try:
+    class FOURCC_F128(FOURCC):
+        dtype = 'float128'
+        ctype = 'long double'
+except TypeError:
+    pass
 
 def result_color(t0, *color):
+    if numpy.result_type is None:
+        return t0 # FIXME
     dt = numpy.result_type(*[c.dtype for c in color])
     return FOURCC.dtype2fourcc[dt]
 
 def value_color_type(val):
     dt = numpy.array([val]).dtype
     return FOURCC.dtype2fourcc[dt]
+
+def signed_color(col):
+    return {FOURCC_U8: FOURCC_S8,
+            FOURCC_S8: FOURCC_S8,
+            FOURCC_U16: FOURCC_S16,
+            FOURCC_S16: FOURCC_S16,
+            FOURCC_U32: FOURCC_S32,
+            FOURCC_S32: FOURCC_S32,
+            FOURCC_U64: FOURCC_S64,
+            FOURCC_S64: FOURCC_S64,
+            FOURCC_F32: FOURCC_F32,
+            FOURCC_F64: FOURCC_F64,
+            FOURCC_F128: FOURCC_F128,
+           }[col]
 
 class BORDER_MODE_UNDEFINED: pass
 class BORDER_MODE_CONSTANT: pass

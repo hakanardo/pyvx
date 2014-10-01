@@ -401,7 +401,8 @@ class Graph(object):
         ffi = FFI()
         ffi.cdef("void func(void);")
         #print str(code)
-        lib = ffi.verify("void func(void) {" + str(code) + "}",
+        inc = "#include <math.h>\n"
+        lib = ffi.verify(inc + "void func(void) {" + str(code) + "}",
                          extra_compile_args=["-O3", "-march=native", "-std=c99"])
         self.compiled_func = lib.func
 
@@ -706,8 +707,27 @@ class Sobel3x3Node(Node):
 
     def verify(self):
         self.ensure(self.input.color.items == 1)
+        if self.input.color in [FOURCC_U8, FOURCC_U16]:
+            ot = FOURCC_S16
+        else:
+            ot = signed_color(self.input.color)
+        self.output_x.suggest_color(ot)
+        self.output_y.suggest_color(ot)
         self.output_x.ensure_similar(self.input)
         self.output_y.ensure_similar(self.input)
+
+    def compile(self, code):
+        code.add_block(self, """
+            for (long y = 0; y < img.height; y++) {
+                for (long x = 0; x < img.width; x++) {
+                    dx[x, y] = (-1*img[x-1, y-1] + 1*img[x+1, y-1] +
+                                -2*img[x-1, y]   + 2*img[x+1, y]   +
+                                -1*img[x-1, y+1] + 1*img[x+1, y+1]);
+                    dy[x, y] = (-1*img[x-1, y-1] - 2*img[x, y-1] - 1*img[x+1, y-1] +
+                                 1*img[x-1, y+1] + 2*img[x, y+1] + 1*img[x+1, y+1]);
+                }
+            }
+            """, img=self.input, dx=self.output_x, dy=self.output_y)
 
 def Sobel3x3(input):
     dx, dy = Image(), Image()
@@ -715,13 +735,24 @@ def Sobel3x3(input):
     return dx, dy
 
 
-class MagnitudeNode(Node):
+class MagnitudeNode(ElementwiseNode):
     signature = 'in grad_x, in grad_y, out mag'
+    convert_policy = CONVERT_POLICY_SATURATE
 
     def verify(self):
         self.ensure(self.grad_x.color.items == 1)
         self.ensure(self.grad_y.color.items == 1)
-        self.mag.ensure_similar(self.input)
+        it = result_color(self.grad_x.color, self.grad_y.color)
+        if it in [FOURCC_U8, FOURCC_U16, FOURCC_S8, FOURCC_S16]:
+            ot = FOURCC_U16
+        else:
+            ot = it
+        self.mag.suggest_color(ot)
+        self.mag.ensure_similar(self.grad_x)
+        self.mag.ensure_similar(self.grad_y)
+
+    body = "mag = sqrt( grad_x * grad_x + grad_y * grad_y );"
+
 
 def Magnitude(grad_x, grad_y):
     mag = Image()
@@ -729,13 +760,17 @@ def Magnitude(grad_x, grad_y):
     return mag
 
 
-class PhaseNode(Node):
+class PhaseNode(ElementwiseNode):
     signature = 'in grad_x, in grad_y, out orientation'
 
     def verify(self):
         self.ensure(self.grad_x.color.items == 1)
         self.ensure(self.grad_y.color.items == 1)
-        self.orientation.ensure_similar(self.input)
+        self.orientation.suggest_color(FOURCC_U8)
+        self.orientation.ensure_similar(self.grad_x)
+        self.orientation.ensure_similar(self.grad_y)
+
+    body = "orientation = (atan2(grad_y, grad_x) + M_PI) * (255.0 / 2.0 / M_PI);"
 
 def Phase(grad_x, grad_y):
     ph = Image()

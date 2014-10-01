@@ -70,7 +70,8 @@ class Code(object):
         ast = cparse(code)
         #ast.show()
         generator = MagicCGenerator(cxnode, magic_vars)
-        self.code += generator.visit(ast)
+        hdr = '\n// %s\n' % cxnode.__class__.__name__
+        self.code += hdr + generator.visit(ast)
 
     def __str__(self):
         return self.code
