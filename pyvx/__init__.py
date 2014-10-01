@@ -1,3 +1,6 @@
 from pyvx.nodes import *
 from pyvx.types import *
-Graph=CoreGraph
+from pyvx.optimize import *
+
+#Graph=CoreGraph
+Graph=OptimizedGraph

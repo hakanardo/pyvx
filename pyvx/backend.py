@@ -222,6 +222,7 @@ class CoreGraph(object):
             if d.color == FOURCC_VIRT:
                 raise InvalidFormatError("FOURCC_VIRT not resolved into specific type.")
 
+        self.optimize()
         self.compile()
 
     def schedule(self):
@@ -246,6 +247,9 @@ class CoreGraph(object):
                 raise InvalidGraphError("Loops not allowed in the graph.")
             worklist = remaining
         return inorder
+
+    def optimize(self):
+        pass
 
     def compile(self):
         for d in self.images:
