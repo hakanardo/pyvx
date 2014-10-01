@@ -271,7 +271,7 @@ class Graph(object):
                         return val;
                     }
                     long subsample(long val) {
-                        return ((val) >> 1) << 1;
+                        return val & (~1);
                     }
                     \n''' + imgs)
         for n in self.nodes:
