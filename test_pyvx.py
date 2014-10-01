@@ -1,4 +1,4 @@
-from pyvx.backend import *
+from pyvx import *
 from array import array
 
 class TestPyVx(object):

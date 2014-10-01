@@ -1,5 +1,5 @@
 import py.test
-from pyvx.backend import *
+from pyvx import *
 
 class TestVerify(object):
 

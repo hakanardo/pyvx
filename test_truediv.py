@@ -1,5 +1,5 @@
 from __future__ import division
-from pyvx.backend import *
+from pyvx import *
 from array import array
 
 class TestDiv(object):
