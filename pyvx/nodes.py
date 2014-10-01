@@ -189,7 +189,7 @@ class AddNode(ElementwiseNode):
 
 def Add(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    AddNode(Graph.current_graph, in1, in2, convert_policy, res)
+    AddNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class SubtractNode(ElementwiseNode):
@@ -198,7 +198,7 @@ class SubtractNode(ElementwiseNode):
 
 def Subtract(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    SubtractNode(Graph.current_graph, in1, in2, convert_policy, res)
+    SubtractNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class MultiplyNode(ElementwiseNode):
@@ -215,7 +215,7 @@ class MultiplyNode(ElementwiseNode):
 
 def Multiply(in1, in2, scale=1, convert_policy=CONVERT_POLICY_TRUNCATE, round_policy=ROUND_POLICY_TO_ZERO):
     res = Image()
-    MultiplyNode(Graph.current_graph, in1, in2, scale, convert_policy, round_policy, res)
+    MultiplyNode(CoreGraph.get_current_graph(), in1, in2, scale, convert_policy, round_policy, res)
     return res
 
 class DivideNode(ElementwiseNode):
@@ -232,7 +232,7 @@ class DivideNode(ElementwiseNode):
 
 def Divide(in1, in2, scale=1, convert_policy=CONVERT_POLICY_TRUNCATE, round_policy=ROUND_POLICY_TO_ZERO):
     res = Image()
-    DivideNode(Graph.current_graph, in1, in2, scale, convert_policy, round_policy, res)
+    DivideNode(CoreGraph.get_current_graph(), in1, in2, scale, convert_policy, round_policy, res)
     return res
 
 class TrueDivideNode(ElementwiseNode):
@@ -241,7 +241,7 @@ class TrueDivideNode(ElementwiseNode):
 
 def TrueDivide(in1, in2):
     res = Image(color=FOURCC_F64)
-    TrueDivideNode(Graph.current_graph, in1, in2, res)
+    TrueDivideNode(CoreGraph.get_current_graph(), in1, in2, res)
     return res
 
 class PowerNode(ElementwiseNode):
@@ -250,7 +250,7 @@ class PowerNode(ElementwiseNode):
 
 def Power(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    PowerNode(Graph.current_graph, in1, in2, convert_policy, res)
+    PowerNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class ModulusNode(ElementwiseNode):
@@ -259,7 +259,7 @@ class ModulusNode(ElementwiseNode):
 
 def Modulus(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    ModulusNode(Graph.current_graph, in1, in2, convert_policy, res)
+    ModulusNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class LeftShiftNode(ElementwiseNode):
@@ -268,7 +268,7 @@ class LeftShiftNode(ElementwiseNode):
 
 def LeftShift(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    LeftShiftNode(Graph.current_graph, in1, in2, convert_policy, res)
+    LeftShiftNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class RightShiftNode(ElementwiseNode):
@@ -277,7 +277,7 @@ class RightShiftNode(ElementwiseNode):
 
 def RightShift(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    RightShiftNode(Graph.current_graph, in1, in2, convert_policy, res)
+    RightShiftNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class AndNode(ElementwiseNode):
@@ -286,7 +286,7 @@ class AndNode(ElementwiseNode):
 
 def And(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    AndNode(Graph.current_graph, in1, in2, convert_policy, res)
+    AndNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class OrNode(ElementwiseNode):
@@ -295,7 +295,7 @@ class OrNode(ElementwiseNode):
 
 def Or(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    OrNode(Graph.current_graph, in1, in2, convert_policy, res)
+    OrNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class XorNode(ElementwiseNode):
@@ -304,7 +304,7 @@ class XorNode(ElementwiseNode):
 
 def Xor(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    XorNode(Graph.current_graph, in1, in2, convert_policy, res)
+    XorNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class CompareNode(ElementwiseNode):
@@ -317,7 +317,7 @@ class CompareNode(ElementwiseNode):
 def Compare(in1, op, in2):
     res = Image()
     res.color = FOURCC_U8
-    CompareNode(Graph.current_graph, in1, op, in2, res)
+    CompareNode(CoreGraph.get_current_graph(), in1, op, in2, res)
     return res
 
 
@@ -344,7 +344,7 @@ class ChannelExtractNode(Node):
 
 def ChannelExtract(input, channel):
     output = Image()
-    ChannelExtractNode(Graph.current_graph,
+    ChannelExtractNode(CoreGraph.get_current_graph(),
                           input, channel, output)
     return output
 
@@ -369,7 +369,7 @@ class Gaussian3x3Node(Node):
 
 def Gaussian3x3(input):
     output = Image()
-    Gaussian3x3Node(Graph.current_graph, input, output)
+    Gaussian3x3Node(CoreGraph.get_current_graph(), input, output)
     return output
 
 
@@ -402,7 +402,7 @@ class Sobel3x3Node(Node):
 
 def Sobel3x3(input):
     dx, dy = Image(), Image()
-    Sobel3x3Node(Graph.current_graph, input, dx, dy)
+    Sobel3x3Node(CoreGraph.get_current_graph(), input, dx, dy)
     return dx, dy
 
 
@@ -427,7 +427,7 @@ class MagnitudeNode(ElementwiseNode):
 
 def Magnitude(grad_x, grad_y):
     mag = Image()
-    MagnitudeNode(Graph.current_graph, grad_x, grad_y, mag)
+    MagnitudeNode(CoreGraph.get_current_graph(), grad_x, grad_y, mag)
     return mag
 
 
@@ -445,7 +445,7 @@ class PhaseNode(ElementwiseNode):
 
 def Phase(grad_x, grad_y):
     ph = Image()
-    PhaseNode(Graph.current_graph, grad_x, grad_y, ph)
+    PhaseNode(CoreGraph.get_current_graph(), grad_x, grad_y, ph)
     return ph
 
 
@@ -457,6 +457,6 @@ class AccumulateImageNode(Node):
 
 def AccumulateImage(input):
     accum = Image()
-    AccumulateImageNode(Graph.current_graph, input, accum)
+    AccumulateImageNode(CoreGraph.get_current_graph(), input, accum)
     return accum
     

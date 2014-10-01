@@ -3,6 +3,7 @@ from pyvx.codegen import Code
 from cffi import FFI
 from collections import defaultdict
 from itertools import chain
+import threading
 
 class Context(object):
     pass
@@ -13,13 +14,14 @@ class CoreImage(object):
     def __init__(self, width=0, height=0, color=FOURCC_VIRT,
                  data=None, context=None, virtual=None, graph=None):
         if graph is None:
-            graph = Graph.current_graph
+            graph = CoreGraph.get_current_graph(none_check=False)
         if context is None:
             context = graph.context
         if virtual is None:
             virtual = (color == FOURCC_VIRT)
         if virtual:
             assert graph is not None
+        assert context is not None
         self.context = context
         self.width = width
         self.height = height
@@ -172,27 +174,34 @@ class ConstantImage(CoreImage):
     def alloc(self):
         self.cdeclaration = ''
 
-class Graph(object):
+class CoreGraph(object):
     default_context = None
-    current_graph = None
+    local_state = threading.local()
+    local_state.current_graph = None
 
     def __init__(self, context=None, early_verify=True):
         if context is None:
-            if Graph.default_context is None:
-                Graph.default_context = Context()
-            context = Graph.default_context
+            if CoreGraph.default_context is None:
+                CoreGraph.default_context = Context()
+            context = CoreGraph.default_context
         self.context = context
         self.nodes = []
         self.data_objects = set()
         self.early_verify = early_verify
 
     def __enter__(self):
-        assert Graph.current_graph is None
-        Graph.current_graph = self
+        assert CoreGraph.local_state.current_graph is None
+        CoreGraph.local_state.current_graph = self
 
     def __exit__(self, *args):
-        assert Graph.current_graph is self
-        Graph.current_graph = None
+        assert CoreGraph.local_state.current_graph is self
+        CoreGraph.local_state.current_graph = None
+
+    @staticmethod
+    def get_current_graph(none_check=True):
+        if none_check and CoreGraph.local_state.current_graph is None:
+            raise AssertionError("This function can only be called from within a 'width Graph():' block.")
+        return CoreGraph.local_state.current_graph            
 
     def _add_node(self, node):
         self.nodes.append(node)
