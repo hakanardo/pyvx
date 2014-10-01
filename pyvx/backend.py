@@ -510,6 +510,7 @@ class ElementwiseNode(Node):
         block = head + "{" + body + "}"
         code.add_block(self, setup + block, **magic)
 
+
 class AddNode(ElementwiseNode):
     signature = "in in1, in in2, in convert_policy, out out"
     body = "out = in1 + in2;"
