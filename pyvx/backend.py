@@ -111,7 +111,10 @@ class Image(object):
         else:
             raise NotImplementedError
 
-    def getitem1d(self, node, channel, idx):
+    def getitem(self, node, channel, idx):
+        if isinstance(idx, tuple):
+            return self.getitem2d(node, channel, *idx)
+
         name = self.csym
         if channel == 'data':
             return '%s[%s]' % (name, idx)
@@ -130,8 +133,10 @@ class Image(object):
             return "%s[%s(clamp(%s, 0, %d)) * %d + %d]" % (
                     name,  ss, idx,   l,  stride_x, off)
 
+    def setitem(self, node, channel, idx, op, value):
+        return self.getitem(node, channel, idx) + op + value
+
     def getattr(self, node, attr):
-        name = self.csym
         if attr == "width":
             return str(self.width)
         elif attr == "height":

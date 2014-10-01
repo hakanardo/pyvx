@@ -7,6 +7,7 @@ def cparse(code):
                        for n in [8, 16, 32, 64])
     ast = parser.parse(typedefs + "void f() {" + code + "}")
     func = ast.ext[-1]
+    #func.show()
     assert func.decl.name == 'f'
     return func.body
 
@@ -25,6 +26,12 @@ class MagicCGenerator(CGenerator):
         return CGenerator.visit_StructRef(self, node)
 
     def visit_ArrayRef(self, node):
+        var, channel, index = self.get_magic_array_ref(node)
+        if var is None:
+            return CGenerator.visit_ArrayRef(self, node)
+        return var.getitem(self.cxnode, channel, index)
+
+    def get_magic_array_ref(self, node):
         var_name = None
         if isinstance(node.name, c_ast.StructRef):
             struct = node.name
@@ -40,11 +47,19 @@ class MagicCGenerator(CGenerator):
             var = self.magic_vars[var_name]
             if isinstance(node.subscript, c_ast.ExprList):
                 x, y = node.subscript.exprs
-                return var.getitem2d(self.cxnode, channel, self.visit(x), self.visit(y))
+                index = (self.visit(x), self.visit(y))
             else:
-                return var.getitem1d(self.cxnode, channel, self.visit(node.subscript))                
+                index = self.visit(node.subscript)
+            return var, channel, index
 
-        return CGenerator.visit_ArrayRef(self, node)
+        return None, None, None
+
+    def visit_Assignment(self, node):
+        var, channel, index = self.get_magic_array_ref(node.lvalue)
+        if var is None:
+            return CGenerator.visit_Assignment(self, node)
+        return var.setitem(self.cxnode, channel, index, 
+                           node.op, self.visit(node.rvalue))
 
 class Code(object):
     
