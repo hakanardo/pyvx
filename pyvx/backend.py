@@ -2,6 +2,7 @@ from pyvx.types import *
 from pyvx.codegen import Code
 from cffi import FFI
 from collections import defaultdict
+from itertools import chain
 
 class Context(object):
     pass
@@ -291,6 +292,7 @@ class Node(object):
     def __init__(self, graph, *args, **kwargs):
         self.graph = graph
         self.inputs, self.outputs, self.inouts = [], [], []
+        self.input_images, self.output_images, self.inout_images = {}, {}, {}
         for i, v in enumerate(self.signature.split(',')):
             v = v.strip().split(' ')
             direction, name = v[0], v[-1]
@@ -304,10 +306,16 @@ class Node(object):
                 raise TypeError("Required argument missing")
             if direction == 'in':
                 self.inputs.append(val)
+                if isinstance(val, Image):
+                    self.input_images[name] = val
             elif direction == 'out':
                 self.outputs.append(val)
+                if isinstance(val, Image):
+                    self.output_images[name] = val
             elif direction == 'inout':
                 self.inouts.append(val)
+                if isinstance(val, Image):
+                    self.inout_images[name] = val                
             else:
                 raise TypeError("Bad direction '%s' of argument '%s'" % (direction, name))
             setattr(self, name, val)
@@ -344,29 +352,45 @@ class Node(object):
             raise InvalidFormatError
 
 
-class AddNode(Node):
-    signature = "in in1, in in2, in policy, out out"
+class ElementwiseNode(Node):
 
     def verify(self):
-        if self.policy != CONVERT_POLICY_TRUNCATE:
-            raise NotImplementedError
-        t = binop_type(self.in1.color, self.in2.color)
-        self.out.suggest_color(t)
-        self.out.ensure_similar(self.in1)
-        self.out.ensure_similar(self.in2)
+        inputs = self.input_images.values()
+        outputs = self.output_images.values() + self.inout_images.values()
+        color = combined_color(*[i.color for i in inputs])
+        for img in outputs:
+            img.suggest_color(color)
+            img.ensure_similar(inputs[0])
 
     def compile(self, code):
-        code.add_block(self, """
-            for (long i = 0; i < out.values; i++) {
-                out[i] = in1[i] + in2[i];
-            }
-            """, in1=self.in1, in2=self.in2, out=self.out)
+        iin = self.input_images.items() + self.inout_images.items()
+        iout = self.output_images.items() + self.inout_images.items()
+        magic = {'__tmp_image_%s' % name : img 
+                 for name, img in iin + iout}
+        setup = ''.join("%s %s;" % (img.color.base_type, name)
+                        for name, img in iin + iout)
+        inp = ''.join("%s = __tmp_image_%s[__i];" % (name, name)
+                      for name, img in iin)
+        outp = ''.join("__tmp_image_%s[__i] = %s;" % (name, name)
+                       for name, img in iout)
+        head = "for (long __i = 0; __i < __tmp_image_%s.values; __i++) " % iin[0][0]
+        body = inp + self.body + outp
+        block = head + "{" + body + "}"
+        code.add_block(self, setup + block, **magic)
+
+class AddNode(ElementwiseNode):
+    signature = "in in1, in in2, in policy, out out"
+    body = "out = in1 + in2;"
+
+    def verify(self):
+        ElementwiseNode.verify(self)
+        if self.policy != CONVERT_POLICY_TRUNCATE:
+            raise NotImplementedError
 
 def Add(in1, in2, policy):
     res = Image()
     AddNode(Graph.current_graph, in1, in2, CONVERT_POLICY_TRUNCATE, res)
     return res
-
 
 
 class ChannelExtractNode(Node):

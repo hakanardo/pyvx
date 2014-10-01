@@ -75,9 +75,11 @@ class FOURCC_F32 (make_fourcc(1, 'float32', 'float')): pass
 class FOURCC_F64 (make_fourcc(1, 'float64', 'double')): pass
 class FOURCC_F128(make_fourcc(1, 'float128', 'long double')): pass
 
-def binop_type(a, b):
-    dt = (numpy.array([], a) + numpy.array([], b)).dtype
-    return dtype2fourcc[dt]
+def combined_color(t0, *color):
+    a = numpy.array([], t0)
+    for t in color:
+        a += numpy.array([], t)
+    return dtype2fourcc[a.dtype]
 
 class BORDER_MODE_UNDEFINED: pass
 class BORDER_MODE_CONSTANT: pass

@@ -3,8 +3,10 @@ from pycparser.c_generator import CGenerator
 
 def cparse(code):
     parser = c_parser.CParser()
-    ast = parser.parse("void f() {" + code + "}")
-    func = ast.ext[0]
+    typedefs = ''.join("typedef int uint%d_t; typedef int int%d_t;" % (n, n) 
+                       for n in [8, 16, 32, 64])
+    ast = parser.parse(typedefs + "void f() {" + code + "}")
+    func = ast.ext[-1]
     assert func.decl.name == 'f'
     return func.body
 
