@@ -42,7 +42,7 @@ class Image(object):
         elif hasattr(data, 'buffer_info'):
             addr, l = data.buffer_info()
             assert l == self.width * self.height * self.color.items
-            self.data = FFI().cast(self.color.base_type + ' *', addr)
+            self.data = FFI().cast(self.color.ctype + ' *', addr)
         else:
             raise NotImplementedError("Dont know how to convert %r to a cffi buffer" % data)
         self._keep_alive_original_data = data
@@ -82,9 +82,9 @@ class Image(object):
     def alloc(self):
         if self.data is None:
             items = self.width * self.height * self.color.items
-            self.data = FFI().new(self.color.base_type + '[]', items)
+            self.data = FFI().new(self.color.ctype + '[]', items)
         addr = FFI().cast('long', self.data)
-        self.ctype = self.color.base_type + " *"
+        self.ctype = self.color.ctype + " *"
         self.csym = "__img%d" % self.count
         self.cdeclaration = "%s __restrict__ %s = ((%s) 0x%x);\n" % (
                 self.ctype, self.csym, self.ctype, addr)
@@ -357,7 +357,7 @@ class ElementwiseNode(Node):
     def verify(self):
         inputs = self.input_images.values()
         outputs = self.output_images.values() + self.inout_images.values()
-        color = combined_color(*[i.color for i in inputs])
+        color = result_color(*[i.color for i in inputs])
         for img in outputs:
             img.suggest_color(color)
             img.ensure_similar(inputs[0])
@@ -367,7 +367,7 @@ class ElementwiseNode(Node):
         iout = self.output_images.items() + self.inout_images.items()
         magic = {'__tmp_image_%s' % name : img 
                  for name, img in iin + iout}
-        setup = ''.join("%s %s;" % (img.color.base_type, name)
+        setup = ''.join("%s %s;" % (img.color.ctype, name)
                         for name, img in iin + iout)
         inp = ''.join("%s = __tmp_image_%s[__i];" % (name, name)
                       for name, img in iin)
