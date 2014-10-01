@@ -43,7 +43,7 @@ class TestPyVx(object):
             img = Image(3, 4, FOURCC_U8, array('B', [1, 2, 100, 200] * 3))
             sa = img + img
             sa_sat = img + img
-            sa_sat.producer.policy = CONVERT_POLICY_SATURATE
+            sa_sat.producer.convert_policy = CONVERT_POLICY_SATURATE
             sa.force()
             sa_sat.force()
         g.verify()
@@ -63,7 +63,7 @@ class TestPyVx(object):
             img = Image(3, 4, FOURCC_S16, array('h', [1, 2, 10000, 20000] * 3))
             sa = img + img
             sa_sat = img + img
-            sa_sat.producer.policy = CONVERT_POLICY_SATURATE
+            sa_sat.producer.convert_policy = CONVERT_POLICY_SATURATE
             sa.force()
             sa_sat.force()
         g.verify()

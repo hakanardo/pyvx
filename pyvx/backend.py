@@ -134,6 +134,12 @@ class Image(object):
                     name,  ss, idx,   l,  stride_x, off)
 
     def setitem(self, node, channel, idx, op, value):
+        if node.convert_policy == CONVERT_POLICY_SATURATE:
+            if op != '=':
+                raise NotImplementedError
+            return "%s = clamp(%s, %r, %r)" % (
+                self.getitem(node, channel, idx), value,
+                self.color.minval, self.color.maxval)
         return self.getitem(node, channel, idx) + op + value
 
     def getattr(self, node, attr):
@@ -330,6 +336,7 @@ class Node(object):
         self.graph._add_node(self)
         self.border_mode = BORDER_MODE_UNDEFINED
         self.border_mode_value = 0
+        self.convert_policy = CONVERT_POLICY_TRUNCATE
         for d in self.outputs + self.inouts:
             if d.producer is None:
                 d.producer = self
@@ -358,6 +365,7 @@ class Node(object):
 
 
 class ElementwiseNode(Node):
+    small_ints = ('uint8_t', 'int8_t', 'uint16_t', 'int16_t')
 
     def verify(self):
         inputs = self.input_images.values()
@@ -366,13 +374,21 @@ class ElementwiseNode(Node):
         for img in outputs:
             img.suggest_color(color)
             img.ensure_similar(inputs[0])
+            if self.convert_policy == CONVERT_POLICY_SATURATE:
+                if img.color.ctype not in self.small_ints:
+                    raise InvalidFormatError("Saturated arithmetic only supported for 8- and 16- bit integers.")
+
+    def tmptype(self, ctype):
+        if ctype in self.small_ints:
+            return 'long'
+        return ctype
 
     def compile(self, code):
         iin = self.input_images.items() + self.inout_images.items()
         iout = self.output_images.items() + self.inout_images.items()
         magic = {'__tmp_image_%s' % name : img 
                  for name, img in iin + iout}
-        setup = ''.join("%s %s;" % (img.color.ctype, name)
+        setup = ''.join("%s %s;" % (self.tmptype(img.color.ctype), name)
                         for name, img in iin + iout)
         inp = ''.join("%s = __tmp_image_%s[__i];" % (name, name)
                       for name, img in iin)
@@ -384,19 +400,8 @@ class ElementwiseNode(Node):
         code.add_block(self, setup + block, **magic)
 
 class AddNode(ElementwiseNode):
-    signature = "in in1, in in2, in policy, out out"
-
-    @property
-    def body(self):
-        if self.policy == CONVERT_POLICY_TRUNCATE:
-            return "out = in1 + in2;"
-        elif self.policy == CONVERT_POLICY_SATURATE:
-            if self.out.color.ctype not in ['uint8_t', 'int8_t', 'uint16_t', 'int16_t']:
-                raise NotImplementedError
-            return "out = clamp(in1 + in2, %r, %r);" % (
-                self.out.color.minval, self.out.color.maxval)
-        else:
-            raise NotImplementedError
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = in1 + in2;"
 
 def Add(in1, in2, policy):
     res = Image()
