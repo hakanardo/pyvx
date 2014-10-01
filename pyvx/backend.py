@@ -82,6 +82,10 @@ class CoreImage(object):
             raise InvalidFormatError
 
     def alloc(self):
+        if self.optimized_out:
+            self.cdeclaration = ''
+            self.csym = self.ctype = 'OPTIMIZED_OUT'
+            return
         if self.data is None:
             items = self.width * self.height * self.color.items
             self.data = FFI().new(self.color.ctype + '[]', items)
@@ -136,6 +140,8 @@ class CoreImage(object):
                     name,  ss, idx,   l,  stride_x, off)
 
     def setitem(self, node, channel, idx, op, value):
+        if self.optimized_out:
+            return ''
         if node.convert_policy == CONVERT_POLICY_SATURATE:
             if op != '=':
                 raise NotImplementedError
@@ -222,6 +228,9 @@ class CoreGraph(object):
             if d.color == FOURCC_VIRT:
                 raise InvalidFormatError("FOURCC_VIRT not resolved into specific type.")
 
+        for item in self.images + self.nodes:
+            item.optimized_out = False
+
         self.optimize()
         self.compile()
 
@@ -266,7 +275,8 @@ class CoreGraph(object):
                     }
                     \n''' + imgs)
         for n in self.nodes:
-            n.compile(code)
+            if not n.optimized_out:
+                n.compile(code)
         ffi = FFI()
         ffi.cdef("void func(void);")
         #print str(code)
