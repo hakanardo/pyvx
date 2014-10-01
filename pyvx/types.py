@@ -24,6 +24,12 @@ class FourccMeta(type):
             if cls.items == 1:
                 assert cls.dtype not in FOURCC.dtype2fourcc
                 FOURCC.dtype2fourcc[cls.dtype] = cls
+            try:
+                cls.maxval = numpy.iinfo(cls.dtype).max
+                cls.minval = numpy.iinfo(cls.dtype).min
+            except ValueError:
+                cls.maxval = numpy.finfo(cls.dtype).max
+                cls.minval = numpy.finfo(cls.dtype).min
         return cls
 
 class FOURCC(object):

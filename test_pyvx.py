@@ -26,7 +26,7 @@ class TestPyVx(object):
         assert gimg.data[1] == 1
         assert gimg.data[11] == 10
 
-    def test_add(self):
+    def test_add_truncate(self):
         g = Graph()
         with g:
             img = Image(3, 4, FOURCC_U8, array('B', range(12)))
@@ -36,6 +36,46 @@ class TestPyVx(object):
         g.process()
         for i in range(12):
             assert sa.data[i] == 2*i
+
+    def test_add_saturate8(self):
+        g = Graph()
+        with g:
+            img = Image(3, 4, FOURCC_U8, array('B', [1, 2, 100, 200] * 3))
+            sa = img + img
+            sa_sat = img + img
+            sa_sat.producer.policy = CONVERT_POLICY_SATURATE
+            sa.force()
+            sa_sat.force()
+        g.verify()
+        g.process()
+        assert sa.data[0] == 2
+        assert sa.data[1] == 4
+        assert sa.data[2] == 200
+        assert sa.data[3] == 400 - 256
+        assert sa_sat.data[0] == 2
+        assert sa_sat.data[1] == 4
+        assert sa_sat.data[2] == 200
+        assert sa_sat.data[3] == 255
+
+    def test_add_saturate16(self):
+        g = Graph()
+        with g:
+            img = Image(3, 4, FOURCC_S16, array('h', [1, 2, 10000, 20000] * 3))
+            sa = img + img
+            sa_sat = img + img
+            sa_sat.producer.policy = CONVERT_POLICY_SATURATE
+            sa.force()
+            sa_sat.force()
+        g.verify()
+        g.process()
+        assert sa.data[0] == 2
+        assert sa.data[1] == 4
+        assert sa.data[2] == 20000
+        assert sa.data[3] == 40000 - 2**16
+        assert sa_sat.data[0] == 2
+        assert sa_sat.data[1] == 4
+        assert sa_sat.data[2] == 20000
+        assert sa_sat.data[3] == 2**15 - 1
 
     def test_channel_extract_rgb(self):
         g = Graph()

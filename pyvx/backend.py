@@ -279,7 +279,7 @@ class Graph(object):
             n.compile(code)
         ffi = FFI()
         ffi.cdef("void func(void);")
-        print str(code)
+        #print str(code)
         lib = ffi.verify("void func(void) {" + str(code) + "}",
                          extra_compile_args=["-O3", "-march=native", "-std=c99"])
         self.compiled_func = lib.func
@@ -380,11 +380,17 @@ class ElementwiseNode(Node):
 
 class AddNode(ElementwiseNode):
     signature = "in in1, in in2, in policy, out out"
-    body = "out = in1 + in2;"
 
-    def verify(self):
-        ElementwiseNode.verify(self)
-        if self.policy != CONVERT_POLICY_TRUNCATE:
+    @property
+    def body(self):
+        if self.policy == CONVERT_POLICY_TRUNCATE:
+            return "out = in1 + in2;"
+        elif self.policy == CONVERT_POLICY_SATURATE:
+            if self.out.color.ctype not in ['uint8_t', 'int8_t', 'uint16_t', 'int16_t']:
+                raise NotImplementedError
+            return "out = clamp(in1 + in2, %r, %r);" % (
+                self.out.color.minval, self.out.color.maxval)
+        else:
             raise NotImplementedError
 
 def Add(in1, in2, policy):
