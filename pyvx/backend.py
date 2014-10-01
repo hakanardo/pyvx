@@ -203,7 +203,10 @@ class Image(object):
         return ChannelExtract(self, CHANNEL_R)
         
     def __add__(self, other):
-        return Add(self, other, CONVERT_POLICY_TRUNCATE)
+        return Add(self, other)
+
+    def __mul__(self, other):
+        return Multiply(self, other)
 
 
 class Graph(object):
@@ -404,9 +407,26 @@ class AddNode(ElementwiseNode):
     signature = "in in1, in in2, in convert_policy, out out"
     body = "out = in1 + in2;"
 
-def Add(in1, in2, policy=CONVERT_POLICY_TRUNCATE):
+def Add(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    AddNode(Graph.current_graph, in1, in2, policy, res)
+    AddNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
+class MultiplyNode(ElementwiseNode):
+    signature = "in in1, in in2, in scale, in convert_policy, in round_policy, out out"
+
+    @property
+    def body(self):
+        if self.round_policy is ROUND_POLICY_TO_ZERO:
+            return "out = in1 * in2 * %r;" % self.scale
+        elif self.round_policy is ROUND_POLICY_TO_NEAREST_EVEN:
+            return "out = rint(in1 * in2 * %r);" % self.scale
+        else:
+            raise NotImplementedError
+
+def Multiply(in1, in2, scale=1, convert_policy=CONVERT_POLICY_TRUNCATE, round_policy=ROUND_POLICY_TO_ZERO):
+    res = Image()
+    MultiplyNode(Graph.current_graph, in1, in2, scale, convert_policy, round_policy, res)
     return res
 
 

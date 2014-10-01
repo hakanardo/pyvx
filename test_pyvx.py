@@ -109,3 +109,30 @@ class TestPyVx(object):
         assert [yimg.data[i] for i in range(7)] == [1,3,5,7,9,11,13]
         assert [uimg.data[i] for i in range(7)] == [0,0,4,4,8,8,12]
         assert [vimg.data[i] for i in range(7)] == [2,2,6,6,10,10,14]
+
+    def test_mul_truncate(self):
+        g = Graph()
+        with g:
+            img1 = Image(3, 4, FOURCC_U8, array('B', range(12)))
+            img2 = Image(3, 4, FOURCC_U8, array('B', [2]*12))
+            sa = img1 * img2
+            sa.producer.scale = 0.25
+            sa.force()
+        g.verify()
+        g.process()
+        for i, expected in enumerate([0,0,1,1,2,2,3,3,4,4,5,5]):
+            assert sa.data[i] == expected
+
+    def test_mul_round_even(self):
+        g = Graph()
+        with g:
+            img1 = Image(3, 4, FOURCC_U8, array('B', range(12)))
+            img2 = Image(3, 4, FOURCC_U8, array('B', [2]*12))
+            sa = img1 * img2
+            sa.producer.scale = 0.25
+            sa.producer.round_policy = ROUND_POLICY_TO_NEAREST_EVEN
+            sa.force()
+        g.verify()
+        g.process()
+        for i, expected in enumerate([0,0,1,2,2,2,3,4,4,4,5,6]):
+            assert sa.data[i] == expected
