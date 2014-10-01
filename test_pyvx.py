@@ -168,3 +168,21 @@ class TestPyVx(object):
             assert sa1.data[i] == img | (img + 2) << 3 + 0xF
             assert sa2.data[i] == ((img & sa1.data[i]**2 ) >> 1) ^ img
             assert sa3.data[i] == sa1.data[i] % img
+
+    def test_compare(self):
+        g = Graph()
+        with g:
+            img = Image(3, 4, FOURCC_U8, array('B', range(12)))
+            sa1 = (1 < img) & (img <= 2)
+            sa2 = img == 3
+            sa3 = img != 4
+            sa1.force()
+            sa2.force()
+            sa3.force()
+        g.verify()
+        g.process()
+        for i in range(12):
+            img = i
+            assert sa1.data[i] == (1 < img <= 2)
+            assert sa2.data[i] == (img == 3)
+            assert sa3.data[i] == (img != 4)

@@ -277,10 +277,26 @@ class Image(object):
     def __xror__(self, other):
         return Xor(self.make_similar_image(other), self)
 
+    def __lt__(self, other):
+        return Compare(self, "<", self.make_similar_image(other))
 
+    def __le__(self, other):
+        return Compare(self, "<=", self.make_similar_image(other))
 
+    def __eq__(self, other):
+        return Compare(self, "==", self.make_similar_image(other))
 
+    def __ne__(self, other):
+        return Compare(self, "!=", self.make_similar_image(other))
 
+    def __gt__(self, other):
+        return Compare(self, ">", self.make_similar_image(other))
+
+    def __ge__(self, other):
+        return Compare(self, ">=", self.make_similar_image(other))
+
+    def __nonzero__(self):
+        raise ValueError("The truth value of an Image is ambigous.")
 
 class ConstantImage(Image):
     def __init__(self, width, height, value):
@@ -616,6 +632,19 @@ class XorNode(ElementwiseNode):
 def Xor(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
     XorNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
+class CompareNode(ElementwiseNode):
+    signature = "in in1, in op, in in2, out out"
+
+    @property
+    def body(self):
+        return "out = in1 %s in2;" % self.op
+
+def Compare(in1, op, in2):
+    res = Image()
+    res.color = FOURCC_U8
+    CompareNode(Graph.current_graph, in1, op, in2, res)
     return res
 
 
