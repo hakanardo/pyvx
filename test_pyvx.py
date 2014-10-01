@@ -137,7 +137,7 @@ class TestPyVx(object):
         for i, expected in enumerate([0,0,1,2,2,2,3,4,4,4,5,6]):
             assert sa.data[i] == expected
 
-    def test_arithmetic(self):
+    def test_arithmetic1(self):
         g = Graph()
         with g:
             img = Image(3, 4, FOURCC_U8, array('B', range(1,13)))
@@ -150,3 +150,21 @@ class TestPyVx(object):
         for i in range(12):
             assert sa1.data[i] == 1
             assert sa2.data[i] == 5 / (i + 1)
+
+    def test_arithmetic2(self):
+        g = Graph()
+        with g:
+            img = Image(3, 4, FOURCC_U8, array('B', range(1,13)))
+            sa1 = img | (img + 2) << 3 + 0xF
+            sa2 = ((img & sa1**2 ) >> 1) ^ img 
+            sa3 = sa1 % img
+            sa1.force()
+            sa2.force()
+            sa3.force()
+        g.verify()
+        g.process()
+        for i in range(12):
+            img = i + 1
+            assert sa1.data[i] == img | (img + 2) << 3 + 0xF
+            assert sa2.data[i] == ((img & sa1.data[i]**2 ) >> 1) ^ img
+            assert sa3.data[i] == sa1.data[i] % img

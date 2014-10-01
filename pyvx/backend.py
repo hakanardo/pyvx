@@ -224,6 +224,63 @@ class Image(object):
     def __rdiv__(self, other):
         return Divide(self.make_similar_image(other), self)
 
+    __floordiv__ = __div__
+    __rfloordiv__ = __rdiv__
+
+    def __pow__(self, other):
+        return Power(self, self.make_similar_image(other))
+
+    def __rpow__(self, other):
+        return Power(self.make_similar_image(other), self)
+
+    def __mod__(self, other):
+        return Modulus(self, self.make_similar_image(other))
+
+    def __rmod__(self, other):
+        return Modulus(self.make_similar_image(other), self)
+
+    def __truediv__(self, other):
+        res = TrueDivide(self, self.make_similar_image(other))
+        return res
+
+    def __rtruediv__(self, other):
+        res = TrueDivide(self.make_similar_image(other), self)
+        return res
+
+    def __lshift__(self, other):
+        return LeftShift(self, self.make_similar_image(other))
+
+    def __rlshift__(self, other):
+        return LeftShift(self.make_similar_image(other), self)
+
+    def __rshift__(self, other):
+        return RightShift(self, self.make_similar_image(other))
+
+    def __rrshift__(self, other):
+        return RightShift(self.make_similar_image(other), self)
+
+    def __and__(self, other):
+        return And(self, self.make_similar_image(other))
+
+    def __rand__(self, other):
+        return And(self.make_similar_image(other), self)
+
+    def __or__(self, other):
+        return Or(self, self.make_similar_image(other))
+
+    def __ror__(self, other):
+        return Or(self.make_similar_image(other), self)
+
+    def __xor__(self, other):
+        return Xor(self, self.make_similar_image(other))
+
+    def __xror__(self, other):
+        return Xor(self.make_similar_image(other), self)
+
+
+
+
+
 
 class ConstantImage(Image):
     def __init__(self, width, height, value):
@@ -488,6 +545,79 @@ def Divide(in1, in2, scale=1, convert_policy=CONVERT_POLICY_TRUNCATE, round_poli
     res = Image()
     DivideNode(Graph.current_graph, in1, in2, scale, convert_policy, round_policy, res)
     return res
+
+class TrueDivideNode(ElementwiseNode):
+    signature = "in in1, in in2, out out"
+    body = "out = ((double) in1) / ((double) in2);"
+
+def TrueDivide(in1, in2):
+    res = Image(color=FOURCC_F64)
+    TrueDivideNode(Graph.current_graph, in1, in2, res)
+    return res
+
+class PowerNode(ElementwiseNode):
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = pow(in1, in2);"
+
+def Power(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+    res = Image()
+    PowerNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
+class ModulusNode(ElementwiseNode):
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = in1 % in2;"
+
+def Modulus(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+    res = Image()
+    ModulusNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
+class LeftShiftNode(ElementwiseNode):
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = in1 << in2;"
+
+def LeftShift(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+    res = Image()
+    LeftShiftNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
+class RightShiftNode(ElementwiseNode):
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = in1 >> in2;"
+
+def RightShift(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+    res = Image()
+    RightShiftNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
+class AndNode(ElementwiseNode):
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = in1 & in2;"
+
+def And(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+    res = Image()
+    AndNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
+class OrNode(ElementwiseNode):
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = in1 | in2;"
+
+def Or(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+    res = Image()
+    OrNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
+class XorNode(ElementwiseNode):
+    signature = "in in1, in in2, in convert_policy, out out"
+    body = "out = in1 ^ in2;"
+
+def Xor(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+    res = Image()
+    XorNode(Graph.current_graph, in1, in2, convert_policy, res)
+    return res
+
 
 
 class ChannelExtractNode(Node):
