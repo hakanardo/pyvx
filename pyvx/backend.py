@@ -10,6 +10,7 @@ class Context(object):
 
 class CoreImage(object):
     count = 0
+    optimized_out = False
 
     def __init__(self, width=0, height=0, color=FOURCC_VIRT,
                  data=None, context=None, virtual=None, graph=None):
@@ -226,10 +227,7 @@ class CoreGraph(object):
                 raise InvalidGraphError("Virtual data never produced.")
             if d.color == FOURCC_VIRT:
                 raise InvalidFormatError("FOURCC_VIRT not resolved into specific type.")
-
-        for item in chain(self.images, self.nodes):
-            item.optimized_out = False
-
+                
         self.optimize()
         self.compile()
 
@@ -293,6 +291,7 @@ class Node(object):
     border_mode_value = 0
     convert_policy = CONVERT_POLICY_TRUNCATE
     round_policy = ROUND_POLICY_TO_NEAREST_EVEN
+    optimized_out = False
 
     def __init__(self, graph, *args, **kwargs):
         self.graph = graph
@@ -354,3 +353,18 @@ class Node(object):
         if not condition:
             raise InvalidFormatError
 
+class MergedNode(Node):
+
+    def __init__(self, graph, nodes):
+        self.original_nodes = nodes
+        self.graph = graph
+        self.inputs, self.outputs, self.inouts = [], [], []
+        for n in nodes:
+            self.inputs += n.inputs
+            self.outputs += n.outputs
+            self.inouts += n.inouts
+        self.input_images = self.output_images = self.inout_images = NotImplemented
+        self.graph._add_node(self)
+        for d in self.outputs + self.inouts:
+            assert d.producer.group is nodes[0].group
+            d.producer = self

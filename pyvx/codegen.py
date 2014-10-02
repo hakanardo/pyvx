@@ -73,5 +73,8 @@ class Code(object):
         hdr = '\n// %s\n' % cxnode.__class__.__name__
         self.code += hdr + generator.visit(ast)
 
+    def add_code(self, code):
+        self.code += code
+
     def __str__(self):
         return self.code

@@ -22,3 +22,22 @@ class TestOptimize(object):
         g.process()
         assert gdx.data[55] == 8
         assert gdx.data[66] == 8
+
+    def test_merge_elementwise(self):
+        g = Graph()
+        with g:
+            img1 = Image(20, 20, FOURCC_U8, array('B', range(200) * 2))
+            img2 = Image(20, 20, FOURCC_U8, array('B', range(200) * 2))
+            dx, dy = Sobel3x3(img1)
+            t1 = dx + img2
+            t2 = 2 * dy
+            t3 = Gaussian3x3(Gaussian3x3(t2)) - t1
+            t3.force()
+        g.verify()
+        assert t1.producer is t2.producer
+        assert t3.producer is not t1.producer
+        g.process()
+        assert t3.data[9*20 + 9] == 147
+        assert t3.data[10*20 + 10] == 70
+        assert t3.data[11*20 + 11] == 37
+

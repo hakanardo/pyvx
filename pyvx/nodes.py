@@ -174,7 +174,7 @@ class ElementwiseNode(Node):
             return 'long'
         return ctype
 
-    def compile(self, code):
+    def compile(self, code, noloop=False):
         iin = self.input_images.items() + self.inout_images.items()
         iout = self.output_images.items() + self.inout_images.items()
         magic = {'__tmp_image_%s' % name : img 
@@ -185,11 +185,23 @@ class ElementwiseNode(Node):
                       for name, img in iin)
         outp = ''.join("__tmp_image_%s[__i] = %s;" % (name, name)
                        for name, img in iout)
-        head = "for (long __i = 0; __i < __tmp_image_%s.values; __i++) " % iin[0][0]
+        if noloop:
+            head = ""
+        else:
+            head = "for (long __i = 0; __i < __tmp_image_%s.values; __i++) " % iin[0][0]
         body = inp + self.body + outp
         block = head + "{" + body + "}"
         code.add_block(self, setup + block, **magic)
 
+class MergedElementwiseNode(MergedNode):
+    def compile(self, code):
+        img = self.original_nodes[0].input_images.values()[0]
+        code.add_code("\n// MergedElementwiseNode\n")
+        code.add_code("for (long __i = 0; __i < %s; __i++) {\n" %
+                       img.getattr(self, "values"))
+        for n in self.original_nodes:
+            n.compile(code, True)
+        code.add_code("}\n")
 
 class AddNode(ElementwiseNode):
     signature = "in in1, in in2, in convert_policy, out out"
