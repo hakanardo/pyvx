@@ -2,8 +2,8 @@ from imgpy.io import Mplayer, view
 from pyvx import *
 import time
 
-def main():
-    video = Mplayer("/usr/share/cognimatics/data/facit/events/passanger/bustst1-M3014-180.mjpg", True)
+def main(fn):
+    video = Mplayer(fn, True)
     frame = video.next()
     w, h = frame.width, frame.height
     mag_res = frame.new()    
@@ -31,4 +31,5 @@ def main():
         time.sleep(0.01)
 
 if __name__ == '__main__':
-    main()
+    import sys
+    main(sys.argv[1])

@@ -82,10 +82,7 @@ class CoreImage(object):
             raise InvalidFormatError
 
     def alloc(self):
-        if self.optimized_out:
-            self.cdeclaration = ''
-            self.csym = self.ctype = 'OPTIMIZED_OUT'
-            return
+        assert not self.optimized_out
         if self.data is None:
             items = self.width * self.height * self.color.items
             self.data = FFI().new(self.color.ctype + '[]', items)
@@ -184,6 +181,7 @@ class CoreGraph(object):
     default_context = None
     local_state = threading.local()
     local_state.current_graph = None
+    show_source = False
 
     def __init__(self, context=None, early_verify=True):
         if context is None:
@@ -280,7 +278,8 @@ class CoreGraph(object):
             n.compile(code)
         ffi = FFI()
         ffi.cdef("void func(void);")
-        #print str(code)
+        if self.show_source:
+            print str(code)
         inc = "#include <math.h>\n"
         lib = ffi.verify(inc + "void func(void) {" + str(code) + "}",
                          extra_compile_args=["-O3", "-march=native", "-std=c99"])
