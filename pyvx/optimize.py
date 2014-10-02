@@ -15,6 +15,8 @@ class OptimizedGraph(CoreGraph):
         worklist = self.images[:]
         while worklist:
             item = worklist.pop()
+            if item.optimized_out:
+                continue
             if isinstance(item, CoreImage):
                 if not item.virtual:
                     continue
