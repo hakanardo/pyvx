@@ -4,12 +4,23 @@ from collections import defaultdict
 
 class OptimizedGraph(CoreGraph):
     def optimize(self):
+        self.identify_consumers()
+        self.ded_code_removal()
+
+    def identify_consumers(self):
         self.consumers = defaultdict(set)
         for node in self.nodes:
             for d in node.inputs + node.inouts:
                 self.consumers[d].add(node)
 
-        self.ded_code_removal()
+    def remove_image(self, img):
+        img.optimized_out = True
+
+    def remove_node(self, node):
+        node.optimized_out = True
+        for d in node.inputs + node.inouts:
+            self.consumers[d].remove(node)
+        self.nodes.remove(node)
 
     def ded_code_removal(self):
         worklist = self.images[:]
@@ -31,10 +42,3 @@ class OptimizedGraph(CoreGraph):
             else:
                 assert False
 
-    def remove_image(self, img):
-        img.optimized_out = True
-
-    def remove_node(self, node):
-        node.optimized_out = True
-        for d in node.inputs + node.inouts:
-            self.consumers[d].remove(node)

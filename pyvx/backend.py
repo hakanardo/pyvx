@@ -275,8 +275,8 @@ class CoreGraph(object):
                     }
                     \n''' + imgs)
         for n in self.nodes:
-            if not n.optimized_out:
-                n.compile(code)
+            assert not n.optimized_out
+            n.compile(code)
         ffi = FFI()
         ffi.cdef("void func(void);")
         #print str(code)
