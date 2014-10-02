@@ -6,6 +6,7 @@ class OptimizedGraph(CoreGraph):
     def optimize(self):
         self.identify_consumers()
         self.ded_code_removal()
+        self.identify_parents()
 
     def identify_consumers(self):
         self.consumers = defaultdict(set)
@@ -13,8 +14,12 @@ class OptimizedGraph(CoreGraph):
             for d in node.inputs + node.inouts:
                 self.consumers[d].add(node)
 
+    def identify_parents(self):
+        pass
+
     def remove_image(self, img):
         img.optimized_out = True
+        self.images.remove(img)
 
     def remove_node(self, node):
         node.optimized_out = True
@@ -23,7 +28,7 @@ class OptimizedGraph(CoreGraph):
         self.nodes.remove(node)
 
     def ded_code_removal(self):
-        worklist = self.images[:]
+        worklist = list(self.images)
         while worklist:
             item = worklist.pop()
             if item.optimized_out:

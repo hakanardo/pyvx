@@ -192,7 +192,6 @@ class CoreGraph(object):
             context = CoreGraph.default_context
         self.context = context
         self.nodes = []
-        self.data_objects = set()
         self.early_verify = early_verify
 
     def __enter__(self):
@@ -211,11 +210,13 @@ class CoreGraph(object):
 
     def _add_node(self, node):
         self.nodes.append(node)
-        for d in node.inputs + node.outputs + node.inouts:
-            self.data_objects.add(d)
 
     def verify(self):
-        self.images = [d for d in self.data_objects if isinstance(d, CoreImage)]
+        self.images = set()        
+        for node in self.nodes:
+            for d in node.inputs + node.outputs + node.inouts:
+                if isinstance(d, CoreImage):
+                    self.images.add(d)
         self.nodes = self.schedule()
 
         for node in self.nodes:
@@ -228,7 +229,7 @@ class CoreGraph(object):
             if d.color == FOURCC_VIRT:
                 raise InvalidFormatError("FOURCC_VIRT not resolved into specific type.")
 
-        for item in self.images + self.nodes:
+        for item in chain(self.images, self.nodes):
             item.optimized_out = False
 
         self.optimize()

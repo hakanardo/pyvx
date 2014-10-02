@@ -132,6 +132,8 @@ class Image(CoreImage):
         return Compare(self, "<=", self.make_similar_image(other))
 
     def __eq__(self, other):
+        if CoreGraph.get_current_graph(none_check=False) is None:
+            return self is other
         return Compare(self, "==", self.make_similar_image(other))
 
     def __ne__(self, other):
@@ -145,6 +147,12 @@ class Image(CoreImage):
 
     def __nonzero__(self):
         raise ValueError("The truth value of an Image is ambigous.")
+
+    def __hash__(self):
+        if CoreGraph.get_current_graph(none_check=False) is None:
+            return object.__hash__(self)
+        else:
+            raise TypeError("Images are not hasable when used within 'with Graph():' blocks.")
 
 
 class ElementwiseNode(Node):
