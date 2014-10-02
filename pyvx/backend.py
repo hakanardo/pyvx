@@ -146,7 +146,7 @@ class CoreImage(object):
             return "%s = clamp(%s, %r, %r)" % (
                 self.getitem(node, channel, idx), value,
                 self.color.minval, self.color.maxval)
-        return self.getitem(node, channel, idx) + op + value
+        return self.getitem(node, channel, idx) + ' ' + op + ' ' + value
 
     def getattr(self, node, attr):
         if attr == "width":
@@ -227,35 +227,20 @@ class CoreGraph(object):
                 raise InvalidGraphError("Virtual data never produced.")
             if d.color == FOURCC_VIRT:
                 raise InvalidFormatError("FOURCC_VIRT not resolved into specific type.")
-                
+
         self.optimize()
         self.compile()
 
     def schedule(self):
-        present = defaultdict(lambda : True)
-        for d in self.images:
-            present[d] = not d.virtual
-        for n in self.nodes:
-            for d in n.outputs + n.inouts:
-                present[d] = False
-        worklist = self.nodes[:]
-        inorder = []
-        while worklist:
-            remaining = []
-            for n in worklist:
-                if all(present[d] for d in n.inputs):
-                    inorder.append(n)
-                    for d in n.outputs:
-                        present[d] = True
-                else:
-                    remaining.append(n)
-            if len(worklist) == len(remaining):
-                raise InvalidGraphError("Loops not allowed in the graph.")
-            worklist = remaining
-        return inorder
-
-    def optimize(self):
-        pass
+        scheduler = Scheduler(self.nodes, self.images)
+        one_order = []
+        while scheduler.loaded_nodes:
+            n = scheduler.loaded_nodes.pop()
+            scheduler.fire(n)
+            one_order.append(n)
+        if scheduler.blocked_nodes:
+            raise InvalidGraphError("Loops not allowed in the graph.")
+        return one_order
 
     def compile(self):
         for d in self.images:
@@ -285,6 +270,30 @@ class CoreGraph(object):
 
     def process(self):
         self.compiled_func()
+
+class Scheduler(object):
+    def __init__(self, nodes, images):
+        self.nodes = nodes
+        self.images = images
+        self.present = defaultdict(lambda : True)
+        for d in self.images:
+            self.present[d] = not d.virtual
+        for n in self.nodes:
+            for d in n.outputs + n.inouts:
+                self.present[d] = False
+        self.blocked_nodes = set(self.nodes)
+        self.loaded_nodes = set()
+        self.fire()
+
+    def fire(self, node=None):
+        if node is not None:
+            for d in node.outputs:
+                self.present[d] = True
+        for n in list(self.blocked_nodes):
+            if all(self.present[d] for d in n.inputs):
+                self.blocked_nodes.remove(n)
+                self.loaded_nodes.add(n)
+
 
 class Node(object):
     border_mode = BORDER_MODE_UNDEFINED
@@ -363,8 +372,13 @@ class MergedNode(Node):
             self.inputs += n.inputs
             self.outputs += n.outputs
             self.inouts += n.inouts
+        for d in n.outputs + n.inouts:
+            try:
+                self.inputs.remove(d)
+            except ValueError:
+                pass
         self.input_images = self.output_images = self.inout_images = NotImplemented
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
-            assert d.producer.group is nodes[0].group
+            assert d.producer in nodes
             d.producer = self

@@ -65,12 +65,14 @@ class Code(object):
     
     def __init__(self, code=''):
         self.code = code
+        self.indent_level = 0
 
     def add_block(self, cxnode, code, **magic_vars):
         ast = cparse(code)
         #ast.show()
         generator = MagicCGenerator(cxnode, magic_vars)
-        hdr = '\n// %s\n' % cxnode.__class__.__name__
+        generator.indent_level = self.indent_level
+        hdr = '\n%s// %s\n' % (' ' * self.indent_level, cxnode.__class__.__name__)
         self.code += hdr + generator.visit(ast)
 
     def add_code(self, code):

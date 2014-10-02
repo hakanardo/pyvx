@@ -197,10 +197,12 @@ class MergedElementwiseNode(MergedNode):
     def compile(self, code):
         img = self.original_nodes[0].input_images.values()[0]
         code.add_code("\n// MergedElementwiseNode\n")
+        code.indent_level += 4
         code.add_code("for (long __i = 0; __i < %s; __i++) {\n" %
                        img.getattr(self, "values"))
         for n in self.original_nodes:
             n.compile(code, True)
+        code.indent_level -= 4
         code.add_code("}\n")
 
 class AddNode(ElementwiseNode):

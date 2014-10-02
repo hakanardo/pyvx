@@ -41,3 +41,26 @@ class TestOptimize(object):
         assert t3.data[10*20 + 10] == 70
         assert t3.data[11*20 + 11] == 37
 
+    def test_allocation_removal(self):
+        g = Graph()
+        with g:
+            img1 = Image(20, 20, FOURCC_U8, array('B', range(200) * 2))
+            img2 = Image(20, 20, FOURCC_U8, array('B', range(200) * 2))
+            t1 = img1 + 1
+            t2 = img2 + 2
+            t3 = t1 - 3
+            t4 = t2 / 4
+            t5 = t3 % 5
+            t6 = t4 | 6
+            sa = t5 + t6
+            res = sa * Gaussian3x3(t5)
+            res.force()
+        g.verify()
+        assert len(set([t1.producer, t2.producer, t3.producer, 
+                        t4.producer, t5.producer, t6.producer,
+                        sa.producer])) == 1
+        g.process()
+        assert t3.data[9*20 + 9] == 147
+        assert t3.data[10*20 + 10] == 70
+        assert t3.data[11*20 + 11] == 37
+
