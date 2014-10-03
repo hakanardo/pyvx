@@ -3,6 +3,7 @@
 
 int main() {
     vx_context c = vxCreateContext();
-    printf("%d\n", c);
+    vx_image img = vxCreateImage(c, 640, 480, FOURCC_RGB);
+    printf("%d, %d\n", c, img);
     return 0;
 }

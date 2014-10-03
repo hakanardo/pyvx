@@ -98,20 +98,31 @@ def export(signature):
     return decorator
 
 class PythonApi(object):
+    cdef = ''
 
     def __init__(self, build=False):
         ffi = FFI()
         ffi.cdef(self.cdef)
+        typedefs = []
         code = []
         callbacks = {}
         for n in dir(self):
-            fn = getattr(self, n)
-            if hasattr(fn, 'signature'):
+            item = getattr(self, n)
+            if isinstance(item, Enum):
+                items = ', '.join('%s=%d' % (e.__name__, i) 
+                                  for i, e in enumerate(item))
+                typedefs.append('typedef enum {' + items + '} ' + n + ';')
+        ffi.cdef('\n'.join(typedefs))
+        for n in dir(self):
+            item = getattr(self, n)
+            if hasattr(item, 'signature'):
+                fn = item
                 tp = ffi._typeof(fn.signature, consider_function_as_funcptr=True)
                 callback_var = ffi.getctype(tp, n)
                 code.append("%s;" % callback_var)
                 callbacks[n] = ffi.callback(tp, fn)
         self._code = code
+        self._typedefs = typedefs
         ffi.cdef('\n'.join(code))
         if not build:
             lib = ffi.dlopen(None)
@@ -128,10 +139,13 @@ class PythonApi(object):
         tmp = tempfile.mkdtemp()
         pwd = os.getcwd()
         os.chdir(tmp)
+        typedefs = '\n'.join(self._typedefs) + "\n\n"
 
         with open("tmp.c", 'w') as fd:
-            fd.write("""
+            fd.write(""" 
+                #include <stdint.h>
                 #include <Python.h>
+                """ + typedefs + """
 
                 static void __initialize(void) __attribute__((constructor));
                 void __initialize(void) {
@@ -157,7 +171,9 @@ class PythonApi(object):
         with open(name + '.h', 'w') as fd:
             fd.write("#ifndef __OPENCX_H__\n")
             fd.write("#define __OPENCX_H__\n\n")
+            fd.write("#include <stdint.h>\n")
             fd.write(self.cdef + '\n')
+            fd.write(typedefs + '\n\n')
             fd.write(prototypes + "\n\n")
             fd.write("#endif\n")
 
@@ -182,3 +198,11 @@ class PythonApi(object):
 
     def retrive(self, p):
         return self.references[p]
+
+class Enum(list):
+    def __new__(cls, *args):
+        return list.__new__(cls, args)
+    def __init__(self, *args):
+        return list.__init__(self, args)
+
+                
