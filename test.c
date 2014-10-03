@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 int main() {
-    printf("%d\n", vxCreateContext());
+    vx_context c = vxCreateContext();
+    printf("%d\n", c);
     return 0;
 }

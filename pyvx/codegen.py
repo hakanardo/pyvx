@@ -1,10 +1,7 @@
 from pycparser import c_parser, c_ast
 from pycparser.c_generator import CGenerator
-
-import cffi
 from cffi import FFI
-from cffi.verifier import Verifier
-import types, tempfile, subprocess, os
+import tempfile, subprocess, os
 
 typedefs = ''.join("typedef int uint%d_t; typedef int int%d_t;" % (n, n) 
                    for n in [8, 16, 32, 64])
@@ -97,17 +94,18 @@ class Code(object):
 def export(signature):
     def decorator(f):
         f.signature = signature
-        return staticmethod(f)
+        return f
     return decorator
 
 class PythonApi(object):
+
     def __init__(self, build=False):
         ffi = FFI()
+        ffi.cdef(self.cdef)
         code = []
         callbacks = {}
         for n in dir(self):
             fn = getattr(self, n)
-            #if isinstance(fn, types.FunctionType) and hasattr(fn, 'signature'):
             if hasattr(fn, 'signature'):
                 tp = ffi._typeof(fn.signature, consider_function_as_funcptr=True)
                 callback_var = ffi.getctype(tp, n)
@@ -122,6 +120,9 @@ class PythonApi(object):
             self._lib = lib
             self._ffi = ffi
             self._callbacks = callbacks
+
+        self.references = []
+        self.freelist = None
 
     def build(self, name):
         tmp = tempfile.mkdtemp()
@@ -156,5 +157,28 @@ class PythonApi(object):
         with open(name + '.h', 'w') as fd:
             fd.write("#ifndef __OPENCX_H__\n")
             fd.write("#define __OPENCX_H__\n\n")
+            fd.write(self.cdef + '\n')
             fd.write(prototypes + "\n\n")
             fd.write("#endif\n")
+
+    def store(self, x):
+        "Store the object 'x' and returns a new object descriptor for it."
+        p = self.freelist
+        if p is None:
+            p = len(self.references)
+            self.references.append(x)
+        else:
+            self.freelist = self.references[p]
+            self.references[p] = x
+        return p
+
+    def discard(self, p):
+        """Discard (i.e. close) the object descriptor 'p'.
+        Return the original object that was attached to 'p'."""
+        x = self.references[p]
+        self.references[p] = self.freelist
+        self.freelist = p
+        return x
+
+    def retrive(self, p):
+        return self.references[p]
