@@ -6,9 +6,9 @@ from itertools import combinations
 class OptimizedGraph(CoreGraph):
     def optimize(self):
         self.identify_consumers()
-        self.ded_code_removal()
         self.identify_relations()
         self.merge_elementwise_nodes()
+        self.ded_code_removal()
 
     def identify_consumers(self):
         self.consumers = defaultdict(set)
@@ -28,7 +28,6 @@ class OptimizedGraph(CoreGraph):
 
     def remove_image(self, img):
         img.optimized_out = True
-        self.images.remove(img)
 
     def remove_node(self, node):
         node.optimized_out = True
@@ -52,7 +51,8 @@ class OptimizedGraph(CoreGraph):
                 imgs = item.output_images.values() + item.inout_images.values()
                 if all(i.optimized_out for i in imgs):
                     self.remove_node(item)
-                    worklist.extend(item.inputs + item.inouts)
+                    worklist.extend(item.input_images.values())
+                    worklist.extend(item.inout_images.values())
             else:
                 assert False
 
@@ -84,7 +84,7 @@ class OptimizedGraph(CoreGraph):
                 scheduler.fire(n)
             delayed_nodes = []
 
-         # Restore invariants
+        # Restore invariants
         self.nodes = self.schedule()
         self.identify_consumers()
         self.identify_relations()

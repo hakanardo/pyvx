@@ -83,17 +83,23 @@ class CoreImage(object):
             raise InvalidFormatError
 
     def alloc(self):
-        assert not self.optimized_out
-        if self.data is None:
-            items = self.width * self.height * self.color.items
-            self.data = FFI().new(self.color.ctype + '[]', items)
-        addr = FFI().cast('long', self.data)
-        self.ctype = self.color.ctype + " *"
-        self.csym = "__img%d" % self.count
-        self.cdeclaration = "%s __restrict__ %s = ((%s) 0x%x);\n" % (
-                self.ctype, self.csym, self.ctype, addr)
+        if self.optimized_out:
+            self.ctype = self.color.ctype
+            self.csym = "__img%d" % self.count
+            self.cdeclaration = "%s %s;\n" % (self.ctype, self.csym)
+        else:            
+            if self.data is None:
+                items = self.width * self.height * self.color.items
+                self.data = FFI().new(self.color.ctype + '[]', items)
+            addr = FFI().cast('long', self.data)
+            self.ctype = self.color.ctype + " *"
+            self.csym = "__img%d" % self.count
+            self.cdeclaration = "%s __restrict__ %s = ((%s) 0x%x);\n" % (
+                    self.ctype, self.csym, self.ctype, addr)
 
     def getitem2d(self, node, channel, x, y):
+        if self.optimized_out:
+            return self.csym
         if channel is None:
             if self.color.items != 1:
                 raise InvalidFormatError("Cant access pixel of multi channel image without specifying channel.")
@@ -116,6 +122,8 @@ class CoreImage(object):
             raise NotImplementedError
 
     def getitem(self, node, channel, idx):
+        if self.optimized_out:
+            return self.csym        
         if isinstance(idx, tuple):
             return self.getitem2d(node, channel, *idx)
 
@@ -139,7 +147,7 @@ class CoreImage(object):
 
     def setitem(self, node, channel, idx, op, value):
         if self.optimized_out:
-            return ''
+            return self.csym + ' = ' + value
         if node.convert_policy == CONVERT_POLICY_SATURATE:
             if op != '=':
                 raise NotImplementedError
@@ -378,7 +386,12 @@ class MergedNode(Node):
         self.inputs = list(self.inputs)
         self.outputs = list(self.outputs)
         self.inouts = list(self.inouts)
-        self.input_images = self.output_images = self.inout_images = NotImplemented
+        self.input_images = {i: img for i, img in enumerate(self.inputs) 
+                                    if isinstance(img, CoreImage)}
+        self.output_images = {i: img for i, img in enumerate(self.outputs) 
+                                     if isinstance(img, CoreImage)}
+        self.inout_images = {i: img for i, img in enumerate(self.inouts) 
+                                    if isinstance(img, CoreImage)}
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
             assert d.producer in nodes
