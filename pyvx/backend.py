@@ -367,18 +367,20 @@ class MergedNode(Node):
     def __init__(self, graph, nodes):
         self.original_nodes = nodes
         self.graph = graph
-        self.inputs, self.outputs, self.inouts = [], [], []
+        self.inputs, self.outputs, self.inouts = set(), set(), set()
         for n in nodes:
-            self.inputs += n.inputs
-            self.outputs += n.outputs
-            self.inouts += n.inouts
-        for d in n.outputs + n.inouts:
-            try:
-                self.inputs.remove(d)
-            except ValueError:
-                pass
+            self.inputs |= set(n.inputs)
+            self.outputs |= set(n.outputs)
+            self.inouts |= set(n.inouts)
+        self.inputs -= self.outputs
+        self.inputs -= self.inouts
+
+        self.inputs = list(self.inputs)
+        self.outputs = list(self.outputs)
+        self.inouts = list(self.inouts)
         self.input_images = self.output_images = self.inout_images = NotImplemented
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
             assert d.producer in nodes
             d.producer = self
+

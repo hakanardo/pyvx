@@ -84,7 +84,7 @@ class OptimizedGraph(CoreGraph):
                 scheduler.fire(n)
             delayed_nodes = []
 
-        # Restore invariants
+         # Restore invariants
         self.nodes = self.schedule()
         self.identify_consumers()
         self.identify_relations()

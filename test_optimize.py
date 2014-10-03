@@ -60,7 +60,7 @@ class TestOptimize(object):
                         t4.producer, t5.producer, t6.producer,
                         sa.producer])) == 1
         g.process()
-        assert t3.data[9*20 + 9] == 147
-        assert t3.data[10*20 + 10] == 70
-        assert t3.data[11*20 + 11] == 37
+        assert t3.data[9*20 + 9] == 187
+        assert t3.data[10*20 + 10] == 8
+        assert t3.data[11*20 + 11] == 29
 
