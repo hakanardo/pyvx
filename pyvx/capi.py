@@ -17,6 +17,7 @@ class OpenVxApi(PythonApi):
 
     @export("vx_image(vx_context, uint32_t, uint32_t, vx_fourcc)")
     def vxCreateImage(self, context, width, height, color):
+        print color
         img = Image(width, height, color, context=context)
         # FIXME: context.free_on_del.add(img)
         return img

@@ -107,12 +107,14 @@ class PythonApi(object):
         code = []
         callbacks = {}
         self.reference_types = set()
+        self.enum_types = set()
         for n in dir(self):
             item = getattr(self, n)
             if isinstance(item, Enum):
                 items = ', '.join('%s=%d' % (e.__name__, i) 
                                   for i, e in enumerate(item))
                 typedefs.append('typedef enum {' + items + '} ' + n + ';')
+                self.enum_types.add(n)
             elif isinstance(item, Reference):
                 s = 'struct _%s *' % n
                 typedefs.append('typedef %s %s;' % (s, n))
@@ -143,12 +145,16 @@ class PythonApi(object):
 
     def make_callback(self, tp, fn):
         store_result = tp.result.cname in self.reference_types
-        retrieve_args = [i for i,a in enumerate(tp.args) 
-                         if a.cname in self.reference_types]
+        retrieve_refs = tuple([i for i,a in enumerate(tp.args) 
+                               if a.cname in self.reference_types])
+        retrieve_enums =  tuple([(i, a.cname) for i,a in enumerate(tp.args) 
+                                 if a.cname in self.enum_types])
         def f(*args):
             args = list(args)
-            for i in retrieve_args:
+            for i in retrieve_refs:
                 args[i] = self.retrive(args[i])
+            for i, n in retrieve_enums:
+                args[i] = getattr(self, n)[args[i]]
             r = fn(*args)
             if store_result:
                 r = self.store(r)
