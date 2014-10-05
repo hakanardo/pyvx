@@ -101,17 +101,22 @@ class PythonApi(object):
     cdef = ''
 
     def __init__(self, build=False):
-        ffi = FFI()
+        ffi = self.ffi = FFI()
         ffi.cdef(self.cdef)
         typedefs = []
         code = []
         callbacks = {}
+        self.reference_types = set()
         for n in dir(self):
             item = getattr(self, n)
             if isinstance(item, Enum):
                 items = ', '.join('%s=%d' % (e.__name__, i) 
                                   for i, e in enumerate(item))
                 typedefs.append('typedef enum {' + items + '} ' + n + ';')
+            elif isinstance(item, Reference):
+                s = 'struct _%s *' % n
+                typedefs.append('typedef %s %s;' % (s, n))
+                self.reference_types.add(s)
         ffi.cdef('\n'.join(typedefs))
         for n in dir(self):
             item = getattr(self, n)
@@ -120,7 +125,7 @@ class PythonApi(object):
                 tp = ffi._typeof(fn.signature, consider_function_as_funcptr=True)
                 callback_var = ffi.getctype(tp, n)
                 code.append("%s;" % callback_var)
-                callbacks[n] = ffi.callback(tp, fn)
+                callbacks[n] = self.make_callback(tp, fn)
         self._code = code
         self._typedefs = typedefs
         ffi.cdef('\n'.join(code))
@@ -135,6 +140,21 @@ class PythonApi(object):
         self.references = []
         self.freelist = None
         self.ffi = ffi
+
+    def make_callback(self, tp, fn):
+        store_result = tp.result.cname in self.reference_types
+        retrieve_args = [i for i,a in enumerate(tp.args) 
+                         if a.cname in self.reference_types]
+        def f(*args):
+            args = list(args)
+            for i in retrieve_args:
+                args[i] = self.retrive(args[i])
+            r = fn(*args)
+            if store_result:
+                r = self.store(r)
+            return r
+        return self.ffi.callback(tp, f)
+
 
     def build(self, name):
         tmp = tempfile.mkdtemp()
@@ -207,5 +227,7 @@ class Enum(list):
         return list.__new__(cls, args)
     def __init__(self, *args):
         return list.__init__(self, args)
+
+class Reference(object): pass
 
                 
