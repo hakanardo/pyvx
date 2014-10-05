@@ -4,8 +4,8 @@ from pyvx import *
 
 class OpenVxApi(PythonApi):
     cdef = """
-        typedef long vx_context;
-        typedef long vx_image;
+        typedef struct _vx_context* vx_context;
+        typedef struct _vx_image* vx_image;
 
     """
 

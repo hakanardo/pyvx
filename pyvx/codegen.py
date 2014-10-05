@@ -134,6 +134,7 @@ class PythonApi(object):
 
         self.references = []
         self.freelist = None
+        self.ffi = ffi
 
     def build(self, name):
         tmp = tempfile.mkdtemp()
@@ -186,17 +187,19 @@ class PythonApi(object):
         else:
             self.freelist = self.references[p]
             self.references[p] = x
-        return p
+        return self.ffi.cast('void *', p)
 
     def discard(self, p):
         """Discard (i.e. close) the object descriptor 'p'.
         Return the original object that was attached to 'p'."""
+        p = int(self.ffi.cast('long', p))
         x = self.references[p]
         self.references[p] = self.freelist
         self.freelist = p
         return x
 
     def retrive(self, p):
+        p = int(self.ffi.cast('long', p))
         return self.references[p]
 
 class Enum(list):
