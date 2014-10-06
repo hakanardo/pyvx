@@ -27,6 +27,6 @@ int main() {
     } else {
         printf("Verification failed.\n");
     }
-    vxReleaseContext(context); // this will release everything 
+    vxReleaseContext(&context); // this will release everything 
     return 0;
 }

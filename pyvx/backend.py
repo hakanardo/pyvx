@@ -6,18 +6,12 @@ from itertools import chain
 import threading
 
 class Context(object):
-    api = None
     references = []
 
-    def add_reference(self, api, ref):
-        if self.api is None:
-            self.api = api
-        assert self.api is api
+    def add_reference(self, ref):
         self.references.append(ref)
 
-    def cleanup(self):
-        for r in self.references:
-            self.api.discard(r)
+    def clear_references(self):
         self.references = []
 
 class CoreImage(object):

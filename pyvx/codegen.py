@@ -91,10 +91,12 @@ class Code(object):
         return self.code
 
 
-def export(signature, add_ret_to_arg=None):
+def export(signature, add_ret_to_arg=None, retrive_args=True, store_result=True):
     def decorator(f):
         f.signature = signature
         f.add_ret_to_arg = add_ret_to_arg
+        f.retrive_args = retrive_args
+        f.store_result = store_result
         return staticmethod(f)
     return decorator
 
@@ -129,6 +131,7 @@ class PythonApi(object):
                 callbacks[n] = self.make_callback(tp, fn)
         ffi.cdef('\n'.join(code))
         self.callbacks = callbacks
+        api.pyapi = self
         self.api = api
         if build:
             self.build(build, code, typedefs)
@@ -137,30 +140,33 @@ class PythonApi(object):
         lib = self.ffi.dlopen(None)
         for n, cb in self.callbacks.items():
             setattr(lib, n, cb)
-        self.api.lib = lib
+        self.lib = lib
         self.references = []
         self.freelist = None
         return self
 
 
     def make_callback(self, tp, fn):
-        store_result = tp.result.cname in self.reference_types
-        retrieve_refs = tuple([i for i,a in enumerate(tp.args) 
-                               if a.cname in self.reference_types])
-        retrieve_enums =  tuple([(i, a.cname) for i,a in enumerate(tp.args) 
-                                 if a.cname in self.enum_types])
+        store_result = fn.store_result and tp.result.cname in self.reference_types
+        if fn.retrive_args:       
+            retrive_refs = tuple([i for i,a in enumerate(tp.args) 
+                                   if a.cname in self.reference_types])
+            retrive_enums =  tuple([(i, a.cname) for i,a in enumerate(tp.args) 
+                                     if a.cname in self.enum_types])
+        else:
+            retrive_refs = retrive_enums = ()
         add_ret_to_arg = fn.add_ret_to_arg
         def f(*args):
             args = list(args)
-            for i in retrieve_refs:
+            for i in retrive_refs:
                 args[i] = self.retrive(args[i])
-            for i, n in retrieve_enums:
+            for i, n in retrive_enums:
                 args[i] = getattr(self.api, n)[args[i]]
             r = fn(*args)
             if store_result:
                 r = self.store(r)
                 if add_ret_to_arg is not None:
-                    args[add_ret_to_arg].add_reference(self, r)
+                    args[add_ret_to_arg].add_reference(r)
             return r
         return self.ffi.callback(tp, f)
 

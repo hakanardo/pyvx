@@ -3,8 +3,8 @@ import codegen
 from pyvx import *
 
 
-def export(signature, add_ret_to_arg=0):
-    return codegen.export(signature, add_ret_to_arg)
+def export(signature, add_ret_to_arg=0, **kwargs):
+    return codegen.export(signature, add_ret_to_arg, **kwargs)
 
 
 
@@ -70,24 +70,28 @@ class OpenVxApi(object):
         try:
             graph.verify()
         except InvalidGraphError:
-            return OpenVxApi.lib.VX_ERROR_INVALID_GRAPH
+            return OpenVxApi.pyapi.lib.VX_ERROR_INVALID_GRAPH
         except InvalidValueError:
-            return OpenVxApi.lib.VX_ERROR_INVALID_VALUE
+            return OpenVxApi.pyapi.lib.VX_ERROR_INVALID_VALUE
         except InvalidFormatError:
-            return OpenVxApi.lib.VX_ERROR_INVALID_FORMAT
+            return OpenVxApi.pyapi.lib.VX_ERROR_INVALID_FORMAT
         except MultipleWritersError: 
-            return OpenVxApi.lib.VX_ERROR_MULTIPLE_WRITERS
-        return OpenVxApi.lib.VX_SUCCESS
+            return OpenVxApi.pyapi.lib.VX_ERROR_MULTIPLE_WRITERS
+        return OpenVxApi.pyapi.lib.VX_SUCCESS
 
     @export("vx_status(vx_graph)")
     def vxProcessGraph(graph):
         graph.process()
-        return OpenVxApi.lib.VX_SUCCESS
+        return OpenVxApi.pyapi.lib.VX_SUCCESS
     
-    @export("void(vx_context)")
+    @export("void(vx_context *)", retrive_args=False)
     def vxReleaseContext(context):
-        context.cleanup()
-
+        context_obj = OpenVxApi.pyapi.retrive(context[0])
+        for r in context_obj.references:
+            OpenVxApi.pyapi.discard(r)
+        context_obj.clear_references()
+        OpenVxApi.pyapi.discard(context[0])
+        context[0] = OpenVxApi.pyapi.ffi.NULL
 
 if __name__ == '__main__':
     import sys
