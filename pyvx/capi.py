@@ -2,7 +2,7 @@ from codegen import PythonApi, export, Enum, Reference
 from pyvx import *
 
 
-class OpenVxApi(PythonApi):
+class OpenVxApi(object):
     
     vx_context = Reference()
     vx_image = Reference()
@@ -12,11 +12,11 @@ class OpenVxApi(PythonApi):
                      FOURCC_S16, FOURCC_U32, FOURCC_S32)
 
     @export("vx_context()")
-    def vxCreateContext(self):
+    def vxCreateContext():
         return Context()
 
     @export("vx_image(vx_context, uint32_t, uint32_t, vx_fourcc)")
-    def vxCreateImage(self, context, width, height, color):
+    def vxCreateImage(context, width, height, color):
         print color
         img = Image(width, height, color, context=context)
         # FIXME: context.free_on_del.add(img)
@@ -24,5 +24,7 @@ class OpenVxApi(PythonApi):
 
 if __name__ == '__main__':
     import sys
-    api = OpenVxApi(True)
-    api.build(sys.argv[1])
+    if sys.argv[1] == 'build' and len(sys.argv) == 3:
+        api = PythonApi(OpenVxApi, build=sys.argv[2])
+    else:
+        print 'Usage: %s build <lib>' % sys.argv[0]

@@ -94,13 +94,13 @@ class Code(object):
 def export(signature):
     def decorator(f):
         f.signature = signature
-        return f
+        return staticmethod(f)
     return decorator
 
 class PythonApi(object):
     cdef = ''
 
-    def __init__(self, build=False):
+    def __init__(self, api, build=None):
         ffi = self.ffi = FFI()
         ffi.cdef(self.cdef)
         typedefs = []
@@ -108,8 +108,8 @@ class PythonApi(object):
         callbacks = {}
         self.reference_types = set()
         self.enum_types = set()
-        for n in dir(self):
-            item = getattr(self, n)
+        for n in dir(api):
+            item = getattr(api, n)
             if isinstance(item, Enum):
                 items = ', '.join('%s=%d' % (e.__name__, i) 
                                   for i, e in enumerate(item))
@@ -120,28 +120,29 @@ class PythonApi(object):
                 typedefs.append('typedef %s %s;' % (s, n))
                 self.reference_types.add(s)
         ffi.cdef('\n'.join(typedefs))
-        for n in dir(self):
-            item = getattr(self, n)
+        for n in dir(api):
+            item = getattr(api, n)
             if hasattr(item, 'signature'):
                 fn = item
                 tp = ffi._typeof(fn.signature, consider_function_as_funcptr=True)
                 callback_var = ffi.getctype(tp, n)
                 code.append("%s;" % callback_var)
                 callbacks[n] = self.make_callback(tp, fn)
-        self._code = code
-        self._typedefs = typedefs
         ffi.cdef('\n'.join(code))
-        if not build:
-            lib = ffi.dlopen(None)
-            for n, cb in callbacks.items():
-                setattr(lib, n, cb)
-            self._lib = lib
-            self._ffi = ffi
-            self._callbacks = callbacks
+        self.callbacks = callbacks
+        self.api = api
+        if build:
+            self.build(build, code, typedefs)
 
+    def load(self):
+        lib = self.ffi.dlopen(None)
+        for n, cb in self.callbacks.items():
+            setattr(lib, n, cb)
+        self._lib = lib
         self.references = []
         self.freelist = None
-        self.ffi = ffi
+        return self
+
 
     def make_callback(self, tp, fn):
         store_result = tp.result.cname in self.reference_types
@@ -154,7 +155,7 @@ class PythonApi(object):
             for i in retrieve_refs:
                 args[i] = self.retrive(args[i])
             for i, n in retrieve_enums:
-                args[i] = getattr(self, n)[args[i]]
+                args[i] = getattr(self.api, n)[args[i]]
             r = fn(*args)
             if store_result:
                 r = self.store(r)
@@ -162,11 +163,11 @@ class PythonApi(object):
         return self.ffi.callback(tp, f)
 
 
-    def build(self, name):
+    def build(self, name, code, typedefs):
         tmp = tempfile.mkdtemp()
         pwd = os.getcwd()
         os.chdir(tmp)
-        typedefs = '\n'.join(self._typedefs) + "\n\n"
+        typedefs = '\n'.join(typedefs) + "\n\n"
 
         with open("tmp.c", 'w') as fd:
             fd.write(""" 
@@ -180,21 +181,22 @@ class PythonApi(object):
                   PyRun_SimpleString("import sys\\n"
                                      "sys.path.append('.')\\n"
                                      "from pyvx.capi import OpenVxApi\\n"
-                                     "api = OpenVxApi()\\n");
+                                     "from pyvx.codegen import PythonApi\\n"
+                                     "api = PythonApi(OpenVxApi).load()\\n");
                 }
 
                 static void __deinitialize(void) __attribute__((destructor));
                 void __deinitialize(void) {
                   Py_Finalize();
                 }
-                """ + '\n'.join(self._code))
+                """ + '\n'.join(code))
         subprocess.call(['gcc', '-c', '-fPIC', '-I/usr/include/python2.7', 'tmp.c'])
         subprocess.call(['gcc', '-shared', '-Wl,-soname,lib%s.so' % name,
                          '-o', '%s/lib%s.so' % (pwd, name), 'tmp.o', '-lpython2.7'])
         os.chdir(pwd)
         subprocess.call(['rm', '-r', tmp])
 
-        prototypes = '\n'.join('extern ' + l for l in self._code)
+        prototypes = '\n'.join('extern ' + l for l in code)
         with open(name + '.h', 'w') as fd:
             fd.write("#ifndef __OPENCX_H__\n")
             fd.write("#define __OPENCX_H__\n\n")
