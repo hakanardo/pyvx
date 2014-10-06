@@ -91,18 +91,17 @@ class Code(object):
         return self.code
 
 
-def export(signature):
+def export(signature, add_ret_to_arg=None):
     def decorator(f):
         f.signature = signature
+        f.add_ret_to_arg = add_ret_to_arg
         return staticmethod(f)
     return decorator
 
 class PythonApi(object):
-    cdef = ''
-
     def __init__(self, api, build=None):
         ffi = self.ffi = FFI()
-        ffi.cdef(self.cdef)
+        ffi.cdef(api.cdef)
         typedefs = []
         code = []
         callbacks = {}
@@ -111,7 +110,7 @@ class PythonApi(object):
         for n in dir(api):
             item = getattr(api, n)
             if isinstance(item, Enum):
-                items = ', '.join('%s=%d' % (e.__name__, i) 
+                items = ', '.join('%s=%d' % (item.prefix + e.__name__, i) 
                                   for i, e in enumerate(item))
                 typedefs.append('typedef enum {' + items + '} ' + n + ';')
                 self.enum_types.add(n)
@@ -138,7 +137,7 @@ class PythonApi(object):
         lib = self.ffi.dlopen(None)
         for n, cb in self.callbacks.items():
             setattr(lib, n, cb)
-        self._lib = lib
+        self.api.lib = lib
         self.references = []
         self.freelist = None
         return self
@@ -150,6 +149,7 @@ class PythonApi(object):
                                if a.cname in self.reference_types])
         retrieve_enums =  tuple([(i, a.cname) for i,a in enumerate(tp.args) 
                                  if a.cname in self.enum_types])
+        add_ret_to_arg = fn.add_ret_to_arg
         def f(*args):
             args = list(args)
             for i in retrieve_refs:
@@ -159,6 +159,8 @@ class PythonApi(object):
             r = fn(*args)
             if store_result:
                 r = self.store(r)
+                if add_ret_to_arg is not None:
+                    args[add_ret_to_arg].add_reference(self, r)
             return r
         return self.ffi.callback(tp, f)
 
@@ -173,7 +175,7 @@ class PythonApi(object):
             fd.write(""" 
                 #include <stdint.h>
                 #include <Python.h>
-                """ + typedefs + """
+                """ + self.api.cdef + typedefs + """
 
                 static void __initialize(void) __attribute__((constructor));
                 void __initialize(void) {
@@ -201,7 +203,7 @@ class PythonApi(object):
             fd.write("#ifndef __OPENCX_H__\n")
             fd.write("#define __OPENCX_H__\n\n")
             fd.write("#include <stdint.h>\n")
-            fd.write(self.cdef + '\n')
+            fd.write(self.api.cdef + '\n')
             fd.write(typedefs + '\n\n')
             fd.write(prototypes + "\n\n")
             fd.write("#endif\n")
@@ -231,9 +233,10 @@ class PythonApi(object):
         return self.references[p]
 
 class Enum(list):
-    def __new__(cls, *args):
+    def __new__(cls, *args, **kwargs):
         return list.__new__(cls, args)
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
+        self.prefix = kwargs.get('prefix', '')
         return list.__init__(self, args)
 
 class Reference(object): pass

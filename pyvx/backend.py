@@ -6,7 +6,19 @@ from itertools import chain
 import threading
 
 class Context(object):
-    pass
+    api = None
+    references = []
+
+    def add_reference(self, api, ref):
+        if self.api is None:
+            self.api = api
+        assert self.api is api
+        self.references.append(ref)
+
+    def cleanup(self):
+        for r in self.references:
+            self.api.discard(r)
+        self.references = []
 
 class CoreImage(object):
     count = 0
@@ -200,6 +212,9 @@ class CoreGraph(object):
         self.context = context
         self.nodes = []
         self.early_verify = early_verify
+
+    def add_reference(self, *args):
+        return self.context.add_reference(*args)
 
     def __enter__(self):
         assert CoreGraph.local_state.current_graph is None

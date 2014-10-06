@@ -143,7 +143,8 @@ class CONVERT_POLICY_SATURATE: pass
 class ROUND_POLICY_TO_ZERO: pass
 class ROUND_POLICY_TO_NEAREST_EVEN: pass
 
-class MultipleWritersError(Exception): pass
-class InvalidGraphError(Exception): pass
-class InvalidValueError(Exception): pass
-class InvalidFormatError(Exception): pass
+class VerificationError(Exception): pass
+class MultipleWritersError(VerificationError): pass
+class InvalidGraphError(VerificationError): pass
+class InvalidValueError(VerificationError): pass
+class InvalidFormatError(VerificationError): pass
