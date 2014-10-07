@@ -1,4 +1,6 @@
 from pyvx.backend import *
+from cffi import FFI
+import os
 
 class Image(CoreImage):
 
@@ -482,3 +484,41 @@ def AccumulateImage(input):
     AccumulateImageNode(CoreGraph.get_current_graph(), input, accum)
     return accum
     
+
+ffi = FFI()
+ffi.cdef("""
+        struct vlcplay {
+            int width, height;
+            ...;
+        };
+
+        struct vlcplay *vlcplay_create(char *path);
+        void vlcplay_next(struct vlcplay *m, unsigned char *buf);
+        void vlcplay_release(struct vlcplay **m);
+         """)
+mydir = os.path.dirname(os.path.abspath(__file__))
+lib = ffi.verify("""
+                 #include "vlcplay.h"
+                 """, 
+                 extra_compile_args=['-O3', '-I' + mydir],
+                 sources=[os.path.join(mydir, f) for f in ['vlcplay.c']],
+                 libraries=['vlc'])
+
+class PlayNode(Node):
+    signature = 'in path, out output'
+
+    def verify(self):
+        self.player = lib.vlcplay_create(self.path)
+        self.output.ensure_shape(self.player.width, self.player.height)
+        self.output.ensure_color(FOURCC_RGB)
+        self.output.force()
+
+    def compile(self, code):
+        adr = int(ffi.cast('long', self.player))
+        code.add_block(self, "vlcplay_next((void *)0x%x, img.data);" % adr, img=self.output);
+        code.extra_link_args.append(ffi.verifier.modulefilename)
+
+def Play(path):
+    img = Image()
+    PlayNode(CoreGraph.get_current_graph(), path, img)
+    return img

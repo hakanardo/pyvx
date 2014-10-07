@@ -171,6 +171,8 @@ class CoreImage(object):
             return str(self.width * self.height)
         elif attr == "values":
             return str(self.width * self.height * self.color.items)
+        elif attr == "data":
+            return self.csym
         else:
             raise AttributeError
 
@@ -282,7 +284,8 @@ class CoreGraph(object):
             print str(code)
         inc = "#include <math.h>\n"
         lib = ffi.verify(inc + "void func(void) {" + str(code) + "}",
-                         extra_compile_args=["-O3", "-march=native", "-std=c99"])
+                         extra_compile_args=["-O3", "-march=native", "-std=c99"],
+                         extra_link_args=code.extra_link_args)
         self.compiled_func = lib.func
 
     def process(self):

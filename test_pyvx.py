@@ -186,3 +186,12 @@ class TestPyVx(object):
             assert sa1.data[i] == (1 < img <= 2)
             assert sa2.data[i] == (img == 3)
             assert sa3.data[i] == (img != 4)
+
+    def test_play(self):
+        g = Graph()
+        with g:
+            img = Play("t.avi")
+        g.verify()
+        g.process()
+        assert img.width == 400
+        assert img.height == 300
