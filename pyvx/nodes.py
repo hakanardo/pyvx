@@ -530,6 +530,7 @@ class PlayNode(Node):
 
     def __del__(self):
         # FXIME: lib.vlcplay_release(self.player)
+        pass
 
 def Play(path):
     img = Image()
@@ -551,6 +552,7 @@ class ShowNode(Node):
 
     def __del__(self):
         # FXIME: lib.glview_release(self.viewer)
+        pass
 
 
 def Show(img, name="View"):
