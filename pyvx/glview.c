@@ -1,14 +1,6 @@
 #include <string.h>
 #include "glview.h"
 
-struct glview {
-  int win;
-  char *name;
-  unsigned int tex;
-  int width, height;
-  int pixel_type, pixel_size;
-};
-
 static int glut_initiated=0;
 static struct glview **windows;
 static int n_windows=0;
@@ -115,4 +107,8 @@ void glview_next(struct glview *m, unsigned char *imageData) {
 
   //glutMainLoop();
   glutMainLoopEvent();
+}
+
+void glview_release(struct glview *m) {
+  free(m);
 }

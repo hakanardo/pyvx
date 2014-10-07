@@ -3,8 +3,16 @@
 
 #include <GL/glut.h>
 
-struct glview;
+struct glview {
+  int win;
+  char *name;
+  unsigned int tex;
+  int width, height;
+  int pixel_type, pixel_size;
+};
+
 struct glview *glview_create(int width, int height, int pixel_type, int pixel_size, char *name);
 void glview_next(struct glview *m, unsigned char *imageData);
+void glview_release(struct glview *m);
 
 #endif

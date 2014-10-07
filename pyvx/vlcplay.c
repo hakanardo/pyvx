@@ -78,20 +78,19 @@ void vlcplay_next(struct vlcplay *m, unsigned char *buf) {
 }
 
 
-void vlcplay_release(struct vlcplay **m) {
+void vlcplay_release(struct vlcplay *m) {
      /* Stop playing */
-     libvlc_media_player_stop ((*m)->mp);
-     pthread_mutex_unlock(&(*m)->thrd_mutex);
+     libvlc_media_player_stop (m->mp);
+     pthread_mutex_unlock(&m->thrd_mutex);
 
      /* Free the media_player */
-     libvlc_media_player_release ((*m)->mp);
+     libvlc_media_player_release (m->mp);
  
-     libvlc_release ((*m)->inst); 
+     libvlc_release (m->inst); 
 
-     if ((*m)->buf) free((*m)->buf);
-     pthread_mutex_destroy(&(*m)->main_mutex);
-     pthread_mutex_destroy(&(*m)->thrd_mutex);
+     if (m->buf) free(m->buf);
+     pthread_mutex_destroy(&m->main_mutex);
+     pthread_mutex_destroy(&m->thrd_mutex);
 
-     free(*m);
-     *m = NULL;
+     free(m);
 }

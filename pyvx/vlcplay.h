@@ -15,6 +15,6 @@ struct vlcplay {
 
 struct vlcplay * vlcplay_create(char *path);
 void vlcplay_next(struct vlcplay *m, unsigned char *buf);
-void vlcplay_release(struct vlcplay **m);
+void vlcplay_release(struct vlcplay *m);
 
 #endif

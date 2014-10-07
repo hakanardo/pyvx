@@ -494,12 +494,16 @@ ffi.cdef("""
 
         struct vlcplay *vlcplay_create(char *path);
         void vlcplay_next(struct vlcplay *m, unsigned char *buf);
-        void vlcplay_release(struct vlcplay **m);
+        void vlcplay_release(struct vlcplay *m);
 
 
-        struct glview;
+        struct glview {
+            int width, height;
+            ...;
+        };
         struct glview *glview_create(int width, int height, int pixel_type, int pixel_size, char *name);
         void glview_next(struct glview *m, unsigned char *imageData);
+        void glview_release(struct glview *m);
 
         #define GL_RGB ...
         #define GL_UNSIGNED_BYTE ...
@@ -518,9 +522,11 @@ class VlcError(Exception): pass
 
 class PlayNode(Node):
     signature = 'in path, out output'
+    player = None
 
     def verify(self):
-        self.player = lib.vlcplay_create(self.path)
+        if not self.player:
+            self.player = lib.vlcplay_create(self.path)
         if not self.player:
             raise VlcError
         self.output.ensure_shape(self.player.width, self.player.height)
@@ -533,8 +539,7 @@ class PlayNode(Node):
         code.extra_link_args.append(ffi.verifier.modulefilename)
 
     def __del__(self):
-        # FXIME: lib.vlcplay_release(self.player)
-        pass
+        lib.vlcplay_release(self.player)
 
 def Play(path):
     img = Image()
@@ -543,9 +548,14 @@ def Play(path):
 
 class ShowNode(Node):
     signature = "in input, in name"
+    viewer = None
 
     def verify(self):
         self.input.ensure_color(FOURCC_RGB)
+        if self.viewer:
+            if self.viewer.width == self.input.width and self.viewer.height == self.input.height:
+                return
+            #lib.vlcplay_release(self.viewer)
         self.viewer = lib.glview_create(self.input.width, self.input.height,
                                         lib.GL_RGB, lib.GL_UNSIGNED_BYTE, self.name)
 
@@ -555,8 +565,7 @@ class ShowNode(Node):
         code.extra_link_args.append(ffi.verifier.modulefilename)
 
     def __del__(self):
-        # FXIME: lib.glview_release(self.viewer)
-        pass
+        lib.glview_release(self.viewer)
 
 
 def Show(img, name="View"):
