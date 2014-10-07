@@ -195,3 +195,7 @@ class TestPyVx(object):
         g.process()
         assert img.width == 320
         assert img.height == 240
+        fcnt = 1
+        while not g.process():
+            fcnt += 1
+        assert fcnt == 135

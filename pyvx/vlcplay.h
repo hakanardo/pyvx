@@ -11,10 +11,11 @@ struct vlcplay {
     pthread_mutex_t main_mutex;
     pthread_mutex_t thrd_mutex;
     int player_error;
+    int player_done;
 };
 
 struct vlcplay * vlcplay_create(char *path);
-void vlcplay_next(struct vlcplay *m, unsigned char *buf);
+int vlcplay_next(struct vlcplay *m, unsigned char *buf);
 void vlcplay_release(struct vlcplay *m);
 
 #endif

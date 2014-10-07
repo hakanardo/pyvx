@@ -29,12 +29,17 @@ static void unlock(void *opaque, void *picture, void *const *planes) {
     pthread_mutex_unlock(&m->main_mutex);        
 }
 
-static void event(const struct libvlc_event_t *e, void *opaque) {
+static void error_event(const struct libvlc_event_t *e, void *opaque) {
     struct vlcplay *m = opaque;
     m->player_error = 1;
     pthread_mutex_unlock(&m->main_mutex);    
 }
 
+static void done_event(const struct libvlc_event_t *e, void *opaque) {
+    struct vlcplay *m = opaque;
+    m->player_done = 1;
+    pthread_mutex_unlock(&m->main_mutex);    
+}
 
 
 
@@ -46,10 +51,12 @@ struct vlcplay * vlcplay_create(char *path) {
     pthread_mutex_lock(&mod->main_mutex);
 
 
-    const char *args[] = {"--no-drop-late-frames", "--no-skip-frames"};
-    mod->inst = libvlc_new (2, args);
+    const char *args[] = {"--no-drop-late-frames", "--no-skip-frames",
+                          "-I", "dummy"};
+    mod->inst = libvlc_new (4, args);
+    if (!mod->inst) return NULL;
     mod->buf = NULL;
-    mod->player_error = 0;
+    mod->player_error = mod->player_done = 0;
     //m = libvlc_media_new_location (mod->inst, "http://mycool.movie.com/test.mov");
     m = libvlc_media_new_path (mod->inst, path);
     if (!m) return NULL;
@@ -60,21 +67,25 @@ struct vlcplay * vlcplay_create(char *path) {
     libvlc_video_set_callbacks(mod->mp, lock, unlock, NULL, mod);
     libvlc_video_set_format_callbacks(mod->mp, setup, NULL);
     libvlc_event_manager_t *vlcEventManager = libvlc_media_player_event_manager(mod->mp);
-    libvlc_event_attach(vlcEventManager, libvlc_MediaPlayerEncounteredError, event, mod);
+    libvlc_event_attach(vlcEventManager, libvlc_MediaPlayerEncounteredError, error_event, mod);
+    libvlc_event_attach(vlcEventManager, libvlc_MediaPlayerEndReached, done_event, mod);
     if (libvlc_media_player_play (mod->mp)) return NULL;
 
     pthread_mutex_lock (&mod->main_mutex);
     if (mod->player_error) {
-        vlcplay_release(&mod);
+        vlcplay_release(mod);
         return NULL;
     }
     return mod;
 }
 
-void vlcplay_next(struct vlcplay *m, unsigned char *buf) {
+int vlcplay_next(struct vlcplay *m, unsigned char *buf) {
+    if (m->player_done) return -1;
     m->buf = buf;
     pthread_mutex_unlock(&m->thrd_mutex);
     pthread_mutex_lock(&m->main_mutex);
+    if (m->player_done) return -1;
+    return 0;
 }
 
 

@@ -279,17 +279,17 @@ class CoreGraph(object):
             assert not n.optimized_out
             n.compile(code)
         ffi = FFI()
-        ffi.cdef("void func(void);")
+        ffi.cdef("int func(void);")
         if self.show_source:
             print str(code)
         inc = "#include <math.h>\n"
-        lib = ffi.verify(inc + "void func(void) {" + str(code) + "}",
+        lib = ffi.verify(inc + "int func(void) {" + str(code) + "return 0;}",
                          extra_compile_args=["-O3", "-march=native", "-std=c99"],
                          extra_link_args=code.extra_link_args)
         self.compiled_func = lib.func
 
     def process(self):
-        self.compiled_func()
+        return self.compiled_func()
 
 class Scheduler(object):
     def __init__(self, nodes, images):

@@ -1,4 +1,5 @@
 from pyvx import *
+from time import sleep
 
 def main():
     g = Graph()
@@ -6,8 +7,8 @@ def main():
         img = Play("test.avi")
         Show(img)
     g.verify()
-    while True:
-        g.process()
+    while not g.process():
+        pass
 
 if __name__ == '__main__':
     main()
