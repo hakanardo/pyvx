@@ -514,11 +514,15 @@ lib = ffi.verify("""
                  sources=[os.path.join(mydir, f) for f in ['vlcplay.c', 'glview.c']],
                  libraries=['vlc', 'glut', 'GL', 'GLU'])
 
+class VlcError(Exception): pass
+
 class PlayNode(Node):
     signature = 'in path, out output'
 
     def verify(self):
         self.player = lib.vlcplay_create(self.path)
+        if not self.player:
+            raise VlcError
         self.output.ensure_shape(self.player.width, self.player.height)
         self.output.ensure_color(FOURCC_RGB)
         self.output.force()

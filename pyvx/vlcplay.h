@@ -10,6 +10,7 @@ struct vlcplay {
     unsigned char *buf;
     pthread_mutex_t main_mutex;
     pthread_mutex_t thrd_mutex;
+    int player_error;
 };
 
 struct vlcplay * vlcplay_create(char *path);
