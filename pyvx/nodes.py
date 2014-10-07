@@ -495,14 +495,24 @@ ffi.cdef("""
         struct vlcplay *vlcplay_create(char *path);
         void vlcplay_next(struct vlcplay *m, unsigned char *buf);
         void vlcplay_release(struct vlcplay **m);
+
+
+        struct glview;
+        struct glview *glview_create(int width, int height, int pixel_type, int pixel_size, char *name);
+        void glview_next(struct glview *m, unsigned char *imageData);
+
+        #define GL_RGB ...
+        #define GL_UNSIGNED_BYTE ...
+
          """)
 mydir = os.path.dirname(os.path.abspath(__file__))
 lib = ffi.verify("""
                  #include "vlcplay.h"
+                 #include "glview.h"
                  """, 
                  extra_compile_args=['-O3', '-I' + mydir],
-                 sources=[os.path.join(mydir, f) for f in ['vlcplay.c']],
-                 libraries=['vlc'])
+                 sources=[os.path.join(mydir, f) for f in ['vlcplay.c', 'glview.c']],
+                 libraries=['vlc', 'glut', 'GL', 'GLU'])
 
 class PlayNode(Node):
     signature = 'in path, out output'
@@ -518,7 +528,30 @@ class PlayNode(Node):
         code.add_block(self, "vlcplay_next((void *)0x%x, img.data);" % adr, img=self.output);
         code.extra_link_args.append(ffi.verifier.modulefilename)
 
+    def __del__(self):
+        # FXIME: lib.vlcplay_release(self.player)
+
 def Play(path):
     img = Image()
     PlayNode(CoreGraph.get_current_graph(), path, img)
     return img
+
+class ShowNode(Node):
+    signature = "in input, in name"
+
+    def verify(self):
+        self.input.ensure_color(FOURCC_RGB)
+        self.viewer = lib.glview_create(self.input.width, self.input.height,
+                                        lib.GL_RGB, lib.GL_UNSIGNED_BYTE, self.name)
+
+    def compile(self, code):
+        adr = int(ffi.cast('long', self.viewer))
+        code.add_block(self, "glview_next((void *)0x%x, img.data);" % adr, img=self.input);
+        code.extra_link_args.append(ffi.verifier.modulefilename)
+
+    def __del__(self):
+        # FXIME: lib.glview_release(self.viewer)
+
+
+def Show(img, name="View"):
+    ShowNode(CoreGraph.get_current_graph(), img, name)
