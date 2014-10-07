@@ -190,8 +190,8 @@ class TestPyVx(object):
     def test_play(self):
         g = Graph()
         with g:
-            img = Play("t.avi")
+            img = Play("test.avi")
         g.verify()
         g.process()
-        assert img.width == 400
-        assert img.height == 300
+        assert img.width == 320
+        assert img.height == 240
