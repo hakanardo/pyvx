@@ -69,6 +69,7 @@ struct vlcplay * vlcplay_create(char *path) {
     libvlc_event_manager_t *vlcEventManager = libvlc_media_player_event_manager(mod->mp);
     libvlc_event_attach(vlcEventManager, libvlc_MediaPlayerEncounteredError, error_event, mod);
     libvlc_event_attach(vlcEventManager, libvlc_MediaPlayerEndReached, done_event, mod);
+    //libvlc_media_player_set_pause(mod->mp, 1);
     if (libvlc_media_player_play (mod->mp)) return NULL;
 
     pthread_mutex_lock (&mod->main_mutex);
@@ -82,6 +83,7 @@ struct vlcplay * vlcplay_create(char *path) {
 int vlcplay_next(struct vlcplay *m, unsigned char *buf) {
     if (m->player_done) return -1;
     m->buf = buf;
+    //libvlc_media_player_next_frame(m->mp);
     pthread_mutex_unlock(&m->thrd_mutex);
     pthread_mutex_lock(&m->main_mutex);
     if (m->player_done) return -1;
