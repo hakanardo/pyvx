@@ -13,7 +13,7 @@ class OpenVxApi(object):
         typedef enum {
             VX_ERROR_MULTIPLE_WRITERS, VX_ERROR_INVALID_GRAPH, 
             VX_ERROR_INVALID_VALUE, VX_ERROR_INVALID_FORMAT,
-            VX_SUCCESS
+            VX_SUCCESS, VX_ERROR_GRAPH_ABANDONED
         } vx_status;
     """
     
@@ -61,7 +61,8 @@ class OpenVxApi(object):
 
     @export("vx_status(vx_graph)")
     def vxProcessGraph(graph):
-        graph.process()
+        if graph.process() == -1: # FIXME: Make this "return graph.process()"
+            return OpenVxApi.pyapi.lib.VX_ERROR_GRAPH_ABANDONED
         return OpenVxApi.pyapi.lib.VX_SUCCESS
     
     @export("void(vx_context *)", retrive_args=False)
@@ -95,7 +96,6 @@ class OpenVxApi(object):
 
     @export("vx_node(vx_graph, char *, vx_image)")
     def vxPlayNode(graph, fn, output):
-        import pdb; pdb.set_trace()
         return PlayNode(graph, fn, output)
 
     @export("vx_node(vx_graph, vx_image, char *)")
