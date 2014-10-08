@@ -44,6 +44,8 @@ static void done_event(const struct libvlc_event_t *e, void *opaque) {
 
 
 struct vlcplay * vlcplay_create(char *path) {
+    fprintf(stderr, "create\n");
+
     libvlc_media_t *m;
     struct vlcplay *mod = malloc(sizeof(struct vlcplay));
     pthread_mutex_init(&mod->main_mutex, NULL);
@@ -70,7 +72,9 @@ struct vlcplay * vlcplay_create(char *path) {
     libvlc_event_attach(vlcEventManager, libvlc_MediaPlayerEncounteredError, error_event, mod);
     libvlc_event_attach(vlcEventManager, libvlc_MediaPlayerEndReached, done_event, mod);
     //libvlc_media_player_set_pause(mod->mp, 1);
+    fprintf(stderr, "go\n");
     if (libvlc_media_player_play (mod->mp)) return NULL;
+    fprintf(stderr, "lock\n");
 
     pthread_mutex_lock (&mod->main_mutex);
     if (mod->player_error) {
