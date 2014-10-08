@@ -186,7 +186,9 @@ class PythonApi(object):
 
                 static void __initialize(void) __attribute__((constructor));
                 void __initialize(void) {
+                  printf("init\\n");
                   Py_Initialize();
+                  PyEval_InitThreads();                  
                   PyRun_SimpleString("import sys\\n"
                                      "sys.path.append('.')\\n"
                                      "from pyvx.capi import OpenVxApi\\n"
