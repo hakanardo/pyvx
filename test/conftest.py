@@ -1,5 +1,5 @@
 import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path = [os.path.dirname(os.path.dirname(__file__))] + sys.path
 
 def pytest_addoption(parser):
     group = parser.getgroup("pyvx")

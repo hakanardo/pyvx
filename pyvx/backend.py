@@ -4,6 +4,8 @@ from cffi import FFI
 from collections import defaultdict
 from itertools import chain
 import threading, os
+from tempfile import mkdtemp
+from shutil import rmtree
 
 class Context(object):
     references = []
@@ -288,12 +290,17 @@ class CoreGraph(object):
             #include "vlcplay.h"
             #include "glview.h"            
         """
+        tmpdir = mkdtemp()
         mydir = os.path.dirname(os.path.abspath(__file__))
-        lib = ffi.verify(inc + head + 
-                         "int func(void) {" + str(code) + "return VX_SUCCESS;}",
-                         extra_compile_args=["-O3", "-march=native", "-std=c99",
-                                             "-I" + mydir],
-                         extra_link_args=code.extra_link_args)
+        try:
+            lib = ffi.verify(inc + head + 
+                             "int func(void) {" + str(code) + "return VX_SUCCESS;}",
+                             extra_compile_args=["-O3", "-march=native", "-std=c99",
+                                                 "-I" + mydir],
+                             extra_link_args=code.extra_link_args,
+                             tmpdir=tmpdir)
+        finally:
+            rmtree(tmpdir)
         self.compiled_func = lib.func
 
     def process(self):

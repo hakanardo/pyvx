@@ -391,7 +391,9 @@ lib = ffi.verify("""
                  """, 
                  extra_compile_args=['-O3', '-I' + mydir],
                  sources=[os.path.join(mydir, f) for f in ['vlcplay.c', 'glview.c']],
-                 libraries=['vlc', 'glut', 'GL', 'GLU'])
+                 libraries=['vlc', 'glut', 'GL', 'GLU'],
+                 modulename='_pyvx_nodes_ffi_',
+                 )
 
 class PlayNode(Node):
     signature = 'in path, out output'
