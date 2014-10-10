@@ -150,6 +150,6 @@ class VX_ERROR_INVALID_VALUE(VerificationError): pass
 class VX_ERROR_INVALID_FORMAT(VerificationError): pass
 class VX_ERROR_GRAPH_ABANDONED(Exception): pass
 class VX_SUCCESS(object): pass
-vx_status_codes = [VX_ERROR_MULTIPLE_WRITERS, VX_ERROR_INVALID_GRAPH, 
+vx_status_codes = [VX_SUCCESS, VX_ERROR_MULTIPLE_WRITERS, VX_ERROR_INVALID_GRAPH, 
                    VX_ERROR_INVALID_VALUE, VX_ERROR_INVALID_FORMAT,
-                   VX_SUCCESS, VX_ERROR_GRAPH_ABANDONED]
+                   VX_ERROR_GRAPH_ABANDONED]

@@ -1,5 +1,5 @@
 from pyvx.types import *
-from pyvx.codegen import Code
+from pyvx.codegen import Code, Enum
 from cffi import FFI
 from collections import defaultdict
 from itertools import chain
@@ -274,7 +274,9 @@ class CoreGraph(object):
                     long subsample(long val) {
                         return val & (~1);
                     }
-                    \n''' + imgs)
+                    \n''' + 
+                    Enum(*vx_status_codes).typedef('vx_status') + "\n\n" + 
+                    imgs + "\n")
         for n in self.nodes:
             assert not n.optimized_out
             n.compile(code)
@@ -289,7 +291,9 @@ class CoreGraph(object):
         self.compiled_func = lib.func
 
     def process(self):
-        return self.compiled_func()
+        r = self.compiled_func()
+        r = vx_status_codes[r]
+        return r
 
 class Scheduler(object):
     def __init__(self, nodes, images):

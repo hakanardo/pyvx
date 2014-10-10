@@ -113,9 +113,7 @@ class PythonApi(object):
         for n in dir(api):
             item = getattr(api, n)
             if isinstance(item, Enum):
-                items = ', '.join('%s=%d' % (item.prefix + e.__name__, i) 
-                                  for i, e in enumerate(item))
-                typedefs.append('typedef enum {' + items + '} ' + n + ';')
+                self.typedefs.append(item.typedef(n))
                 self.enum_types.add(n)
             elif isinstance(item, Reference):
                 s = 'struct _%s *' % n
@@ -254,6 +252,11 @@ class Enum(list):
     def __init__(self, *args, **kwargs):
         self.prefix = kwargs.get('prefix', '')
         return list.__init__(self, args)
+    def typedef(self, n):
+        items = ', '.join('%s=%d' % (self.prefix + e.__name__, i) 
+                          for i, e in enumerate(self))
+        return 'typedef enum {' + items + '} ' + n + ';'
+
 
 class Reference(object): pass
 

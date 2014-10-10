@@ -533,7 +533,7 @@ class PlayNode(Node):
 
     def compile(self, code):
         adr = int(ffi.cast('long', self.player))
-        code.add_block(self, "if (vlcplay_next((void *)0x%x, img.data)) return -1;" % adr, img=self.output);
+        code.add_block(self, "if (vlcplay_next((void *)0x%x, img.data)) return VX_ERROR_GRAPH_ABANDONED;" % adr, img=self.output);
         code.extra_link_args.append(ffi.verifier.modulefilename)
 
     def __del__(self):
