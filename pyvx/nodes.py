@@ -169,7 +169,7 @@ class ElementwiseNode(Node):
             img.ensure_similar(inputs[0])
             if self.convert_policy == CONVERT_POLICY_SATURATE:
                 if img.color.ctype not in self.small_ints:
-                    raise InvalidFormatError("Saturated arithmetic only supported for 8- and 16- bit integers.")
+                    raise VX_ERROR_INVALID_FORMAT("Saturated arithmetic only supported for 8- and 16- bit integers.")
 
     def tmptype(self, ctype):
         if ctype in self.small_ints:
@@ -351,7 +351,7 @@ class ChannelExtractNode(Node):
 
     def verify(self):
         if self.channel not in self.input.color.channels:
-            raise InvalidFormatError(
+            raise VX_ERROR_INVALID_FORMAT(
                 'Cant extract channel %s from %s image.' % (
                     self.channel.__name__, self.input.color.__name__))
         self.output.ensure_color(FOURCC_U8)        
@@ -518,8 +518,6 @@ lib = ffi.verify("""
                  sources=[os.path.join(mydir, f) for f in ['vlcplay.c', 'glview.c']],
                  libraries=['vlc', 'glut', 'GL', 'GLU'])
 
-class VlcError(Exception): pass
-
 class PlayNode(Node):
     signature = 'in path, out output'
     player = None
@@ -528,7 +526,7 @@ class PlayNode(Node):
         if not self.player:
             self.player = lib.vlcplay_create(self.path)
         if not self.player:
-            raise VlcError
+            raise VX_ERROR_INVALID_VALUE("Unable to decode '%s' using vlc." % self.path)
         self.output.ensure_shape(self.player.width, self.player.height)
         self.output.ensure_color(FOURCC_RGB)
         self.output.force()

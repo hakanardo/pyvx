@@ -71,12 +71,12 @@ class CoreImage(object):
         if self.height == 0:
             self.height = height
         if self.width != width or self.height != height:
-            raise InvalidFormatError
+            raise VX_ERROR_INVALID_FORMAT
 
     def ensure_color(self, color):
         self.suggest_color(color)
         if  self.color != color:
-            raise InvalidFormatError            
+            raise VX_ERROR_INVALID_FORMAT            
 
     def suggest_color(self, color):
         if self.color == FOURCC_VIRT:
@@ -86,7 +86,7 @@ class CoreImage(object):
         self.ensure_shape(image)
         self.suggest_color(image.color)
         if self.color.items != image.color.items:
-            raise InvalidFormatError
+            raise VX_ERROR_INVALID_FORMAT
 
     def alloc(self):
         if self.optimized_out:
@@ -108,7 +108,7 @@ class CoreImage(object):
             return self.csym
         if channel is None:
             if self.color.items != 1:
-                raise InvalidFormatError("Cant access pixel of multi channel image without specifying channel.")
+                raise VX_ERROR_INVALID_FORMAT("Cant access pixel of multi channel image without specifying channel.")
             channel = CHANNEL_0
         else:                
             channel = eval(channel.upper())
@@ -189,7 +189,7 @@ class ConstantImage(CoreImage):
         return str(self.value)
 
     def setitem(self, node, channel, idx, op, value):
-        raise InvalidGraphError("ConstantImage's are not writeable.")
+        raise VX_ERROR_INVALID_GRAPH("ConstantImage's are not writeable.")
 
     def alloc(self):
         self.cdeclaration = ''
@@ -243,9 +243,9 @@ class CoreGraph(object):
         # Virtual data produced
         for d in self.images:
             if d.virtual and d.producer is None:
-                raise InvalidGraphError("Virtual data never produced.")
+                raise VX_ERROR_INVALID_GRAPH("Virtual data never produced.")
             if d.color == FOURCC_VIRT:
-                raise InvalidFormatError("FOURCC_VIRT not resolved into specific type.")
+                raise VX_ERROR_INVALID_FORMAT("FOURCC_VIRT not resolved into specific type.")
 
         self.optimize()
         self.compile()
@@ -258,7 +258,7 @@ class CoreGraph(object):
             scheduler.fire(n)
             one_order.append(n)
         if scheduler.blocked_nodes:
-            raise InvalidGraphError("Loops not allowed in the graph.")
+            raise VX_ERROR_INVALID_GRAPH("Loops not allowed in the graph.")
         return one_order
 
     def compile(self):
@@ -366,21 +366,21 @@ class Node(object):
         # Signle writer
         for d in self.outputs + self.inouts:
             if d.producer is not self:
-                raise MultipleWritersError
+                raise VX_ERROR_MULTIPLE_WRITERS
 
         # Bidirection data not virtual
         for d in self.inouts:
             if d.virtual:
-                raise InvalidGraphError("Bidirection data cant be virtual.")
+                raise VX_ERROR_INVALID_GRAPH("Bidirection data cant be virtual.")
 
         for d in self.inputs:
             if isinstance(d, CoreImage) and (not d.width or not d.height):
-                raise InvalidFormatError
+                raise VX_ERROR_INVALID_FORMAT
         self.verify()
 
     def ensure(self, condition):
         if not condition:
-            raise InvalidFormatError
+            raise VX_ERROR_INVALID_FORMAT
 
 class MergedNode(Node):
 

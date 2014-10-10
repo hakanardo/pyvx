@@ -144,7 +144,9 @@ class ROUND_POLICY_TO_ZERO: pass
 class ROUND_POLICY_TO_NEAREST_EVEN: pass
 
 class VerificationError(Exception): pass
-class MultipleWritersError(VerificationError): pass
-class InvalidGraphError(VerificationError): pass
-class InvalidValueError(VerificationError): pass
-class InvalidFormatError(VerificationError): pass
+class VX_ERROR_MULTIPLE_WRITERS(VerificationError): pass
+class VX_ERROR_INVALID_GRAPH(VerificationError): pass
+class VX_ERROR_INVALID_VALUE(VerificationError): pass
+class VX_ERROR_INVALID_FORMAT(VerificationError): pass
+class VX_ERROR_GRAPH_ABANDONED(VerificationError): pass
+class VX_SUCCESS(object): pass
