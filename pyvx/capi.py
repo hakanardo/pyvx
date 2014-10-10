@@ -9,14 +9,8 @@ def export(signature, add_ret_to_arg=0, **kwargs):
 
 
 class OpenVxApi(object):
-    cdef = """
-        typedef enum {
-            VX_ERROR_MULTIPLE_WRITERS, VX_ERROR_INVALID_GRAPH, 
-            VX_ERROR_INVALID_VALUE, VX_ERROR_INVALID_FORMAT,
-            VX_SUCCESS, VX_ERROR_GRAPH_ABANDONED
-        } vx_status;
-    """
-    
+    cdef = ''
+
     vx_context = Reference()
     vx_image = Reference()
     vx_graph = Reference()
@@ -28,6 +22,7 @@ class OpenVxApi(object):
     vx_channel = Enum(CHANNEL_0, CHANNEL_1, CHANNEL_2, CHANNEL_3,
                       CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_A,
                       CHANNEL_Y, CHANNEL_U, CHANNEL_V, prefix="VX_")
+    vx_status = Enum(*vx_status_codes)
 
     @export("vx_context()", add_ret_to_arg=None)
     def vxCreateContext():
@@ -49,21 +44,15 @@ class OpenVxApi(object):
     def vxVerifyGraph(graph):
         try:
             graph.verify()
-        except InvalidGraphError:
-            return OpenVxApi.pyapi.lib.VX_ERROR_INVALID_GRAPH
-        except InvalidValueError:
-            return OpenVxApi.pyapi.lib.VX_ERROR_INVALID_VALUE
-        except InvalidFormatError:
-            return OpenVxApi.pyapi.lib.VX_ERROR_INVALID_FORMAT
-        except MultipleWritersError: 
-            return OpenVxApi.pyapi.lib.VX_ERROR_MULTIPLE_WRITERS
-        return OpenVxApi.pyapi.lib.VX_SUCCESS
+        except VerificationError as e:
+            return e.__class__
+        return VX_SUCCESS
 
     @export("vx_status(vx_graph)")
     def vxProcessGraph(graph):
         if graph.process() == -1: # FIXME: Make this "return graph.process()"
-            return OpenVxApi.pyapi.lib.VX_ERROR_GRAPH_ABANDONED
-        return OpenVxApi.pyapi.lib.VX_SUCCESS
+            return VX_ERROR_GRAPH_ABANDONED
+        return VX_SUCCESS
     
     @export("void(vx_context *)", retrive_args=False)
     def vxReleaseContext(context):

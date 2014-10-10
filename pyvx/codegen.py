@@ -149,6 +149,11 @@ class PythonApi(object):
 
     def make_callback(self, tp, fn):
         store_result = fn.store_result and tp.result.cname in self.reference_types
+        if fn.store_result and tp.result.cname in self.enum_types:
+            assert not store_result
+            enum_result = tp.result.cname
+        else:
+            enum_result = None
         if fn.retrive_args:       
             retrive_refs = tuple([i for i,a in enumerate(tp.args) 
                                    if a.cname in self.reference_types])
@@ -168,7 +173,10 @@ class PythonApi(object):
                 r = self.store(r)
                 if add_ret_to_arg is not None:
                     args[add_ret_to_arg].add_reference(r)
+            elif enum_result:
+                r = getattr(self.api, enum_result).index(r)
             return r
+        f.__name__ = fn.__name__
         return self.ffi.callback(tp, f)
 
 

@@ -25,7 +25,7 @@ int main(int ac, char **av) {
             status = vxProcessGraph(graph);
         }
     } else {
-        fprintf(stderr, "Verification failed.\n");
+        fprintf(stderr, "Verification failed: %d\n", status);
     }
     vxReleaseContext(&context); // this will release everything 
     return 0;
