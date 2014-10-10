@@ -54,10 +54,10 @@ class Image(CoreImage):
         return ConstantImage(self.width, self.height, other)
 
     def __add__(self, other):
-        return Add(self, self.make_similar_image(other))
+        return BinaryOperation(self, '+', self.make_similar_image(other))
 
     def __sub__(self, other):
-        return Subtract(self, self.make_similar_image(other))
+        return BinaryOperation(self, '-', self.make_similar_image(other))
 
     def __mul__(self, other):
         return Multiply(self, self.make_similar_image(other))
@@ -69,7 +69,7 @@ class Image(CoreImage):
     __rmul__ = __mul__
 
     def __rsub__(self, other):
-        return Subtract(self.make_similar_image(other), self)
+        return BinaryOperation(self.make_similar_image(other), '-', self)
 
     def __rdiv__(self, other):
         return Divide(self.make_similar_image(other), self)
@@ -84,10 +84,10 @@ class Image(CoreImage):
         return Power(self.make_similar_image(other), self)
 
     def __mod__(self, other):
-        return Modulus(self, self.make_similar_image(other))
+        return BinaryOperation(self, '%', self.make_similar_image(other))
 
     def __rmod__(self, other):
-        return Modulus(self.make_similar_image(other), self)
+        return BinaryOperation(self.make_similar_image(other), '%', self)
 
     def __truediv__(self, other):
         res = TrueDivide(self, self.make_similar_image(other))
@@ -98,34 +98,34 @@ class Image(CoreImage):
         return res
 
     def __lshift__(self, other):
-        return LeftShift(self, self.make_similar_image(other))
+        return BinaryOperation(self, "<<", self.make_similar_image(other))
 
     def __rlshift__(self, other):
-        return LeftShift(self.make_similar_image(other), self)
+        return BinaryOperation(self.make_similar_image(other), "<<", self)
 
     def __rshift__(self, other):
-        return RightShift(self, self.make_similar_image(other))
+        return BinaryOperation(self, ">>", self.make_similar_image(other))
 
     def __rrshift__(self, other):
-        return RightShift(self.make_similar_image(other), self)
+        return BinaryOperation(self.make_similar_image(other), ">>", self)
 
     def __and__(self, other):
-        return And(self, self.make_similar_image(other))
+        return BinaryOperation(self, "&", self.make_similar_image(other))
 
     def __rand__(self, other):
-        return And(self.make_similar_image(other), self)
+        return BinaryOperation(self.make_similar_image(other), "&", self)
 
     def __or__(self, other):
-        return Or(self, self.make_similar_image(other))
+        return BinaryOperation(self, "|", self.make_similar_image(other))
 
     def __ror__(self, other):
-        return Or(self.make_similar_image(other), self)
+        return BinaryOperation(self.make_similar_image(other), "|", self)
 
     def __xor__(self, other):
-        return Xor(self, self.make_similar_image(other))
+        return BinaryOperation(self, "^", self.make_similar_image(other))
 
     def __xror__(self, other):
-        return Xor(self.make_similar_image(other), self)
+        return XBinaryOperationor(self.make_similar_image(other), "^", self)
 
     def __lt__(self, other):
         return Compare(self, "<", self.make_similar_image(other))
@@ -207,22 +207,16 @@ class MergedElementwiseNode(MergedNode):
         code.indent_level -= 4
         code.add_code("}\n")
 
-class AddNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
-    body = "out = in1 + in2;"
+class BinaryOperationNode(ElementwiseNode):
+    signature = "in in1, in op, in in2, in convert_policy, out out"
+    @property
+    def body(self):
+        return "out = in1 %s in2;" % self.op
 
-def Add(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
+def BinaryOperation(in1, op, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
-    AddNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
-    return res
-
-class SubtractNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
-    body = "out = in1 - in2;"
-
-def Subtract(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    SubtractNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
+    BinaryOperationNode(CoreGraph.get_current_graph(), 
+                        in1, op, in2, convert_policy, res)
     return res
 
 class MultiplyNode(ElementwiseNode):
@@ -275,60 +269,6 @@ class PowerNode(ElementwiseNode):
 def Power(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
     res = Image()
     PowerNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
-    return res
-
-class ModulusNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
-    body = "out = in1 % in2;"
-
-def Modulus(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    ModulusNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
-    return res
-
-class LeftShiftNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
-    body = "out = in1 << in2;"
-
-def LeftShift(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    LeftShiftNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
-    return res
-
-class RightShiftNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
-    body = "out = in1 >> in2;"
-
-def RightShift(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    RightShiftNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
-    return res
-
-class AndNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
-    body = "out = in1 & in2;"
-
-def And(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    AndNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
-    return res
-
-class OrNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
-    body = "out = in1 | in2;"
-
-def Or(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    OrNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
-    return res
-
-class XorNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
-    body = "out = in1 ^ in2;"
-
-def Xor(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    XorNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
     return res
 
 class CompareNode(ElementwiseNode):
