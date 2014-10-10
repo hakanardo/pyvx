@@ -324,6 +324,9 @@ class Scheduler(object):
                 self.blocked_nodes.remove(n)
                 self.loaded_nodes.add(n)
 
+def parse_signature(signature):
+    sig = [v.strip().split(' ') for v in signature.split(',')]
+    return [(v[0].lower(), v[-1]) for v in sig]
 
 class Node(object):
     border_mode = BORDER_MODE_UNDEFINED
@@ -336,9 +339,7 @@ class Node(object):
         self.graph = graph
         self.inputs, self.outputs, self.inouts = [], [], []
         self.input_images, self.output_images, self.inout_images = {}, {}, {}
-        for i, v in enumerate(self.signature.split(',')):
-            v = v.strip().split(' ')
-            direction, name = v[0], v[-1]
+        for i, (direction, name) in enumerate(parse_signature(self.signature)):
             if i < len(args):
                 val = args[i]
                 if name in kwargs:

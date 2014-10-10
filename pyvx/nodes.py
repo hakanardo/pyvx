@@ -213,14 +213,10 @@ class BinaryOperationNode(ElementwiseNode):
     def body(self):
         return "out = in1 %s in2;" % self.op
 
-def BinaryOperation(in1, op, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    BinaryOperationNode(CoreGraph.get_current_graph(), 
-                        in1, op, in2, convert_policy, res)
-    return res
-
 class MultiplyNode(ElementwiseNode):
     signature = "in in1, in in2, in scale, in convert_policy, in round_policy, out out"
+    scale = 1
+    round_policy = ROUND_POLICY_TO_ZERO
 
     @property
     def body(self):
@@ -231,13 +227,10 @@ class MultiplyNode(ElementwiseNode):
         else:
             raise NotImplementedError
 
-def Multiply(in1, in2, scale=1, convert_policy=CONVERT_POLICY_TRUNCATE, round_policy=ROUND_POLICY_TO_ZERO):
-    res = Image()
-    MultiplyNode(CoreGraph.get_current_graph(), in1, in2, scale, convert_policy, round_policy, res)
-    return res
-
 class DivideNode(ElementwiseNode):
     signature = "in in1, in in2, in scale, in convert_policy, in round_policy, out out"
+    scale = 1
+    round_policy = ROUND_POLICY_TO_ZERO
 
     @property
     def body(self):
@@ -248,43 +241,24 @@ class DivideNode(ElementwiseNode):
         else:
             raise NotImplementedError
 
-def Divide(in1, in2, scale=1, convert_policy=CONVERT_POLICY_TRUNCATE, round_policy=ROUND_POLICY_TO_ZERO):
-    res = Image()
-    DivideNode(CoreGraph.get_current_graph(), in1, in2, scale, convert_policy, round_policy, res)
-    return res
-
 class TrueDivideNode(ElementwiseNode):
     signature = "in in1, in in2, out out"
     body = "out = ((double) in1) / ((double) in2);"
 
-def TrueDivide(in1, in2):
-    res = Image(color=FOURCC_F64)
-    TrueDivideNode(CoreGraph.get_current_graph(), in1, in2, res)
-    return res
+    def verify(self):
+        self.out.suggest_color(FOURCC_F64)
+        ElementwiseNode.verify(self)
 
 class PowerNode(ElementwiseNode):
     signature = "in in1, in in2, in convert_policy, out out"
     body = "out = pow(in1, in2);"
 
-def Power(in1, in2, convert_policy=CONVERT_POLICY_TRUNCATE):
-    res = Image()
-    PowerNode(CoreGraph.get_current_graph(), in1, in2, convert_policy, res)
-    return res
-
-class CompareNode(ElementwiseNode):
+class CompareNode(BinaryOperationNode):
     signature = "in in1, in op, in in2, out out"
 
-    @property
-    def body(self):
-        return "out = in1 %s in2;" % self.op
-
-def Compare(in1, op, in2):
-    res = Image()
-    res.color = FOURCC_U8
-    CompareNode(CoreGraph.get_current_graph(), in1, op, in2, res)
-    return res
-
-
+    def verify(self):
+        self.out.suggest_color(FOURCC_U8)
+        ElementwiseNode.verify(self)
 
 class ChannelExtractNode(Node):
     signature = "in input, in channel, out output"
@@ -305,14 +279,6 @@ class ChannelExtractNode(Node):
             """ % self.channel.__name__.lower(), 
             input=self.input, out=self.output)
 
-
-def ChannelExtract(input, channel):
-    output = Image()
-    ChannelExtractNode(CoreGraph.get_current_graph(),
-                          input, channel, output)
-    return output
-
-
 class Gaussian3x3Node(Node):
     signature = "in input, out output"
 
@@ -330,12 +296,6 @@ class Gaussian3x3Node(Node):
                 }
             }
             """, img=self.input, res=self.output)
-
-def Gaussian3x3(input):
-    output = Image()
-    Gaussian3x3Node(CoreGraph.get_current_graph(), input, output)
-    return output
-
 
 class Sobel3x3Node(Node):
     signature = 'in input, out output_x, out output_y'
@@ -364,12 +324,6 @@ class Sobel3x3Node(Node):
             }
             """, img=self.input, dx=self.output_x, dy=self.output_y)
 
-def Sobel3x3(input):
-    dx, dy = Image(), Image()
-    Sobel3x3Node(CoreGraph.get_current_graph(), input, dx, dy)
-    return dx, dy
-
-
 class MagnitudeNode(ElementwiseNode):
     signature = 'in grad_x, in grad_y, out mag'
     convert_policy = CONVERT_POLICY_SATURATE
@@ -388,13 +342,6 @@ class MagnitudeNode(ElementwiseNode):
 
     body = "mag = sqrt( grad_x * grad_x + grad_y * grad_y );"
 
-
-def Magnitude(grad_x, grad_y):
-    mag = Image()
-    MagnitudeNode(CoreGraph.get_current_graph(), grad_x, grad_y, mag)
-    return mag
-
-
 class PhaseNode(ElementwiseNode):
     signature = 'in grad_x, in grad_y, out orientation'
 
@@ -407,23 +354,11 @@ class PhaseNode(ElementwiseNode):
 
     body = "orientation = (atan2(grad_y, grad_x) + M_PI) * (255.0 / 2.0 / M_PI);"
 
-def Phase(grad_x, grad_y):
-    ph = Image()
-    PhaseNode(CoreGraph.get_current_graph(), grad_x, grad_y, ph)
-    return ph
-
-
 class AccumulateImageNode(Node):
     signature = 'in input, inout accum'
 
     def verify(self):
         pass
-
-def AccumulateImage(input):
-    accum = Image()
-    AccumulateImageNode(CoreGraph.get_current_graph(), input, accum)
-    return accum
-    
 
 ffi = FFI()
 ffi.cdef("""
@@ -487,6 +422,7 @@ def Play(path):
 class ShowNode(Node):
     signature = "in input, in name"
     viewer = None
+    name = "Video"
 
     def verify(self):
         self.input.ensure_color(FOURCC_RGB)
