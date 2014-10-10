@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "vlcplay.h"
 
@@ -57,8 +60,13 @@ struct vlcplay * vlcplay_create(char *path) {
     if (!mod->inst) return NULL;
     mod->buf = NULL;
     mod->player_error = mod->player_done = 0;
-    //m = libvlc_media_new_location (mod->inst, "http://mycool.movie.com/test.mov");
-    m = libvlc_media_new_path (mod->inst, path);
+    int fd = open(path, O_RDONLY);
+    if (fd == -1) {
+        m = libvlc_media_new_location (mod->inst, path);
+    } else {
+        close(fd);
+        m = libvlc_media_new_path (mod->inst, path);
+    }
     if (!m) return NULL;
 
     mod->mp = libvlc_media_player_new_from_media (m);
