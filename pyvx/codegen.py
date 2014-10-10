@@ -113,7 +113,7 @@ class PythonApi(object):
         for n in dir(api):
             item = getattr(api, n)
             if isinstance(item, Enum):
-                self.typedefs.append(item.typedef(n))
+                typedefs.append(item.typedef(n))
                 self.enum_types.add(n)
             elif isinstance(item, Reference):
                 s = 'struct _%s *' % n

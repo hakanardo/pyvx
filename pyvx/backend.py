@@ -3,7 +3,7 @@ from pyvx.codegen import Code, Enum
 from cffi import FFI
 from collections import defaultdict
 from itertools import chain
-import threading
+import threading, os
 
 class Context(object):
     references = []
@@ -265,18 +265,17 @@ class CoreGraph(object):
         for d in self.images:
             d.alloc()
         imgs = ''.join(d.cdeclaration for d in self.images)
-        code = Code('''
-                    long clamp(long val, long min_val, long max_val) {
-                        if (val < min_val) return min_val;
-                        if (val > max_val) return max_val;
-                        return val;
-                    }
-                    long subsample(long val) {
-                        return val & (~1);
-                    }
-                    \n''' + 
-                    Enum(*vx_status_codes).typedef('vx_status') + "\n\n" + 
-                    imgs + "\n")
+        head = '''
+            long clamp(long val, long min_val, long max_val) {
+                if (val < min_val) return min_val;
+                if (val > max_val) return max_val;
+                return val;
+            }
+            long subsample(long val) {
+                return val & (~1);
+            }
+        ''' + Enum(*vx_status_codes).typedef('vx_status') + "\n"
+        code = Code(imgs + "\n")
         for n in self.nodes:
             assert not n.optimized_out
             n.compile(code)
@@ -284,9 +283,16 @@ class CoreGraph(object):
         ffi.cdef("int func(void);")
         if self.show_source:
             print str(code)
-        inc = "#include <math.h>\n"
-        lib = ffi.verify(inc + "int func(void) {" + str(code) + "return 0;}",
-                         extra_compile_args=["-O3", "-march=native", "-std=c99"],
+        inc = """
+            #include <math.h>
+            #include "vlcplay.h"
+            #include "glview.h"            
+        """
+        mydir = os.path.dirname(os.path.abspath(__file__))
+        lib = ffi.verify(inc + head + 
+                         "int func(void) {" + str(code) + "return VX_SUCCESS;}",
+                         extra_compile_args=["-O3", "-march=native", "-std=c99",
+                                             "-I" + mydir],
                          extra_link_args=code.extra_link_args)
         self.compiled_func = lib.func
 

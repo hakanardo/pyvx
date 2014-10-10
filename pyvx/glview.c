@@ -1,16 +1,19 @@
 #include <string.h>
 #include "glview.h"
 
+void glutMainLoopEvent(void);
+
 static int glut_initiated=0;
 static struct glview **windows;
 static int n_windows=0;
+static int escaped_pressed=0;
 
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))
 
 void keyboard(unsigned char key, int x, int y) {
   if (key == 27) {
-    exit(0);
+    escaped_pressed=1;
   }
 }
 
@@ -85,7 +88,7 @@ struct glview *glview_create(int width, int height, int pixel_type, int pixel_si
   return m;
 }
 
-void glview_next(struct glview *m, unsigned char *imageData) {
+int glview_next(struct glview *m, unsigned char *imageData) {
   glutSetWindow(m->win);
   glBindTexture(GL_TEXTURE_RECTANGLE_NV, m->tex);
   glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV,0,
@@ -107,6 +110,7 @@ void glview_next(struct glview *m, unsigned char *imageData) {
 
   //glutMainLoop();
   glutMainLoopEvent();
+  return escaped_pressed;
 }
 
 void glview_release(struct glview *m) {

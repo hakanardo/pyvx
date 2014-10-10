@@ -12,7 +12,7 @@ struct glview {
 };
 
 struct glview *glview_create(int width, int height, int pixel_type, int pixel_size, char *name);
-void glview_next(struct glview *m, unsigned char *imageData);
+int glview_next(struct glview *m, unsigned char *imageData);
 void glview_release(struct glview *m);
 
 #endif

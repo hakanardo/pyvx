@@ -502,7 +502,7 @@ ffi.cdef("""
             ...;
         };
         struct glview *glview_create(int width, int height, int pixel_type, int pixel_size, char *name);
-        void glview_next(struct glview *m, unsigned char *imageData);
+        int glview_next(struct glview *m, unsigned char *imageData);
         void glview_release(struct glview *m);
 
         #define GL_RGB ...
@@ -559,7 +559,7 @@ class ShowNode(Node):
 
     def compile(self, code):
         adr = int(ffi.cast('long', self.viewer))
-        code.add_block(self, "glview_next((void *)0x%x, img.data);" % adr, img=self.input);
+        code.add_block(self, "if (glview_next((void *)0x%x, img.data)) return VX_ERROR_GRAPH_ABANDONED;" % adr, img=self.input);
         code.extra_link_args.append(ffi.verifier.modulefilename)
 
     def __del__(self):

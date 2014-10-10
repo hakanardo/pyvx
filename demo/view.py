@@ -6,7 +6,7 @@ def main(path="v4l2:///dev/video0"):
         img = Play(path)
         Show(img)
     g.verify()
-    while not g.process():
+    while g.process() == VX_SUCCESS:
         pass
 
 if __name__ == '__main__':

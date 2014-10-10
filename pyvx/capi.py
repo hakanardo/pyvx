@@ -50,9 +50,7 @@ class OpenVxApi(object):
 
     @export("vx_status(vx_graph)")
     def vxProcessGraph(graph):
-        if graph.process() == -1: # FIXME: Make this "return graph.process()"
-            return VX_ERROR_GRAPH_ABANDONED
-        return VX_SUCCESS
+        return graph.process()
     
     @export("void(vx_context *)", retrive_args=False)
     def vxReleaseContext(context):
