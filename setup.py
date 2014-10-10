@@ -1,14 +1,17 @@
-from setuptools import setup, Extension
+from distutils.core import setup
 import os
 import pyvx.nodes
+import pyvx.capi
+from pyvx.version import version
 
 mydir = os.path.dirname(os.path.abspath(__file__))
 
+libs = pyvx.capi.build()
 setup(
         name='pyvx',
         description='OpenVx implementation',
         long_description=open(os.path.join(mydir, 'README.rst')).read(),
-        version='0.1.0',
+        version=version,
         packages=['pyvx'],
         package_data={'pyvx': ['glview.h', 'vlcplay.h']},
         zip_safe=False,
@@ -18,4 +21,6 @@ setup(
         license='MIT',
         install_requires=['cffi'],
         ext_modules=[pyvx.nodes.ffi.verifier.get_extension()],
+        data_files = [('/usr/local/include', ['openvx.h']),
+                      ('/usr/local/lib', libs)],
     )

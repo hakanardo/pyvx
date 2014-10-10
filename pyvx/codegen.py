@@ -179,7 +179,7 @@ class PythonApi(object):
         return self.ffi.callback(tp, f)
 
 
-    def build(self, name, code, typedefs):
+    def build(self, (name, version, soversion), code, typedefs):
         typedefs = '\n'.join(typedefs) + "\n\n"
         tmp = tempfile.mkdtemp()
         try:
@@ -211,11 +211,19 @@ class PythonApi(object):
             from cffi.ffiplatform import compile
             fn = compile(tmp, Extension(name='lib' + name, 
                                         sources=[src],
-                                        extra_link_args=['-lpython2.7']))
-            bfn = os.path.basename(fn)
-            if os.path.exists(bfn):
-                os.unlink(bfn)
-            copy(fn, bfn)
+                                        extra_link_args=['-lpython2.7',
+                                          '-Wl,-soname,lib%s.so.' % name + soversion]))
+            bfn = os.path.basename(fn)            
+            full = bfn + '.' + version
+            so = bfn + '.' + soversion
+            for f in [full, so, bfn]:
+                try:
+                    os.unlink(f)
+                except OSError:
+                    pass
+            copy(fn, full)
+            os.symlink(full, so)
+            os.symlink(full, bfn)
         finally:
             rmtree(tmp)
 
@@ -228,6 +236,7 @@ class PythonApi(object):
             fd.write(typedefs + '\n\n')
             fd.write(prototypes + "\n\n")
             fd.write("#endif\n")
+        self.library_names = [full, so, bfn]
 
     def store(self, x):
         "Store the object 'x' and returns a new object descriptor for it."

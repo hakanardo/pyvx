@@ -2,7 +2,6 @@ from codegen import PythonApi, Enum, Reference
 import codegen
 from pyvx import *
 
-
 def export(signature, add_ret_to_arg=0, **kwargs):
     return codegen.export(signature, add_ret_to_arg, **kwargs)
 
@@ -90,9 +89,14 @@ class OpenVxApi(object):
         return ShowNode(graph, input, name)
 
 
+def build():
+    from pyvx.version import version, soversion
+    api = PythonApi(OpenVxApi, build=('openvx', version, soversion))
+    return api.library_names
+
 if __name__ == '__main__':
     import sys
-    if sys.argv[1] == 'build' and len(sys.argv) == 3:
-        api = PythonApi(OpenVxApi, build=sys.argv[2])
+    if sys.argv[1] == 'build' and len(sys.argv) == 2:
+        build()
     else:
-        print 'Usage: %s build <lib>' % sys.argv[0]
+        print 'Usage: %s build' % sys.argv[0]
