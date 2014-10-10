@@ -2,6 +2,7 @@ from pycparser import c_parser, c_ast
 from pycparser.c_generator import CGenerator
 from cffi import FFI
 import tempfile, subprocess, os
+from shutil import rmtree, copy
 
 typedefs = ''.join("typedef int uint%d_t; typedef int int%d_t;" % (n, n) 
                    for n in [8, 16, 32, 64])
@@ -179,38 +180,44 @@ class PythonApi(object):
 
 
     def build(self, name, code, typedefs):
-        tmp = tempfile.mkdtemp()
-        pwd = os.getcwd()
-        os.chdir(tmp)
         typedefs = '\n'.join(typedefs) + "\n\n"
+        tmp = tempfile.mkdtemp()
+        try:
+            src = os.path.join(tmp, "tmp.c")
+            with open(src, 'w') as fd:
+                fd.write(""" 
+                    #include <stdint.h>
+                    #include <Python.h>
+                    """ + self.api.cdef + typedefs + """
 
-        with open("tmp.c", 'w') as fd:
-            fd.write(""" 
-                #include <stdint.h>
-                #include <Python.h>
-                """ + self.api.cdef + typedefs + """
+                    static void __initialize(void) __attribute__((constructor));
+                    void __initialize(void) {
+                      Py_Initialize();
+                      PyEval_InitThreads();                  
+                      PyRun_SimpleString("import sys\\n"
+                                         "sys.path.append('.')\\n"
+                                         "from pyvx.capi import OpenVxApi\\n"
+                                         "from pyvx.codegen import PythonApi\\n"
+                                         "api = PythonApi(OpenVxApi).load()\\n");
+                    }
 
-                static void __initialize(void) __attribute__((constructor));
-                void __initialize(void) {
-                  Py_Initialize();
-                  PyEval_InitThreads();                  
-                  PyRun_SimpleString("import sys\\n"
-                                     "sys.path.append('.')\\n"
-                                     "from pyvx.capi import OpenVxApi\\n"
-                                     "from pyvx.codegen import PythonApi\\n"
-                                     "api = PythonApi(OpenVxApi).load()\\n");
-                }
+                    static void __deinitialize(void) __attribute__((destructor));
+                    void __deinitialize(void) {
+                      Py_Finalize();
+                    }
+                    """ + '\n'.join(code))
 
-                static void __deinitialize(void) __attribute__((destructor));
-                void __deinitialize(void) {
-                  Py_Finalize();
-                }
-                """ + '\n'.join(code))
-        subprocess.call(['gcc', '-c', '-fPIC', '-I/usr/include/python2.7', 'tmp.c'])
-        subprocess.call(['gcc', '-shared', '-Wl,-soname,lib%s.so' % name,
-                         '-o', '%s/lib%s.so' % (pwd, name), 'tmp.o', '-lpython2.7'])
-        os.chdir(pwd)
-        subprocess.call(['rm', '-r', tmp])
+            from distutils.core import Extension
+            from cffi.ffiplatform import compile
+            fn = compile(tmp, Extension(name='lib' + name, 
+                                        sources=[src],
+                                        extra_link_args=['-lpython2.7']))
+            bfn = os.path.basename(fn)
+            if os.path.exists(bfn):
+                os.unlink(bfn)
+            copy(fn, bfn)
+        finally:
+            rmtree(tmp)
 
         prototypes = '\n'.join('extern ' + l for l in code)
         with open(name + '.h', 'w') as fd:
