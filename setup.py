@@ -10,6 +10,8 @@ libs = []
 
 class my_build(build):
     def run(self):
+        if not os.path.exists('build'):
+            os.mkdir('build')
         libs.extend(pyvx.capi.build('build'))
         build.run(self)
 
@@ -27,7 +29,7 @@ setup(
         license='MIT',
         install_requires=['cffi'],
         ext_modules=[pyvx.nodes.ffi.verifier.get_extension()],
-        data_files = [('/usr/local/include', ['openvx.h']),
-                      ('/usr/local/lib', libs)],
+        data_files = [('/usr/local/include', [os.path.join('build', 'openvx.h')]),
+                      ('/usr/local/lib', [os.path.join('build', l) for l in libs])],
         cmdclass = {'build': my_build}
     )

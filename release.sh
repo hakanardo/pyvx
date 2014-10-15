@@ -5,4 +5,5 @@ if [ -f build ]; then
     echo Please clean up
     exit
 fi
-python setup.py sdist upload
+python setup.py sdist || exit
+twine upload dist/*
