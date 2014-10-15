@@ -8,8 +8,8 @@ mydir = os.path.dirname(os.path.abspath(__file__))
 
 libs = pyvx.capi.build()
 setup(
-        name='pyvx',
-        description='OpenVx implementation',
+        name='PyVX',
+        description='OpenVX implementation',
         long_description=open(os.path.join(mydir, 'README.rst')).read(),
         version=version,
         packages=['pyvx'],
