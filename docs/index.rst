@@ -59,10 +59,6 @@ There are a few different ways to install:
 .. _`bitbucket`: https://bitbucket.org/hakanardo/pyvx
 
 
-.. toctree::
-   :maxdepth: 2
-
-
 Comments and bugs
 =================
 
