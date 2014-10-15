@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-PyVX documentation
-==================
+PyVX
+====
 
 PyVX is an implementation of `OpenVX`_ in python. `OpenVX`_ is a standard for
 expressing computer vision processing algorithms as a graph of function nodes.
@@ -47,21 +47,29 @@ There are a few different ways to install:
 
 .. __: http://pypi.python.org/pypi/pyvx
 
-* or get it from the `Bitbucket page`_:
+* or get it from `bitbucket`_:
 
 .. code-block:: bash
 
-  hg clone https://bitbucket.org/hakanardo/pyvx``
+  hg clone https://bitbucket.org/hakanardo/pyvx
   cd pyvx
   python setup.py install
 
 
-.. _`Bitbucket page`: https://bitbucket.org/hakanardo/pyvx
+.. _`bitbucket`: https://bitbucket.org/hakanardo/pyvx
 
 
 .. toctree::
    :maxdepth: 2
 
+
+Comments and bugs
+=================
+
+There is a `mailing list`_ for general discussions and an `issue tracker`_ for reporting bugs.
+
+.. _`issue tracker`: https://bitbucket.org/hakanardo/pyvx/issues
+.. _`mailing list`: https://groups.google.com/forum/#!forum/pyvx
 
 
 Indices and tables
