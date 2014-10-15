@@ -2,11 +2,11 @@ from pyvx.types import *
 import pyvx.nodes as nodes
 from pyvx.backend import *
 
-MultipleWritersError = VX_ERROR_MULTIPLE_WRITERS
-InvalidGraphError = VX_ERROR_INVALID_GRAPH
-InvalidValueError = VX_ERROR_INVALID_VALUE
-InvalidFormatError = VX_ERROR_INVALID_FORMAT
-GraphAbandonedError = VX_ERROR_GRAPH_ABANDONED
+MultipleWritersError = ERROR_MULTIPLE_WRITERS
+InvalidGraphError = ERROR_INVALID_GRAPH
+InvalidValueError = ERROR_INVALID_VALUE
+InvalidFormatError = ERROR_INVALID_FORMAT
+GraphAbandonedError = ERROR_GRAPH_ABANDONED
 
 class Image(CoreImage):
 

@@ -21,7 +21,7 @@ class OpenVxApi(object):
     vx_channel = Enum(CHANNEL_0, CHANNEL_1, CHANNEL_2, CHANNEL_3,
                       CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_A,
                       CHANNEL_Y, CHANNEL_U, CHANNEL_V, prefix="VX_")
-    vx_status = Enum(*vx_status_codes)
+    vx_status = Enum(*status_codes, prefix="VX_")
 
     @export("vx_context()", add_ret_to_arg=None)
     def vxCreateContext():
@@ -45,7 +45,7 @@ class OpenVxApi(object):
             graph.verify()
         except VerificationError as e:
             return e.__class__
-        return VX_SUCCESS
+        return SUCCESS
 
     @export("vx_status(vx_graph)")
     def vxProcessGraph(graph):

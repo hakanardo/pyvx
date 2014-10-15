@@ -35,7 +35,13 @@ welcome.
 Installation
 ============
 
-There are a few different ways to install:
+Before installing, make sure all dependencies are installed:
+
+.. code-block:: bash
+
+  apt-get install vlc libvlc-dev freeglut3-dev
+
+Then there are a few different ways to install PyVX:
 
 * Use pip:
 
@@ -57,6 +63,36 @@ There are a few different ways to install:
 
 
 .. _`bitbucket`: https://bitbucket.org/hakanardo/pyvx
+
+Modules
+=======
+
+The main modules of PyVX are:
+
+pyvx.vx
+    Python API following the standardized `OpenVX`_ API as strictly as possible.
+
+pyvx.pythonic
+    A more python friendly version of the `OpenVX`_ API.
+
+pyvx.capi
+    A specification of a C API that is used generate a shared
+    library and a header embedding python and calls the pyvx.vx functions. This
+    provides the C API of the `OpenVX`_ standard.
+
+pyvx.nodes
+    The implementation of the different processing nodes.
+
+pyvx.backend
+    The backend that generates the C-code implementing the graphs specified.
+
+pyvx.optimize
+    Graph optimizations that are executed on the graphs during the verification step.
+
+Standards compliant Python API
+==============================
+
+.. automodule:: pyvx.vx
 
 
 Comments and bugs

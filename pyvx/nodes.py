@@ -14,7 +14,7 @@ class ElementwiseNode(Node):
             img.ensure_similar(inputs[0])
             if self.convert_policy == CONVERT_POLICY_SATURATE:
                 if img.color.ctype not in self.small_ints:
-                    raise VX_ERROR_INVALID_FORMAT("Saturated arithmetic only supported for 8- and 16- bit integers.")
+                    raise ERROR_INVALID_FORMAT("Saturated arithmetic only supported for 8- and 16- bit integers.")
 
     def tmptype(self, ctype):
         if ctype in self.small_ints:
@@ -110,7 +110,7 @@ class ChannelExtractNode(Node):
 
     def verify(self):
         if self.channel not in self.input.color.channels:
-            raise VX_ERROR_INVALID_FORMAT(
+            raise ERROR_INVALID_FORMAT(
                 'Cant extract channel %s from %s image.' % (
                     self.channel.__name__, self.input.color.__name__))
         self.output.ensure_color(FOURCC_U8)        
@@ -248,7 +248,7 @@ class PlayNode(Node):
         if not self.player:
             self.player = lib.vlcplay_create(self.path)
         if not self.player:
-            raise VX_ERROR_INVALID_VALUE("Unable to decode '%s' using vlc." % self.path)
+            raise ERROR_INVALID_VALUE("Unable to decode '%s' using vlc." % self.path)
         self.output.ensure_shape(self.player.width, self.player.height)
         self.output.ensure_color(FOURCC_RGB)
         self.output.force()

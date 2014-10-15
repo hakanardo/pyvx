@@ -144,12 +144,12 @@ class ROUND_POLICY_TO_ZERO: pass
 class ROUND_POLICY_TO_NEAREST_EVEN: pass
 
 class VerificationError(Exception): pass
-class VX_ERROR_MULTIPLE_WRITERS(VerificationError): pass
-class VX_ERROR_INVALID_GRAPH(VerificationError): pass
-class VX_ERROR_INVALID_VALUE(VerificationError): pass
-class VX_ERROR_INVALID_FORMAT(VerificationError): pass
-class VX_ERROR_GRAPH_ABANDONED(Exception): pass
-class VX_SUCCESS(object): pass
-vx_status_codes = [VX_SUCCESS, VX_ERROR_MULTIPLE_WRITERS, VX_ERROR_INVALID_GRAPH, 
-                   VX_ERROR_INVALID_VALUE, VX_ERROR_INVALID_FORMAT,
-                   VX_ERROR_GRAPH_ABANDONED]
+class ERROR_MULTIPLE_WRITERS(VerificationError): pass
+class ERROR_INVALID_GRAPH(VerificationError): pass
+class ERROR_INVALID_VALUE(VerificationError): pass
+class ERROR_INVALID_FORMAT(VerificationError): pass
+class ERROR_GRAPH_ABANDONED(Exception): pass
+class SUCCESS(object): pass
+status_codes = [SUCCESS, ERROR_MULTIPLE_WRITERS, ERROR_INVALID_GRAPH, 
+                ERROR_INVALID_VALUE, ERROR_INVALID_FORMAT,
+                ERROR_GRAPH_ABANDONED]

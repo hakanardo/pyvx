@@ -73,12 +73,12 @@ class CoreImage(object):
         if self.height == 0:
             self.height = height
         if self.width != width or self.height != height:
-            raise VX_ERROR_INVALID_FORMAT
+            raise ERROR_INVALID_FORMAT
 
     def ensure_color(self, color):
         self.suggest_color(color)
         if  self.color != color:
-            raise VX_ERROR_INVALID_FORMAT            
+            raise ERROR_INVALID_FORMAT            
 
     def suggest_color(self, color):
         if self.color == FOURCC_VIRT:
@@ -88,7 +88,7 @@ class CoreImage(object):
         self.ensure_shape(image)
         self.suggest_color(image.color)
         if self.color.items != image.color.items:
-            raise VX_ERROR_INVALID_FORMAT
+            raise ERROR_INVALID_FORMAT
 
     def alloc(self):
         if self.optimized_out:
@@ -110,7 +110,7 @@ class CoreImage(object):
             return self.csym
         if channel is None:
             if self.color.items != 1:
-                raise VX_ERROR_INVALID_FORMAT("Cant access pixel of multi channel image without specifying channel.")
+                raise ERROR_INVALID_FORMAT("Cant access pixel of multi channel image without specifying channel.")
             channel = CHANNEL_0
         else:                
             channel = eval(channel.upper())
@@ -191,7 +191,7 @@ class ConstantImage(CoreImage):
         return str(self.value)
 
     def setitem(self, node, channel, idx, op, value):
-        raise VX_ERROR_INVALID_GRAPH("ConstantImage's are not writeable.")
+        raise ERROR_INVALID_GRAPH("ConstantImage's are not writeable.")
 
     def alloc(self):
         self.cdeclaration = ''
@@ -245,9 +245,9 @@ class CoreGraph(object):
         # Virtual data produced
         for d in self.images:
             if d.virtual and d.producer is None:
-                raise VX_ERROR_INVALID_GRAPH("Virtual data never produced.")
+                raise ERROR_INVALID_GRAPH("Virtual data never produced.")
             if d.color == FOURCC_VIRT:
-                raise VX_ERROR_INVALID_FORMAT("FOURCC_VIRT not resolved into specific type.")
+                raise ERROR_INVALID_FORMAT("FOURCC_VIRT not resolved into specific type.")
 
         self.optimize()
         self.compile()
@@ -260,7 +260,7 @@ class CoreGraph(object):
             scheduler.fire(n)
             one_order.append(n)
         if scheduler.blocked_nodes:
-            raise VX_ERROR_INVALID_GRAPH("Loops not allowed in the graph.")
+            raise ERROR_INVALID_GRAPH("Loops not allowed in the graph.")
         return one_order
 
     def compile(self):
@@ -276,7 +276,7 @@ class CoreGraph(object):
             long subsample(long val) {
                 return val & (~1);
             }
-        ''' + Enum(*vx_status_codes).typedef('vx_status') + "\n"
+        ''' + Enum(*status_codes, prefix="VX_").typedef('vx_status') + "\n"
         code = Code(imgs + "\n")
         for n in self.nodes:
             assert not n.optimized_out
@@ -305,7 +305,7 @@ class CoreGraph(object):
 
     def process(self):
         r = self.compiled_func()
-        r = vx_status_codes[r]
+        r = status_codes[r]
         return r
 
 class Scheduler(object):
@@ -384,21 +384,21 @@ class Node(object):
         # Signle writer
         for d in self.outputs + self.inouts:
             if d.producer is not self:
-                raise VX_ERROR_MULTIPLE_WRITERS
+                raise ERROR_MULTIPLE_WRITERS
 
         # Bidirection data not virtual
         for d in self.inouts:
             if d.virtual:
-                raise VX_ERROR_INVALID_GRAPH("Bidirection data cant be virtual.")
+                raise ERROR_INVALID_GRAPH("Bidirection data cant be virtual.")
 
         for d in self.inputs:
             if isinstance(d, CoreImage) and (not d.width or not d.height):
-                raise VX_ERROR_INVALID_FORMAT
+                raise ERROR_INVALID_FORMAT
         self.verify()
 
     def ensure(self, condition):
         if not condition:
-            raise VX_ERROR_INVALID_FORMAT
+            raise ERROR_INVALID_FORMAT
 
 class MergedNode(Node):
 
