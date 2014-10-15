@@ -1,12 +1,18 @@
 from distutils.core import setup
+from distutils.command.build import build
 import os
 import pyvx.nodes
 import pyvx.capi
 from pyvx.version import version
 
 mydir = os.path.dirname(os.path.abspath(__file__))
+libs = []
 
-libs = pyvx.capi.build()
+class my_build(build):
+    def run(self):
+        libs.extend(pyvx.capi.build('build'))
+        build.run(self)
+
 setup(
         name='PyVX',
         description='OpenVX implementation',
@@ -23,4 +29,5 @@ setup(
         ext_modules=[pyvx.nodes.ffi.verifier.get_extension()],
         data_files = [('/usr/local/include', ['openvx.h']),
                       ('/usr/local/lib', libs)],
+        cmdclass = {'build': my_build}
     )

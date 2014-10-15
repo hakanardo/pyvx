@@ -89,9 +89,9 @@ class OpenVxApi(object):
         return ShowNode(graph, input, name)
 
 
-def build():
+def build(out_path='.'):
     from pyvx.version import version, soversion
-    api = PythonApi(OpenVxApi, build=('openvx', version, soversion))
+    api = PythonApi(OpenVxApi, build=('openvx', version, soversion, out_path))
     return api.library_names
 
 if __name__ == '__main__':

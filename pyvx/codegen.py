@@ -179,7 +179,7 @@ class PythonApi(object):
         return self.ffi.callback(tp, f)
 
 
-    def build(self, (name, version, soversion), code, typedefs):
+    def build(self, (name, version, soversion, out_path), code, typedefs):
         typedefs = '\n'.join(typedefs) + "\n\n"
         tmp = tempfile.mkdtemp()
         try:
@@ -213,7 +213,7 @@ class PythonApi(object):
                                         sources=[src],
                                         extra_link_args=['-lpython2.7',
                                           '-Wl,-soname,lib%s.so.' % name + soversion]))
-            bfn = os.path.basename(fn)            
+            bfn = os.path.join(out_path, os.path.basename(fn))
             full = bfn + '.' + version
             so = bfn + '.' + soversion
             for f in [full, so, bfn]:
@@ -222,13 +222,13 @@ class PythonApi(object):
                 except OSError:
                     pass
             copy(fn, full)
-            os.symlink(full, so)
-            os.symlink(full, bfn)
+            os.symlink(os.path.basename(full), so)
+            os.symlink(os.path.basename(full), bfn)
         finally:
             rmtree(tmp)
 
         prototypes = '\n'.join('extern ' + l for l in code)
-        with open(name + '.h', 'w') as fd:
+        with open(os.path.join(out_path, name + '.h'), 'w') as fd:
             fd.write("#ifndef __OPENCX_H__\n")
             fd.write("#define __OPENCX_H__\n\n")
             fd.write("#include <stdint.h>\n")
