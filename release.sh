@@ -1,7 +1,7 @@
 #!/bin/sh
 
 rm -rf build dist __pycache__ */__pycache__
-if [ -f build ]; then
+if [ -d build ]; then
     echo Please clean up
     exit
 fi

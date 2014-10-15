@@ -15,6 +15,8 @@ class my_build(build):
         libs.extend(pyvx.capi.build('build'))
         build.run(self)
 
+
+
 setup(
         name='PyVX',
         description='OpenVX implementation',
@@ -27,9 +29,9 @@ setup(
         author='Hakan Ardo',
         author_email='pyvx@googlegroups.com',
         license='MIT',
-        install_requires=['cffi'],
+        install_requires=['pycparser','cffi'],
         ext_modules=[pyvx.nodes.ffi.verifier.get_extension()],
         data_files = [('/usr/local/include', [os.path.join('build', 'openvx.h')]),
-                      ('/usr/local/lib', [os.path.join('build', l) for l in libs])],
-        cmdclass = {'build': my_build}
+                      ('/usr/local/lib', libs)],
+        cmdclass={'build': my_build},
     )
