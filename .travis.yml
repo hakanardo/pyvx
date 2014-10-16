@@ -13,4 +13,5 @@ deploy:
   password:
     secure: LA16LJyigOhZPqBulP/jT0DbM8cDnGma5y/7ldiHpEJTuKUYQ9VJSKDnxYXPRnTyWtQT2VioQtqMES3m8djBsrI8mm85heJUDI67EyRl7g/MEljBiSeida2VTwlY4U5INBuCyijQ5j52U1C2SOKksnBIaO7yh2MuOL4M/nMnIWI=
   on:
+    branch: stable
     tags: true

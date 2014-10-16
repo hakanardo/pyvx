@@ -9,4 +9,4 @@ git checkout stable || exit
 git pull
 git merge master || exit
 git push --tags
-git co master
+git checkout master
