@@ -1,8 +1,7 @@
 from pyvx import *
 
 def main(path="v4l2:///dev/video0"):
-    g = Graph()
-    with g:
+    with Graph() as g:
         img = Play(path)
         Show(img)
     g.verify()

@@ -1,5 +1,5 @@
-from imgpy.io import Mplayer, view
 from pyvx import *
+from imgpy.io import Mplayer, view
 import time
 
 def main(fn):
@@ -9,8 +9,7 @@ def main(fn):
     mag_res = frame.new()    
     phi_res = frame.new()    
 
-    g = Graph()
-    with g:
+    with Graph() as g:
         img = Image(w, h, FOURCC_U8, data=frame)
         gimg = Gaussian3x3(img)
         dx, dy = Sobel3x3(gimg)

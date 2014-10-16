@@ -1,6 +1,6 @@
 """ 
-:mod:`pyvx.vx` --- Standards compliant Python API
-=================================================
+:mod:`pyvx.vx` --- Standards compliant API
+==========================================
 
 This module provides the functions as specified by the `OpenVX`_ standard.
 Please refer to the `OpenVX speficication`_ for a description of the API. The

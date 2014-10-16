@@ -90,6 +90,7 @@ The main modules of PyVX are:
     Graph optimizations that are executed on the graphs during the verification step.
 
 .. automodule:: pyvx.vx
+.. automodule:: pyvx.pythonic
 
 
 Comments and bugs

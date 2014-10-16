@@ -217,6 +217,7 @@ class CoreGraph(object):
     def __enter__(self):
         assert CoreGraph.local_state.current_graph is None
         CoreGraph.local_state.current_graph = self
+        return self
 
     def __exit__(self, *args):
         assert CoreGraph.local_state.current_graph is self
