@@ -1,3 +1,9 @@
+"""
+:mod:`pyvx.codegen` --- Code generation tools
+=============================================
+
+"""
+
 from pycparser import c_parser, c_ast
 from pycparser.c_generator import CGenerator
 from cffi import FFI
@@ -72,14 +78,64 @@ class MagicCGenerator(CGenerator):
                            node.op, self.visit(node.rvalue))
 
 class Code(object):
+    """ 
+        Represents some generated C-code together with
+        a bit of metadata. It has the following public attributes:
+
+        ``indent_level``
+            Number of spaces to indent code added using ``add_block``.
+        ``extra_link_args``
+            A ``list`` of extra arguments needed to be passed to the linker when 
+            compiling the code. It is typically used to link to libraries 
+            used by the code.
+        ``includes``
+            A ``set`` of lines added at the top of the generated .c file outside
+            the function enclosing the code. This is intended for ``#include ...``
+            lines.
+
+    """
     
     def __init__(self, code=''):
+        """ Construct a new ``Code`` object and initiate it's code to ``code``.            
+        """
         self.code = code
         self.indent_level = 0
         self.extra_link_args = []
         self.includes = set()
 
     def add_block(self, cxnode, code, **magic_vars):
+        """ Add ``code`` as a new block of code. It will be enclosed in with ``{}``
+            brackets to allow it to declare local variables. The code will be
+            parsed and all references to the symbol names passed as keyword 
+            arguments will be extracted and handled separately. These magic variables
+            are intended to be Image objects, but could be anything that define 
+            compatible ``getattr()`` and ``getitem()`` methods. If ``img`` is 
+            declared to be a magic variable it can be used in the C-code in the
+            following ways:
+
+                ``img[x,y]``
+                    The value of pixel (``x``, ``y``) of a single channel image.
+                ``img.channel_x[x,y]``
+                    The value of pixel (``x``, ``y``) in ``CHANNEL_X``.
+                ``img[i]``
+                    The i'th value in the image. ``i`` is an integer between ``0``
+                    and ``width * height * channels - 1``.
+                ``img.channel_x[i]``
+                    The i'th value in ``CAHNNEL_X`` of the image. ``i`` is an integer 
+                    between ``0`` and ``width * height - 1``.           
+                ``img.width``
+                    The width of the image in pixels.
+                ``img.height``
+                    The height of the image in pixels.                
+                ``img.pixels``
+                    The number of pixels in the image (width * height).
+                ``img.values``
+                    The number of values in the image (width * height * channels).
+                ``img.data``
+                    A pointer to the beginning of the pixel data.
+
+
+        """
         ast = cparse(code)
         #ast.show()
         generator = MagicCGenerator(cxnode, magic_vars)
@@ -88,9 +144,13 @@ class Code(object):
         self.code += hdr + generator.visit(ast)
 
     def add_code(self, code):
+        """ Extend the code with ``code`` with any adjustment.
+        """        
         self.code += code
 
     def __str__(self):
+        """ Returns the generated code.
+        """
         return self.code
 
 

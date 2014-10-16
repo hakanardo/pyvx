@@ -89,9 +89,14 @@ The main modules of PyVX are:
 :mod:`pyvx.optimize`
     Graph optimizations that are executed on the graphs during the verification step.
 
+:mod:`pyvx.codegen`
+    Code generation tools.
+
 .. automodule:: pyvx.vx
 .. automodule:: pyvx.pythonic
 .. automodule:: pyvx.nodes
+.. automodule:: pyvx.codegen
+   :members:
 
 
 Comments and bugs
