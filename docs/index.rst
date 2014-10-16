@@ -95,7 +95,7 @@ The main modules of PyVX are:
 Comments and bugs
 =================
 
-There is a `mailing list`_ for general discussions and an `issue tracker`_ for reporting bugs.
+There is a `mailing list`_ for general discussions and an `issue tracker`_ for reporting bugs. 
 
 .. _`issue tracker`: https://github.com/hakanardo/pyvx/issues
 .. _`mailing list`: https://groups.google.com/forum/#!forum/pyvx
