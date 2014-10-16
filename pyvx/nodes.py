@@ -222,13 +222,9 @@ class PlayNode(Node):
             int vlcplay_next(struct vlcplay *m, unsigned char *buf);
             void vlcplay_release(struct vlcplay *m);
             """)
-    lib = ffi.verify("""
-                     #include "vlcplay.h"
-                     """, 
-                     extra_compile_args=['-O3', '-I' + mydir],
-                     sources=[os.path.join(mydir, 'vlcplay.c')],
+    lib = ffi.verify(open(os.path.join(mydir, 'vlcplay.c')).read(),
+                     extra_compile_args=['-O3'],
                      libraries=['vlc'],
-                     modulename='_pyvx_play_node_ffi_',
                      )
 
 
@@ -268,13 +264,9 @@ class ShowNode(Node):
             #define GL_UNSIGNED_BYTE ...
 
              """)
-    lib = ffi.verify("""
-                     #include "glview.h"
-                     """, 
-                     extra_compile_args=['-O3', '-I' + mydir],
-                     sources=[os.path.join(mydir, 'glview.c')],
+    lib = ffi.verify(open(os.path.join(mydir, 'glview.c')).read(), 
+                     extra_compile_args=['-O3'],
                      libraries=['glut', 'GL', 'GLU'],
-                     modulename='_pyvx_show_node_ffi_',
                      )
 
 

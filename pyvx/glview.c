@@ -1,5 +1,5 @@
 #include <string.h>
-#include "glview.h"
+#include "../glview.h"
 
 void glutMainLoopEvent(void);
 
