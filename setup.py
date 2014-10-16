@@ -30,7 +30,7 @@ setup(
         author_email='pyvx@googlegroups.com',
         license='MIT',
         install_requires=['pycparser','cffi'],
-        ext_modules=[pyvx.nodes.ffi.verifier.get_extension()],
+        ext_modules=[pyvx.nodes.PlayNode.ffi.verifier.get_extension()],
         data_files = [('/usr/local/include', [os.path.join('build', 'openvx.h')]),
                       ('/usr/local/lib', libs)],
         cmdclass={'build': my_build},

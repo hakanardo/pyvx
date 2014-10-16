@@ -205,48 +205,36 @@ class AccumulateImageNode(Node):
     def verify(self):
         pass
 
-ffi = FFI()
-ffi.cdef("""
-        struct vlcplay {
-            int width, height;
-            ...;
-        };
-
-        struct vlcplay *vlcplay_create(char *path);
-        int vlcplay_next(struct vlcplay *m, unsigned char *buf);
-        void vlcplay_release(struct vlcplay *m);
-
-
-        struct glview {
-            int width, height;
-            ...;
-        };
-        struct glview *glview_create(int width, int height, int pixel_type, int pixel_size, char *name);
-        int glview_next(struct glview *m, unsigned char *imageData);
-        void glview_release(struct glview *m);
-
-        #define GL_RGB ...
-        #define GL_UNSIGNED_BYTE ...
-
-         """)
 mydir = os.path.dirname(os.path.abspath(__file__))
-lib = ffi.verify("""
-                 #include "vlcplay.h"
-                 #include "glview.h"
-                 """, 
-                 extra_compile_args=['-O3', '-I' + mydir],
-                 sources=[os.path.join(mydir, f) for f in ['vlcplay.c', 'glview.c']],
-                 libraries=['vlc', 'glut', 'GL', 'GLU'],
-                 modulename='_pyvx_nodes_ffi_',
-                 )
 
 class PlayNode(Node):
     signature = 'in path, out output'
     player = None
 
+    ffi = FFI()
+    ffi.cdef("""
+            struct vlcplay {
+                int width, height;
+                ...;
+            };
+
+            struct vlcplay *vlcplay_create(char *path);
+            int vlcplay_next(struct vlcplay *m, unsigned char *buf);
+            void vlcplay_release(struct vlcplay *m);
+            """)
+    lib = ffi.verify("""
+                     #include "vlcplay.h"
+                     """, 
+                     extra_compile_args=['-O3', '-I' + mydir],
+                     sources=[os.path.join(mydir, 'vlcplay.c')],
+                     libraries=['vlc'],
+                     modulename='_pyvx_play_node_ffi_',
+                     )
+
+
     def verify(self):
         if not self.player:
-            self.player = lib.vlcplay_create(self.path)
+            self.player = self.lib.vlcplay_create(self.path)
         if not self.player:
             raise ERROR_INVALID_VALUE("Unable to decode '%s' using vlc." % self.path)
         self.output.ensure_shape(self.player.width, self.player.height)
@@ -254,40 +242,58 @@ class PlayNode(Node):
         self.output.force()
 
     def compile(self, code):
-        adr = int(ffi.cast('long', self.player))
+        adr = int(self.ffi.cast('long', self.player))
         code.add_block(self, "if (vlcplay_next((void *)0x%x, img.data)) return VX_ERROR_GRAPH_ABANDONED;" % adr, img=self.output);
-        code.extra_link_args.append(ffi.verifier.modulefilename)
+        code.extra_link_args.append(self.ffi.verifier.modulefilename)
 
     def __del__(self):
-        lib.vlcplay_release(self.player)
-
-def Play(path):
-    img = Image()
-    PlayNode(CoreGraph.get_current_graph(), path, img)
-    return img
+        self.lib.vlcplay_release(self.player)
 
 class ShowNode(Node):
     signature = "in input, in name"
     viewer = None
-    name = "Video"
+    name = "View"
+
+    ffi = FFI()
+    ffi.cdef("""
+            struct glview {
+                int width, height;
+                ...;
+            };
+            struct glview *glview_create(int width, int height, int pixel_type, int pixel_size, char *name);
+            int glview_next(struct glview *m, unsigned char *imageData);
+            void glview_release(struct glview *m);
+
+            #define GL_RGB ...
+            #define GL_UNSIGNED_BYTE ...
+
+             """)
+    lib = ffi.verify("""
+                     #include "glview.h"
+                     """, 
+                     extra_compile_args=['-O3', '-I' + mydir],
+                     sources=[os.path.join(mydir, 'glview.c')],
+                     libraries=['glut', 'GL', 'GLU'],
+                     modulename='_pyvx_show_node_ffi_',
+                     )
+
 
     def verify(self):
         self.input.ensure_color(FOURCC_RGB)
         if self.viewer:
             if self.viewer.width == self.input.width and self.viewer.height == self.input.height:
                 return
-            #lib.vlcplay_release(self.viewer)
-        self.viewer = lib.glview_create(self.input.width, self.input.height,
-                                        lib.GL_RGB, lib.GL_UNSIGNED_BYTE, self.name)
+            self.lib.glview_release(self.viewer)
+        self.viewer = self.lib.glview_create(self.input.width, 
+                                             self.input.height,
+                                             self.lib.GL_RGB, 
+                                             self.lib.GL_UNSIGNED_BYTE, 
+                                             self.name)
 
     def compile(self, code):
-        adr = int(ffi.cast('long', self.viewer))
+        adr = int(self.ffi.cast('long', self.viewer))
         code.add_block(self, "if (glview_next((void *)0x%x, img.data)) return VX_ERROR_GRAPH_ABANDONED;" % adr, img=self.input);
-        code.extra_link_args.append(ffi.verifier.modulefilename)
+        code.extra_link_args.append(self.ffi.verifier.modulefilename)
 
     def __del__(self):
         lib.glview_release(self.viewer)
-
-
-def Show(img, name="View"):
-    ShowNode(CoreGraph.get_current_graph(), img, name)
