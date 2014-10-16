@@ -1,10 +1,17 @@
 language: python
 python:
-  - "2.7"
+- '2.6'
+- '2.7'
 install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y vlc libvlc-dev freeglut3-dev
-  - pip install -r requirements.txt
+- sudo apt-get update -qq
+- sudo apt-get install -y vlc libvlc-dev freeglut3-dev
+- pip install -r requirements.txt
 script:
-  - py.test -v
-
+- py.test -v
+deploy:
+  provider: pypi
+  user: hakanardo
+  password:
+    secure: LA16LJyigOhZPqBulP/jT0DbM8cDnGma5y/7ldiHpEJTuKUYQ9VJSKDnxYXPRnTyWtQT2VioQtqMES3m8djBsrI8mm85heJUDI67EyRl7g/MEljBiSeida2VTwlY4U5INBuCyijQ5j52U1C2SOKksnBIaO7yh2MuOL4M/nMnIWI=
+  on:
+    tags: true
