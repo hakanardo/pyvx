@@ -30,7 +30,7 @@ handful of nodes are implemented as well as graph optimizations to do dead
 code elimination and to merge strictly element-wise nodes. Contributions are
 welcome.
 
-.. _`demo`: https://bitbucket.org/hakanardo/pyvx/src/master/demo/
+.. _`demo`: https://github.com/hakanardo/pyvx/tree/master/demo
 
 Installation
 ============
@@ -53,16 +53,16 @@ Then there are a few different ways to install PyVX:
 
 .. __: http://pypi.python.org/pypi/pyvx
 
-* or get it from `bitbucket`_:
+* or get it from `Github`_:
 
 .. code-block:: bash
 
-  hg clone https://bitbucket.org/hakanardo/pyvx
+  git clone https://github.com/hakanardo/pyvx.git
   cd pyvx
   python setup.py install
 
 
-.. _`bitbucket`: https://bitbucket.org/hakanardo/pyvx
+.. _`Github`: https://github.com/hakanardo/pyvx
 
 Modules
 =======
@@ -97,7 +97,7 @@ Comments and bugs
 
 There is a `mailing list`_ for general discussions and an `issue tracker`_ for reporting bugs.
 
-.. _`issue tracker`: https://bitbucket.org/hakanardo/pyvx/issues
+.. _`issue tracker`: https://github.com/hakanardo/pyvx/issues
 .. _`mailing list`: https://groups.google.com/forum/#!forum/pyvx
 
 
