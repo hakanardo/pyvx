@@ -77,6 +77,7 @@ class Code(object):
         self.code = code
         self.indent_level = 0
         self.extra_link_args = []
+        self.includes = set()
 
     def add_block(self, cxnode, code, **magic_vars):
         ast = cparse(code)

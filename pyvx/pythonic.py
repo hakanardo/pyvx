@@ -7,6 +7,7 @@ InvalidGraphError = ERROR_INVALID_GRAPH
 InvalidValueError = ERROR_INVALID_VALUE
 InvalidFormatError = ERROR_INVALID_FORMAT
 GraphAbandonedError = ERROR_GRAPH_ABANDONED
+InvalidNodeError = ERROR_INVALID_NODE
 
 class Image(CoreImage):
 

@@ -17,6 +17,10 @@ class my_build(build):
 
 
 
+ext_modules = [n.ffi.verifier.get_extension() 
+               for n in [pyvx.nodes.PlayNode, pyvx.nodes.ShowNode]
+               if n.lib]
+
 setup(
         name='PyVX',
         description='OpenVX implementation',
@@ -30,9 +34,22 @@ setup(
         author_email='pyvx@googlegroups.com',
         license='MIT',
         install_requires=['pycparser','cffi'],
-        ext_modules=[pyvx.nodes.PlayNode.ffi.verifier.get_extension(),
-                     pyvx.nodes.ShowNode.ffi.verifier.get_extension()],
+        ext_modules=ext_modules,
         data_files = [('/usr/local/include', [os.path.join('build', 'openvx.h')]),
                       ('/usr/local/lib', libs)],
         cmdclass={'build': my_build},
     )
+
+if pyvx.nodes.PlayNode.lib is None:
+    print
+    print "Warning: PlayNode not availible due to mssing dependencies. Try:"
+    print
+    print "    apt-get install vlc libvlc-dev"
+    print
+
+if pyvx.nodes.ShowNode.lib is None:
+    print
+    print "Warning: ShowNode not availible due to mssing dependencies. Try:"
+    print
+    print "    apt-get install freeglut3-dev"
+    print

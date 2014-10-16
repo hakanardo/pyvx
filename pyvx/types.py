@@ -148,8 +148,9 @@ class ERROR_MULTIPLE_WRITERS(VerificationError): pass
 class ERROR_INVALID_GRAPH(VerificationError): pass
 class ERROR_INVALID_VALUE(VerificationError): pass
 class ERROR_INVALID_FORMAT(VerificationError): pass
+class ERROR_INVALID_NODE(VerificationError): pass
 class ERROR_GRAPH_ABANDONED(Exception): pass
 class SUCCESS(object): pass
 status_codes = [SUCCESS, ERROR_MULTIPLE_WRITERS, ERROR_INVALID_GRAPH, 
                 ERROR_INVALID_VALUE, ERROR_INVALID_FORMAT,
-                ERROR_GRAPH_ABANDONED]
+                ERROR_GRAPH_ABANDONED, ERROR_INVALID_NODE]

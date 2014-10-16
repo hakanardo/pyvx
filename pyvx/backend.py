@@ -278,6 +278,7 @@ class CoreGraph(object):
             }
         ''' + Enum(*status_codes, prefix="VX_").typedef('vx_status') + "\n"
         code = Code(imgs + "\n")
+        code.includes.add('#include <math.h>')
         for n in self.nodes:
             assert not n.optimized_out
             n.compile(code)
@@ -285,11 +286,7 @@ class CoreGraph(object):
         ffi.cdef("int func(void);")
         if self.show_source:
             print str(code)
-        inc = """
-            #include <math.h>
-            #include "vlcplay.h"
-            #include "glview.h"            
-        """
+        inc = '\n'.join(code.includes) + '\n'
         tmpdir = mkdtemp()
         mydir = os.path.dirname(os.path.abspath(__file__))
         try:

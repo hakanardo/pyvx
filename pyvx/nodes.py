@@ -1,5 +1,5 @@
 from pyvx.backend import *
-from cffi import FFI
+import cffi
 import os
 
 class ElementwiseNode(Node):
@@ -211,7 +211,7 @@ class PlayNode(Node):
     signature = 'in path, out output'
     player = None
 
-    ffi = FFI()
+    ffi = cffi.FFI()
     ffi.cdef("""
             struct vlcplay {
                 int width, height;
@@ -222,13 +222,30 @@ class PlayNode(Node):
             int vlcplay_next(struct vlcplay *m, unsigned char *buf);
             void vlcplay_release(struct vlcplay *m);
             """)
-    lib = ffi.verify(open(os.path.join(mydir, 'vlcplay.c')).read(),
-                     extra_compile_args=['-O3'],
-                     libraries=['vlc'],
-                     )
+    try:
+        lib = ffi.verify(open(os.path.join(mydir, 'vlcplay.c')).read(),
+                         extra_compile_args=['-O3'],
+                         libraries=['vlc'],
+                         )
+    except (cffi.VerificationError, IOError) as e:
+        lib = None
 
 
     def verify(self):
+        if self.lib is None:
+            raise ERROR_INVALID_NODE('''
+                                     
+                PlayNode failed to compile. See error message from the compiler above,
+                and make sure you have vlc installed. On Debian:
+
+                    apt-get install vlc libvlc-dev
+
+                If pyvx is installed centraly it needs to be reinstalled after the
+                issue have been resolved. Using pip that is achieved with:
+
+                    pip install --upgrade --force-reinstall pyvx
+
+                ''')        
         if not self.player:
             self.player = self.lib.vlcplay_create(self.path)
         if not self.player:
@@ -241,6 +258,8 @@ class PlayNode(Node):
         adr = int(self.ffi.cast('long', self.player))
         code.add_block(self, "if (vlcplay_next((void *)0x%x, img.data)) return VX_ERROR_GRAPH_ABANDONED;" % adr, img=self.output);
         code.extra_link_args.append(self.ffi.verifier.modulefilename)
+        code.includes.add('#include "vlcplay.h"')
+
 
     def __del__(self):
         self.lib.vlcplay_release(self.player)
@@ -250,7 +269,7 @@ class ShowNode(Node):
     viewer = None
     name = "View"
 
-    ffi = FFI()
+    ffi = cffi.FFI()
     ffi.cdef("""
             struct glview {
                 int width, height;
@@ -264,13 +283,29 @@ class ShowNode(Node):
             #define GL_UNSIGNED_BYTE ...
 
              """)
-    lib = ffi.verify(open(os.path.join(mydir, 'glview.c')).read(), 
-                     extra_compile_args=['-O3'],
-                     libraries=['glut', 'GL', 'GLU'],
-                     )
-
+    try:
+        lib = ffi.verify(open(os.path.join(mydir, 'glview.c')).read(), 
+                         extra_compile_args=['-O3'],
+                         libraries=['glut', 'GL', 'GLU'])
+    except (cffi.VerificationError, IOError) as e:
+        print e
+        lib = None
 
     def verify(self):
+        if self.lib is None:
+            raise ERROR_INVALID_NODE('''
+
+                ShowNode failed to compile. See error message from the compiler above,
+                and make sure you have glut GL and GLU installed. On Debian:
+
+                    apt-get install freeglut3-dev
+
+                If pyvx is installed centraly it needs to be reinstalled after the
+                issue have been resolved. Using pip that is achieved with:
+
+                    pip install --upgrade --force-reinstall pyvx
+
+                ''')
         self.input.ensure_color(FOURCC_RGB)
         if self.viewer:
             if self.viewer.width == self.input.width and self.viewer.height == self.input.height:
@@ -286,6 +321,8 @@ class ShowNode(Node):
         adr = int(self.ffi.cast('long', self.viewer))
         code.add_block(self, "if (glview_next((void *)0x%x, img.data)) return VX_ERROR_GRAPH_ABANDONED;" % adr, img=self.input);
         code.extra_link_args.append(self.ffi.verifier.modulefilename)
+        code.includes.add('#include "glview.h"')
 
     def __del__(self):
-        lib.glview_release(self.viewer)
+        if self.viewer:
+            self.lib.glview_release(self.viewer)
