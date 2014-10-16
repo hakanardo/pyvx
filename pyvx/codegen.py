@@ -86,7 +86,7 @@ class Code(object):
             Number of spaces to indent code added using ``add_block``.
         ``extra_link_args``
             A ``list`` of extra arguments needed to be passed to the linker when 
-            compiling the code. It is typically used to link to libraries 
+            compiling the code. It is typically used to link with external libraries 
             used by the code.
         ``includes``
             A ``set`` of lines added at the top of the generated .c file outside
@@ -104,14 +104,14 @@ class Code(object):
         self.includes = set()
 
     def add_block(self, cxnode, code, **magic_vars):
-        """ Add ``code`` as a new block of code. It will be enclosed in with ``{}``
+        """ Append ``code`` as a new block of code. It will be enclosed in with ``{}``
             brackets to allow it to declare local variables. The code will be
             parsed and all references to the symbol names passed as keyword 
             arguments will be extracted and handled separately. These magic variables
-            are intended to be Image objects, but could be anything that define 
-            compatible ``getattr()`` and ``getitem()`` methods. If ``img`` is 
-            declared to be a magic variable it can be used in the C-code in the
-            following ways:
+            are intended to refere to ``Image`` objects, but could be anything that define 
+            compatible ``getattr()`` and ``getitem()`` methods. If an ``Image`` is
+            passed as the keyword argument ``img``, it can be used in the C-code in 
+            the following ways:
 
                 ``img[x,y]``
                     The value of pixel (``x``, ``y``) of a single channel image.

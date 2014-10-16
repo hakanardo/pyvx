@@ -5,7 +5,7 @@
 This module provides the functions as specified by the `OpenVX`_ standard.
 Please refer to the `OpenVX speficication`_ for a description of the API. The
 module name vx is used instead of a vx prefix on all symbols. The initial
-example on page 12 of that specification would in python look like this:
+example on page 12 of the specification would in python look like this:
 
 .. code-block:: python 
 

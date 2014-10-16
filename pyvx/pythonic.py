@@ -36,13 +36,13 @@ This API is generated from the OpenVX API using the following transformations:
   used. If ``early_verify`` is ``True`` a partial verification will be performed as
   the nodes are created. This allows most errors to be detected at this time
   and raised as exceptions. The tracebacks of those exceptions will point to
-  the line producing the erroneous node, which simplifies debugging a lot.
+  the line producing the erroneous node. This simplifies debugging a lot.
 
   The ``Graph`` objects are context manager that support the ``with`` statement as
   shown in the example above. It is used to make all the nodes and virtual
   images produced from within the code block belong to that graph. This allows
-  virtual images to be automatically created and special methods implementing
-  binary operations (see below).
+  virtual images to be automatically created and the use of special methods to
+  create binary operations (see below).
 
 - Within the code block of a ``with Graph():`` construction, the following features
   can be used:
@@ -59,17 +59,18 @@ This API is generated from the OpenVX API using the following transformations:
       it is recommended to make any such adjustments as soon as possible.
 
     - ``Image`` objects have a ``force()`` method that will turn a virtual image into a
-      normal non-virtual image.
+      normal fully allocated non-virtual image.
 
     - ``Image`` objects that have been passed as an output or inout parameter of a node 
       have a ``producer`` property that refers to this node. It can be used to access
       a node object even if only it's outputs are available (which would be the
       typical case when using this API).
 
-    - For each ``VX_CHANNEL_X`` the ``Image`` object has a ``channel_x`` property that will 
-      create a ``ChannelExtractNode`` and return the virtual image that node outputs.
+    - For each ``VX_CHANNEL_X`` the ``Image`` object has a ``channel_x`` property 
+      that will 
+      create a ``ChannelExtractNode`` and return it's virtual output images.
 
-    - A lot of the python special methods are Implemented on the Image objects to
+    - A lot of the python special methods are Implemented on the ``Image`` objects to
       allow numpy style expressions to be used to create nodes.
 
     As an example here is a graph that calculates the squared magnitude in a 32 bit 

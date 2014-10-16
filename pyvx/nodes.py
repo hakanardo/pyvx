@@ -26,21 +26,28 @@ and ``compile()``. As an example here is the implementation of the Gaussian3x3No
                 }
                 \""", img=self.input, res=self.output)
 
-- ``signature`` is a string specifying the argument names and there directions 
+- ``Node.signature`` is a string specifying the argument names and there directions 
   (in, out or inout). The arguments will be assigned to attributes with the same
   names when the node is created. The arguments can be given default values by 
   assigning them to class-level attributes.
 
-- ``verify(self)`` is called during the verification phase and can assume that all 
+- ``Node.verify(self)`` is called during the verification phase and can assume that all 
   nodes it depend on have verified successfully. It is supposed to check the
-  arguments and raise one of the VerificationError's if they don't make sense. Also
-  any output images with 0 width/height or color FOURCC_VIRT should be given 
+  arguments and raise one of the ``VerificationError``'s if they don't make sense. Also
+  any output images with width/height set to 0 or color set to FOURCC_VIRT should be given 
   proper values. There are a few helper methods available described below.
 
-- ``compile(self, code)`` is called after verification of the entire graph was
+- ``Node.compile(self, code)`` is called after verification of the entire graph was
   successful. It is responsible for generating C code implementing the node using
   the ``code`` argument. It has a notion of magic variables used to abstract away 
   the pixel access calculations. See :class:`pyvx.codegen.Code`. 
+
+- ``Node.ensure(self, condition)``
+  FIXME
+- ``Image.ensure_...``
+  FIXME
+- ``Image.suggest_...``
+  FIXME
 
 To allow for a general implementation of the graph optimizations, there are special 
 subclasses of ``Node`` that should be used. For strictly element-wise operations
@@ -58,7 +65,7 @@ of the ``PowerNode``:
         body = "out = pow(in1, in2);"
 
 If some logic is needed to produce the code, ``body`` can be implemented as a 
-``property``:
+``property``. That is for example done by the ``BinaryOperationNode``:
 
 .. code-block:: python 
 
@@ -68,7 +75,7 @@ If some logic is needed to produce the code, ``body`` can be implemented as a
         def body(self):
             return "out = in1 %s in2;" % self.op
 
-The default ``verify()`` will ensure that the output images are of the same size
+The default ``ElementwiseNode.verify()`` will ensure that the output images are of the same size
 as the input images and will use :func:`pyvx.types.result_color`  to 
 replace  ``FOURCC_VIRT`` colors among the output images. If this is not appropriate 
 it can be overridden.

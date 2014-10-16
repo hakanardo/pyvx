@@ -77,14 +77,12 @@ The main modules of PyVX are:
 
 :mod:`pyvx.capi`
     A specification of a C API that is used generate a shared
-    library and a header embedding python and calls the pyvx.vx functions. This
+    library and a header file  that embeds python and calls the ``pyvx.vx``
+    functions. This
     provides the C API of the `OpenVX`_ standard.
 
 :mod:`pyvx.nodes`
     The implementation of the different processing nodes.
-
-:mod:`pyvx.backend`
-    The backend that generates the C-code implementing the graphs specified.
 
 :mod:`pyvx.optimize`
     Graph optimizations that are executed on the graphs during the verification step.
@@ -108,11 +106,4 @@ There is a `mailing list`_ for general discussions and an `issue tracker`_ for r
 .. _`mailing list`: https://groups.google.com/forum/#!forum/pyvx
 .. _`continuous integration service`: https://travis-ci.org/hakanardo/pyvx
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
