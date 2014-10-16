@@ -6,7 +6,9 @@ if [ -d build ]; then
     exit
 fi
 git checkout stable || exit
+git pull
 git merge master || exit
-
+git tag v`PYTHONPATH=. python -c 'import pyvx; print pyvx.__version__' 2>/dev/null | tail -1` || exit
+git push --tags
 python setup.py sdist || exit
 twine upload dist/*

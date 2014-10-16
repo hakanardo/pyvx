@@ -3,7 +3,7 @@ from distutils.command.build import build
 import os
 import pyvx.nodes
 import pyvx.capi
-from pyvx.version import release
+from pyvx import __version__
 
 mydir = os.path.dirname(os.path.abspath(__file__))
 libs = []
@@ -25,7 +25,7 @@ setup(
         name='PyVX',
         description='OpenVX implementation',
         long_description=open(os.path.join(mydir, 'README.rst')).read(),
-        version=release,
+        version=__version__,
         packages=['pyvx'],
         package_data={'pyvx': ['glview.h', 'vlcplay.h', 'glview.c', 'vlcplay.c']},
         zip_safe=False,
