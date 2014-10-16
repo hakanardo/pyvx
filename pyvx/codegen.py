@@ -144,7 +144,7 @@ class Code(object):
         self.code += hdr + generator.visit(ast)
 
     def add_code(self, code):
-        """ Extend the code with ``code`` with any adjustment.
+        """ Extend the code with ``code`` without any adjustment.
         """        
         self.code += code
 
