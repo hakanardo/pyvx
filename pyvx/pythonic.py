@@ -23,7 +23,7 @@ like this:
 
 This API is generated from the OpenVX API using the following transformations:
 
-- The error codes VX_ERROR_XXX_YYY are turned into exceptions XxxYyyError and
+- The error codes ``VX_ERROR_XXX_YYY`` are turned into exceptions ``XxxYyyError`` and
   raised instead of returned.
 
 - Graph's are created using
@@ -32,48 +32,48 @@ This API is generated from the OpenVX API using the following transformations:
 
         class Graph(context=None, early_verify=True):
 
-  If `context` is not specified a single global context will be created an
-  used. If early_verify is True a partial verification will be performed as
+  If ``context`` is not specified a single global context will be created an
+  used. If ``early_verify`` is ``True`` a partial verification will be performed as
   the nodes are created. This allows most errors to be detected at this time
   and raised as exceptions. The tracebacks of those exceptions will point to
   the line producing the erroneous node, which simplifies debugging a lot.
 
-  The Graph objects are context manager that support the with statement as
+  The ``Graph`` objects are context manager that support the ``with`` statement as
   shown in the example above. It is used to make all the nodes and virtual
   images produced from within the code block belong to that graph. This allows
   virtual images to be automatically created and special methods implementing
   binary operations (see below).
 
-- Within the code block of a "with Graph():" construction, the following features
+- Within the code block of a ``with Graph():`` construction, the following features
   can be used:
 
-    - For each vxXxxNode there is a Xxx function that has only the input arguments
-      of vxXxxNode. This function will create a 0x0 virtual image with color
-      FOURCC_VIRT for each of the output and inout arguments. Then it will call 
-      vxXxxNode and return the created images. Also, most non-image input arguments 
+    - For each ``vxXxxNode`` there is a ``Xxx()`` function that has only the input arguments
+      of ``vxXxxNode``. This function will create a 0x0 virtual image with color
+      ``FOURCC_VIRT`` for each of the output and inout arguments. Then it will call 
+      ``vxXxxNode`` and return the created images. Also, most non-image input arguments 
       have been given default values and can be skipped.
 
-    - The Image objects have `width`, `height` and `color` properties than
+    - The ``Image`` objects have ``width``, ``height`` and ``color`` properties than
       can be adjusted at any time before the verification 
       phase. However, to get the most out of the early verification described above,
       it is recommended to make any such adjustments as soon as possible.
 
-    - Image objects have a `force()` method that will turn a virtual image into a
+    - ``Image`` objects have a ``force()`` method that will turn a virtual image into a
       normal non-virtual image.
 
-    - Image objects that have been passed as an output or inout parameter of a node 
-      have a `producer` property that refers to this node. It can be used to access
+    - ``Image`` objects that have been passed as an output or inout parameter of a node 
+      have a ``producer`` property that refers to this node. It can be used to access
       a node object even if only it's outputs are available (which would be the
       typical case when using this API).
 
-    - For each VX_CHANNEL_X the Image object has a `channel_x` property that will 
-      create a ChannelExtractNode and return the virtual image that node outputs.
+    - For each ``VX_CHANNEL_X`` the ``Image`` object has a ``channel_x`` property that will 
+      create a ``ChannelExtractNode`` and return the virtual image that node outputs.
 
     - A lot of the python special methods are Implemented on the Image objects to
       allow numpy style expressions to be used to create nodes.
 
     As an example here is a graph that calculates the squared magnitude in a 32 bit 
-    unsigned image.
+    unsigned image:
 
     .. code-block:: python 
 
