@@ -95,10 +95,11 @@ The main modules of PyVX are:
 Comments and bugs
 =================
 
-There is a `mailing list`_ for general discussions and an `issue tracker`_ for reporting bugs. 
+There is a `mailing list`_ for general discussions and an `issue tracker`_ for reporting bugs and a `continuous integration service`_ that's running tests.
 
 .. _`issue tracker`: https://github.com/hakanardo/pyvx/issues
 .. _`mailing list`: https://groups.google.com/forum/#!forum/pyvx
+.. _`continuous integration service`: https://travis-ci.org/hakanardo/pyvx
 
 
 Indices and tables
