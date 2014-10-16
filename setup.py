@@ -1,5 +1,6 @@
-from distutils.core import setup
-from distutils.command.build import build
+from distutils.core import setup, Command
+from distutils.command.build import build as BuildCommand
+import sys
 import os
 import pyvx.nodes
 import pyvx.capi
@@ -8,14 +9,24 @@ from pyvx import __version__
 mydir = os.path.dirname(os.path.abspath(__file__))
 libs = []
 
-class my_build(build):
+class MyBuild(BuildCommand):
     def run(self):
         if not os.path.exists('build'):
             os.mkdir('build')
         libs.extend(pyvx.capi.build('build'))
-        build.run(self)
+        BuildCommand.run(self)
 
 
+class PyTest(Command):
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        import pytest
+        errno = pytest.main()
+        sys.exit(errno)
 
 ext_modules = [n.ffi.verifier.get_extension() 
                for n in [pyvx.nodes.PlayNode, pyvx.nodes.ShowNode]
@@ -37,7 +48,8 @@ setup(
         ext_modules=ext_modules,
         data_files = [('/usr/local/include', [os.path.join('build', 'openvx.h')]),
                       ('/usr/local/lib', libs)],
-        cmdclass={'build': my_build},
+        cmdclass={'build': MyBuild, 'test': PyTest},
+        tests_require=['pytest'],
     )
 
 if pyvx.nodes.PlayNode.lib is None:
