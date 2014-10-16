@@ -1,3 +1,79 @@
+"""
+:mod:`pyvx.nodes` --- Node implementations
+==========================================
+
+This module contains the implementations of the different processing nodes. They
+are implemented by subclassing ``Node`` and overriding ``signature``, ``verify()``
+and ``compile()``. As an example here is the implementation of the Gaussian3x3Node:
+
+.. code-block:: python 
+
+    class Gaussian3x3Node(Node):
+        signature = "in input, out output"
+
+        def verify(self):
+            self.ensure(self.input.color.items == 1)
+            self.output.ensure_similar(self.input)
+
+        def compile(self, code):
+            code.add_block(self, \"""
+                for (long y = 0; y < img.height; y++) {
+                    for (long x = 0; x < img.width; x++) {
+                        res[x, y] = (1*img[x-1, y-1] + 2*img[x, y-1] + 1*img[x+1, y-1] +
+                                     2*img[x-1, y]   + 4*img[x, y]   + 2*img[x+1, y]   +
+                                     1*img[x-1, y+1] + 2*img[x, y+1] + 1*img[x+1, y+1]) / 16;
+                    }
+                }
+                \""", img=self.input, res=self.output)
+
+- ``signature`` is a string specifying the argument names and there directions 
+  (in, out or inout). The arguments will be assigned to attributes with the same
+  names when the node is created. The arguments can be given default values by 
+  assigning them to class-level attributes.
+
+- ``verify(self)`` is called during the verification phase and can assume that all 
+  nodes it depend on have verified successfully. It is supposed to check the
+  arguments and raise one of the VerificationError's if they don't make sense. Also
+  any output images with 0 width/height or color FOURCC_VIRT should be given 
+  proper values. There are a few helper methods available described below.
+
+- ``compile(self, code)`` is called after verification of the entire graph was
+  successful. It is responsible for generating C code implementing the node using
+  the ``code`` argument. It has a notion of magic variables used to abstract away 
+  the pixel access calculations. See :class:`pyvx.codegen.Code`. 
+
+To allow for a general implementation of the graph optimizations, there are special 
+subclasses of ``Node`` that should be used. For strictly element-wise operations
+there is ``ElementwiseNode``. It expects a ``body`` attribute with the code
+that will be executed for each pixel. This code can assume that there are variables
+with the same name as the arguments available. For the input arguments those 
+variables contains the pixel values of the current pixel and it is the responsibility
+of this code to assign the output variables. As an example, here is the implementation
+of the ``PowerNode``:
+
+.. code-block:: python 
+
+    class PowerNode(ElementwiseNode):
+        signature = "in in1, in in2, in convert_policy, out out"
+        body = "out = pow(in1, in2);"
+
+If some logic is needed to produce the code, ``body`` can be implemented as a 
+``property``:
+
+.. code-block:: python 
+
+    class BinaryOperationNode(ElementwiseNode):
+        signature = "in in1, in op, in in2, in convert_policy, out out"
+        @property
+        def body(self):
+            return "out = in1 %s in2;" % self.op
+
+The default ``verify()`` will ensure that the output images are of the same size
+as the input images and will use :func:`pyvx.types.result_color`  to 
+replace  ``FOURCC_VIRT`` colors among the output images. If this is not appropriate 
+it can be overridden.
+
+"""
 from pyvx.backend import *
 import cffi
 import os

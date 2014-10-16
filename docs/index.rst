@@ -91,6 +91,7 @@ The main modules of PyVX are:
 
 .. automodule:: pyvx.vx
 .. automodule:: pyvx.pythonic
+.. automodule:: pyvx.nodes
 
 
 Comments and bugs
