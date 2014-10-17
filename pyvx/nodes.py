@@ -42,12 +42,27 @@ and ``compile()``. As an example here is the implementation of the Gaussian3x3No
   the ``code`` argument. It has a notion of magic variables used to abstract away 
   the pixel access calculations. See :class:`pyvx.codegen.Code`. 
 
-- ``Node.ensure(self, condition)``
-  FIXME
-- ``Image.ensure_...``
-  FIXME
-- ``Image.suggest_...``
-  FIXME
+To simplify the implementation of ``verify()`` there are a few helper functions. They
+will updated the properties of the images if they've not yet been set, and 
+raise ``ERROR_INVALID_FORMAT`` if they were set to something different.
+
+- ``Image.ensure_shape(self, other_image)`` Ensures ``self`` has the same width
+  and height as other_image.
+
+- ``Image.ensure_shape(self, width, height)`` Ensures ``self`` has the width 
+  ``width`` an the height ``height``.
+
+- ``Image.ensure_color(self, color)`` Ensures that the color of ``self`` is ``color``
+
+- ``Image.suggest_color(self, color)`` Sets ``self.color`` to ``color`` if it is not 
+  yet specified.
+
+- ``Image.ensure_similar(self, image)`` Ensures that the shape and number of channels
+  of ``self`` and ``image`` are the same, and suggests that the color of ``self`` is 
+  the same as ``image``.
+
+- ``Node.ensure(self, condition)`` raises ``ERROR_INVALID_FORMAT`` if ``condition``
+  is ``false``.
 
 To allow for a general implementation of the graph optimizations, there are special 
 subclasses of ``Node`` that should be used. For strictly element-wise operations
