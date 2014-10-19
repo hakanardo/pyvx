@@ -8,5 +8,7 @@ git tag v`PYTHONPATH=. python -c 'import pyvx; print pyvx.__version__' 2>/dev/nu
 git checkout stable || exit
 git pull
 git merge master || exit
+git push 
 git push --tags
 git checkout master
+git push 
