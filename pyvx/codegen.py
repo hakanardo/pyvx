@@ -128,9 +128,9 @@ class Code(object):
                 ``img.height``
                     The height of the image in pixels.                
                 ``img.pixels``
-                    The number of pixels in the image (width * height).
+                    The number of pixels in the image (``width * height``).
                 ``img.values``
-                    The number of values in the image (width * height * channels).
+                    The number of values in the image (``width * height * channels``).
                 ``img.data``
                     A pointer to the beginning of the pixel data.
 
