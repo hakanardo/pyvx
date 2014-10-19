@@ -25,11 +25,11 @@ class OpenVxApi(object):
 
     @export("vx_context()", add_ret_to_arg=None)
     def vxCreateContext():
-        return Context()
+        return vx.CreateContext()
 
     @export("vx_image(vx_context, uint32_t, uint32_t, vx_fourcc)")
     def vxCreateImage(context, width, height, color):
-        return Image(width, height, color, context=context)
+        return vx.CreateImage(context, width, height, color)
 
     @export("vx_graph(vx_context)")
     def vxCreateGraph(context):
@@ -37,19 +37,15 @@ class OpenVxApi(object):
 
     @export("vx_image(vx_graph, uint32_t, uint32_t, vx_fourcc)")
     def vxCreateVirtualImage(graph, width, height, color):
-        return Image(width, height, color, graph=graph, virtual=True)
+        return vx.CreateVirtualImage(graph, width, height, color)
 
     @export("vx_status(vx_graph)")
     def vxVerifyGraph(graph):
-        try:
-            graph.verify()
-        except VerificationError as e:
-            return e.__class__
-        return SUCCESS
+        return vx.VerifyGraph(graph)
 
     @export("vx_status(vx_graph)")
     def vxProcessGraph(graph):
-        return graph.process()
+        return vx.ProcessGraph(graph)
     
     @export("void(vx_context *)", retrive_args=False)
     def vxReleaseContext(context):
@@ -62,31 +58,31 @@ class OpenVxApi(object):
 
     @export("vx_node(vx_graph, vx_image, vx_channel, vx_image)")
     def vxChannelExtractNode(graph, input, channel, output):
-        return ChannelExtractNode(graph, input, channel, output)
+        return vx.ChannelExtractNode(graph, input, channel, output)
 
     @export("vx_node(vx_graph, vx_image, vx_image)")
     def vxGaussian3x3Node(graph, input, output):
-        return Gaussian3x3Node(graph, input, output)
+        return vx.Gaussian3x3Node(graph, input, output)
 
     @export("vx_node(vx_graph, vx_image, vx_image, vx_image)")
     def vxSobel3x3Node(graph, input, output_x, output_y):
-        return Sobel3x3Node(graph, input, output_x, output_y)
+        return vx.Sobel3x3Node(graph, input, output_x, output_y)
 
     @export("vx_node(vx_graph, vx_image, vx_image, vx_image)")
     def vxMagnitudeNode(graph, grad_x, grad_y, mag):
-        return MagnitudeNode(graph, grad_x, grad_y, mag)
+        return vx.MagnitudeNode(graph, grad_x, grad_y, mag)
 
     @export("vx_node(vx_graph, vx_image, vx_image, vx_image)")
     def vxPhaseNode(graph, grad_x, grad_y, orientation):
-        return PhaseNode(graph, grad_x, grad_y, orientation)
+        return vx.PhaseNode(graph, grad_x, grad_y, orientation)
 
     @export("vx_node(vx_graph, char *, vx_image)")
     def vxPlayNode(graph, fn, output):
-        return PlayNode(graph, fn, output)
+        return vx.PlayNode(graph, fn, output)
 
     @export("vx_node(vx_graph, vx_image, char *)")
     def vxShowNode(graph, input, name):
-        return ShowNode(graph, input, name)
+        return vx.ShowNode(graph, input, name)
 
 
 def build(out_path='.'):

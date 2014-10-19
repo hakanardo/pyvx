@@ -46,7 +46,6 @@ from pyvx.optimize import OptimizedGraph
 from pyvx.types import *
 from pyvx.nodes import *
 
-
 def CreateContext():
     return Context()
 
