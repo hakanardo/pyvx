@@ -55,7 +55,7 @@ extern "C" {
  CONTEXT
  =============================================================================*/
 
-VX_API vx_context vxCreateContext();
+VX_API vx_context vxCreateContext(void);
 
 VX_API vx_status vxReleaseContext(vx_context *context);
 
