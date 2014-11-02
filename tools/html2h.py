@@ -26,8 +26,13 @@ class MyHTMLParser(HTMLParser):
             self.out.write(data)
 
     def handle_entityref(self, name):
-        self.out.write({'quot': '"', 'lt': '<', 'gt': '>',
+        self.handle_data({'quot': '"', 'lt': '<', 'gt': '>',
                         'amp': '&'}[name])
+
+    def handle_charref(self, name):
+        i = int(name)
+        if i < 127:
+            self.handle_data(chr(i))
 
 parser = MyHTMLParser()
 parser.feed(open(sys.argv[1]).read())

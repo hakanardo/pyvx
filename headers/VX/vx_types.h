@@ -280,20 +280,20 @@ enum vx_convert_policy_e {
 };
 
 enum vx_df_image_e {
-    VX_DF_IMAGE_VIRT = VX_DF_IMAGE(V,I,R,T),
-    VX_DF_IMAGE_RGB  = VX_DF_IMAGE(R,G,B,2),
-    VX_DF_IMAGE_RGBX = VX_DF_IMAGE(R,G,B,A),
-    VX_DF_IMAGE_NV12 = VX_DF_IMAGE(N,V,1,2),
-    VX_DF_IMAGE_NV21 = VX_DF_IMAGE(N,V,2,1),
-    VX_DF_IMAGE_UYVY = VX_DF_IMAGE(U,Y,V,Y),
-    VX_DF_IMAGE_YUYV = VX_DF_IMAGE(Y,U,Y,V),
-    VX_DF_IMAGE_IYUV = VX_DF_IMAGE(I,Y,U,V),
-    VX_DF_IMAGE_YUV4 = VX_DF_IMAGE(Y,U,V,4),
-    VX_DF_IMAGE_U8 = VX_DF_IMAGE(U,0,0,8),
-    VX_DF_IMAGE_U16  = VX_DF_IMAGE(U,0,1,6),
-    VX_DF_IMAGE_S16  = VX_DF_IMAGE(S,0,1,6),
-    VX_DF_IMAGE_U32  = VX_DF_IMAGE(U,0,3,2),
-    VX_DF_IMAGE_S32  = VX_DF_IMAGE(S,0,3,2),
+    VX_DF_IMAGE_VIRT = VX_DF_IMAGE('V','I','R','T'),
+    VX_DF_IMAGE_RGB  = VX_DF_IMAGE('R','G','B','2'),
+    VX_DF_IMAGE_RGBX = VX_DF_IMAGE('R','G','B','A'),
+    VX_DF_IMAGE_NV12 = VX_DF_IMAGE('N','V','1','2'),
+    VX_DF_IMAGE_NV21 = VX_DF_IMAGE('N','V','2','1'),
+    VX_DF_IMAGE_UYVY = VX_DF_IMAGE('U','Y','V','Y'),
+    VX_DF_IMAGE_YUYV = VX_DF_IMAGE('Y','U','Y','V'),
+    VX_DF_IMAGE_IYUV = VX_DF_IMAGE('I','Y','U','V'),
+    VX_DF_IMAGE_YUV4 = VX_DF_IMAGE('Y','U','V','4'),
+    VX_DF_IMAGE_U8 = VX_DF_IMAGE('U','0','0','8'),
+    VX_DF_IMAGE_U16  = VX_DF_IMAGE('U','0','1','6'),
+    VX_DF_IMAGE_S16  = VX_DF_IMAGE('S','0','1','6'),
+    VX_DF_IMAGE_U32  = VX_DF_IMAGE('U','0','3','2'),
+    VX_DF_IMAGE_S32  = VX_DF_IMAGE('S','0','3','2'),
 };
 
 enum vx_reference_attribute_e {
