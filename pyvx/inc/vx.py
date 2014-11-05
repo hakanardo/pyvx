@@ -1,6 +1,8 @@
 import os
 from cffi import FFI
+import pyvx.inc.vx_vendors as vendors
 import pyvx.inc.vx_types as types
+import pyvx.inc.vx_kernels as kernels
 
 ffi = FFI()
 
@@ -16,7 +18,9 @@ ffi.cdef('''
 #define VX_VERSION ...
 ''')
 
-ffi.cdef(types.cdef)
+ffi.cdef(vendors.cdef)
+ffi.cdef(types.cdef + kernels.cdef)
+#ffi.cdef(kernels.cdef)
 
 mydir = os.path.dirname(os.path.abspath(__file__))
 d = os.path.join(mydir, '..', '..', 'headers')
