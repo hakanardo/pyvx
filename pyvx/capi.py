@@ -8,26 +8,13 @@ def export(signature, add_ret_to_arg=0, **kwargs):
 
 
 class OpenVxApi(object):
-    cdef = ''
-
-    vx_context = Reference()
-    vx_image = Reference()
-    vx_graph = Reference()
-    vx_node = Reference()
-
-    vx_fourcc = Enum(FOURCC_VIRT, FOURCC_RGB, FOURCC_RGBX, FOURCC_UYVY,
-                     FOURCC_YUYV, FOURCC_U8, FOURCC_S8, FOURCC_U16, 
-                     FOURCC_S16, FOURCC_U32, FOURCC_S32)
-    vx_channel = Enum(CHANNEL_0, CHANNEL_1, CHANNEL_2, CHANNEL_3,
-                      CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_A,
-                      CHANNEL_Y, CHANNEL_U, CHANNEL_V, prefix="VX_")
-    vx_status = Enum(*status_codes, prefix="VX_")
+    wrapped_reference_types = ['vx_context', 'vx_image', 'vx_graph', 'vx_node']
 
     @export("vx_context()", add_ret_to_arg=None)
     def vxCreateContext():
         return vx.CreateContext()
 
-    @export("vx_image(vx_context, uint32_t, uint32_t, vx_fourcc)")
+    @export("vx_image(vx_context, uint32_t, uint32_t, vx_df_image)")
     def vxCreateImage(context, width, height, color):
         return vx.CreateImage(context, width, height, color)
 
@@ -35,7 +22,7 @@ class OpenVxApi(object):
     def vxCreateGraph(context):
         return Graph(context, early_verify=False)
 
-    @export("vx_image(vx_graph, uint32_t, uint32_t, vx_fourcc)")
+    @export("vx_image(vx_graph, uint32_t, uint32_t, vx_df_image)")
     def vxCreateVirtualImage(graph, width, height, color):
         return vx.CreateVirtualImage(graph, width, height, color)
 
@@ -47,7 +34,7 @@ class OpenVxApi(object):
     def vxProcessGraph(graph):
         return vx.ProcessGraph(graph)
     
-    @export("void(vx_context *)", retrive_args=False)
+    @export("vx_status(vx_context *)", retrive_args=False)
     def vxReleaseContext(context):
         context_obj = OpenVxApi.pyapi.retrive(context[0])
         for r in context_obj.references:
@@ -55,8 +42,9 @@ class OpenVxApi(object):
         context_obj.clear_references()
         OpenVxApi.pyapi.discard(context[0])
         context[0] = OpenVxApi.pyapi.ffi.NULL
+        return vx.SUCCESS
 
-    @export("vx_node(vx_graph, vx_image, vx_channel, vx_image)")
+    @export("vx_node(vx_graph, vx_image, vx_enum, vx_image)")
     def vxChannelExtractNode(graph, input, channel, output):
         return vx.ChannelExtractNode(graph, input, channel, output)
 
@@ -87,9 +75,11 @@ class OpenVxApi(object):
 
 def build(out_path='.'):
     from pyvx import __version_info__, __version__
+    from pyvx.inc.vx import ffi
     major, minor, _ = __version_info__
     soversion = '%d.%d' % (major, minor)
-    api = PythonApi(OpenVxApi, build=('openvx', __version__, soversion, out_path))
+    api = PythonApi(OpenVxApi, ffi)
+    api.build('openvx', __version__, soversion, out_path)
     return api.library_names
 
 if __name__ == '__main__':

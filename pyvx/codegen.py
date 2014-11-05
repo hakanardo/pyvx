@@ -164,40 +164,38 @@ def export(signature, add_ret_to_arg=None, retrive_args=True, store_result=True)
     return decorator
 
 class PythonApi(object):
-    def __init__(self, api, build=None):
-        ffi = self.ffi = FFI()
-        ffi.cdef(api.cdef)
-        typedefs = []
-        code = []
-        callbacks = {}
-        self.reference_types = set()
-        self.enum_types = set()
-        for n in dir(api):
-            item = getattr(api, n)
-            if isinstance(item, Enum):
-                typedefs.append(item.typedef(n))
-                self.enum_types.add(n)
-            elif isinstance(item, Reference):
-                s = 'struct _%s *' % n
-                typedefs.append('typedef %s %s;' % (s, n))
-                self.reference_types.add(s)
-        ffi.cdef('\n'.join(typedefs))
+    def __init__(self, api, parent_ffi):
+        self.ffi = FFI()
+        self.ffi.include(parent_ffi)
+        self.api = api
+        self.cdef = []
+        self.stubs = []
+        self.callbacks = {}
+        self.wrapped_reference_types = set(self.ffi.typeof(n) 
+                                           for n in api.wrapped_reference_types)
+        
+        api.pyapi = self
+
         for n in dir(api):
             item = getattr(api, n)
             if hasattr(item, 'signature'):
                 fn = item
-                tp = ffi._typeof(fn.signature, consider_function_as_funcptr=True)
-                callback_var = ffi.getctype(tp, n)
-                code.append("%s;" % callback_var)
-                callbacks[n] = self.make_callback(tp, fn)
-        ffi.cdef('\n'.join(code))
-        self.callbacks = callbacks
-        api.pyapi = self
-        self.api = api
-        if build:
-            self.build(build, code, typedefs)
+                tp = self.ffi._typeof(fn.signature, consider_function_as_funcptr=True)
+                callback_var = self.ffi.getctype(tp, '_' + n)
+                self.cdef.append("%s;" % callback_var)
+                args = ', '.join(self.ffi.getctype(t, 'a%d' % i) 
+                                 for i, t in enumerate(tp.args))
+                stub = self.ffi.getctype(tp.result, '%s(%s)' % (n, args))
+                args = ', '.join('a%d' % i for i in xrange(len(tp.args)))
+                if tp.result == 'void':
+                    stub += '{_%s(%s);}' % (n, args)
+                else:
+                    stub += '{return _%s(%s);}' % (n, args)                    
+                self.stubs.append(stub)
+                self.callbacks[n] = self.make_callback(tp, fn)
 
     def load(self):
+        self.ffi.cdef('\n'.join(self.cdef))
         lib = self.ffi.dlopen(None)
         for n, cb in self.callbacks.items():
             setattr(lib, n, cb)
@@ -208,40 +206,29 @@ class PythonApi(object):
 
 
     def make_callback(self, tp, fn):
-        store_result = fn.store_result and tp.result.cname in self.reference_types
-        if fn.store_result and tp.result.cname in self.enum_types:
-            assert not store_result
-            enum_result = tp.result.cname
-        else:
-            enum_result = None
-        if fn.retrive_args:       
-            retrive_refs = tuple([i for i,a in enumerate(tp.args) 
-                                   if a.cname in self.reference_types])
-            retrive_enums =  tuple([(i, a.cname) for i,a in enumerate(tp.args) 
-                                     if a.cname in self.enum_types])
-        else:
-            retrive_refs = retrive_enums = ()
+        store_result = fn.store_result and \
+                       tp.result in self.wrapped_reference_types
         add_ret_to_arg = fn.add_ret_to_arg
+        retrive_refs = ()
+        if fn.retrive_args:       
+            retrive_refs = tuple([i for i, a in enumerate(tp.args) 
+                                    if a in self.wrapped_reference_types])
+            
         def f(*args):
             args = list(args)
             for i in retrive_refs:
                 args[i] = self.retrive(args[i])
-            for i, n in retrive_enums:
-                args[i] = getattr(self.api, n)[args[i]]
             r = fn(*args)
             if store_result:
                 r = self.store(r)
-                if add_ret_to_arg is not None:
-                    args[add_ret_to_arg].add_reference(r)
-            elif enum_result:
-                r = getattr(self.api, enum_result).index(r)
+            if add_ret_to_arg is not None:
+                args[add_ret_to_arg].add_reference(r)
             return r
         f.__name__ = fn.__name__
         return self.ffi.callback(tp, f)
 
 
-    def build(self, (name, version, soversion, out_path), code, typedefs):
-        typedefs = '\n'.join(typedefs) + "\n\n"
+    def build(self, name, version, soversion, out_path):
         tmp = tempfile.mkdtemp()
         try:
             src = os.path.join(tmp, "tmp.c")
@@ -249,7 +236,7 @@ class PythonApi(object):
                 fd.write(""" 
                     #include <stdint.h>
                     #include <Python.h>
-                    """ + self.api.cdef + typedefs + """
+                    #include <VX/vx.h>
 
                     static void __initialize(void) __attribute__((constructor));
                     void __initialize(void) {
@@ -266,12 +253,15 @@ class PythonApi(object):
                     void __deinitialize(void) {
                       Py_Finalize();
                     }
-                    """ + '\n'.join(code))
+                    """ + '\n'.join(self.cdef) + "\n\n" + '\n'.join(self.stubs))
 
             from distutils.core import Extension
             from cffi.ffiplatform import compile
+            mydir = os.path.dirname(os.path.abspath(__file__))
+            d = os.path.join(mydir, '..', 'headers')
             fn = compile(tmp, Extension(name='lib' + name, 
                                         sources=[src],
+                                        extra_compile_args=["-I" + d],
                                         extra_link_args=['-lpython2.7',
                                           '-Wl,-soname,lib%s.so.' % name + soversion]))
             bfn = os.path.join(out_path, os.path.basename(fn))
@@ -287,16 +277,6 @@ class PythonApi(object):
             os.symlink(os.path.basename(full), bfn)
         finally:
             rmtree(tmp)
-
-        prototypes = '\n'.join('extern ' + l for l in code)
-        with open(os.path.join(out_path, name + '.h'), 'w') as fd:
-            fd.write("#ifndef __OPENCX_H__\n")
-            fd.write("#define __OPENCX_H__\n\n")
-            fd.write("#include <stdint.h>\n")
-            fd.write(self.api.cdef + '\n')
-            fd.write(typedefs + '\n\n')
-            fd.write(prototypes + "\n\n")
-            fd.write("#endif\n")
         self.library_names = [full, so, bfn]
 
     def store(self, x):
