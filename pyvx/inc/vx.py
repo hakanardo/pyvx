@@ -24,7 +24,8 @@ ffi.cdef(types.cdef + kernels.cdef)
 
 mydir = os.path.dirname(os.path.abspath(__file__))
 d = os.path.join(mydir, '..', '..', 'headers')
-lib = ffi.verify('#include "VX/vx.h"', extra_compile_args=["-I" + d])
+lib = ffi.verify('#include "VX/vx.h"\n' + types.verify,
+                 extra_compile_args=["-I" + d])
 for n in dir(lib):
     if n.lower().startswith('vx_'):
         locals()[n[3:]] = getattr(lib, n)

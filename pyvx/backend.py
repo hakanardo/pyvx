@@ -22,7 +22,6 @@ class CoreImage(object):
 
     def __init__(self, width=0, height=0, color=DF_IMAGE_VIRT,
                  data=None, context=None, virtual=None, graph=None):
-        color = image_format(color)
         if graph is None:
             graph = CoreGraph.get_current_graph(none_check=False)
         if context is None:
@@ -47,22 +46,18 @@ class CoreImage(object):
         self.count = CoreImage.count
 
     @property
-    def color(self):
-        return self._color
-    @color.setter
-    def color(self, value):
-        self._color = image_format(value)
-    
+    def image_format(self):
+        return image_format(self.color)
 
     def set_data_pointer(self, data):
         if hasattr(data, 'typecode'):
-            assert data.typecode == self.color.dtype
+            assert data.typecode == self.image_format.dtype
         if hasattr(data, 'to_cffi'):
             self.data = data.to_cffi(FFI())
         elif hasattr(data, 'buffer_info'):
             addr, l = data.buffer_info()
-            assert l == self.width * self.height * self.color.items
-            self.data = FFI().cast(self.color.ctype + ' *', addr)
+            assert l == self.width * self.height * self.image_format.items
+            self.data = FFI().cast(self.image_format.ctype + ' *', addr)
         else:
             raise NotImplementedError("Dont know how to convert %r to a cffi buffer" % data)
         self._keep_alive_original_data = data
@@ -85,33 +80,31 @@ class CoreImage(object):
             raise InvalidFormatError
 
     def ensure_color(self, color):
-        color = image_format(color)
         self.suggest_color(color)
         if  self.color != color:
             raise InvalidFormatError            
 
     def suggest_color(self, color):
-        color = image_format(color)
-        if self.color.enum == DF_IMAGE_VIRT:
+        if self.color == DF_IMAGE_VIRT:
             self.color = color
 
     def ensure_similar(self, image):
         self.ensure_shape(image)
         self.suggest_color(image.color)
-        if self.color.items != image.color.items:
+        if self.image_format.items != image.image_format.items:
             raise InvalidFormatError
 
     def alloc(self):
         if self.optimized_out:
-            self.ctype = self.color.ctype
+            self.ctype = self.image_format.ctype
             self.csym = "__img%d" % self.count
             self.cdeclaration = "%s %s;\n" % (self.ctype, self.csym)
         else:            
             if self.data is None:
-                items = self.width * self.height * self.color.items
-                self.data = FFI().new(self.color.ctype + '[]', items)
+                items = self.width * self.height * self.image_format.items
+                self.data = FFI().new(self.image_format.ctype + '[]', items)
             addr = FFI().cast('long', self.data)
-            self.ctype = self.color.ctype + " *"
+            self.ctype = self.image_format.ctype + " *"
             self.csym = "__img%d" % self.count
             self.cdeclaration = "%s __restrict__ %s = ((%s) 0x%x);\n" % (
                     self.ctype, self.csym, self.ctype, addr)
@@ -120,16 +113,16 @@ class CoreImage(object):
         if self.optimized_out:
             return self.csym
         if channel is None:
-            if self.color.items != 1:
+            if self.image_format.items != 1:
                 raise InvalidFormatError("Cant access pixel of multi channel image without specifying channel.")
             channel = CHANNEL_0
         else:                
             channel = eval(channel.upper())
         name = self.csym
-        ss = self.color.subsamp(channel)
-        off =  self.color.offset(channel)
-        stride_y = self.width * self.color.items
-        stride_x = self.color.items
+        ss = self.image_format.subsamp(channel)
+        off =  self.image_format.offset(channel)
+        stride_y = self.width * self.image_format.items
+        stride_x = self.image_format.items
         if node.border_mode == BORDER_MODE_UNDEFINED:
             l = self.width * self.height - 1
             return "%s[clamp( %s(%s) * %d + %s(%s) * %d + %d, 0, %d )]" % (
@@ -151,16 +144,16 @@ class CoreImage(object):
             return '%s[%s]' % (name, idx)
         if channel is None:
             if node.border_mode == BORDER_MODE_UNDEFINED:
-                l = self.width * self.height * self.color.items - 1
+                l = self.width * self.height * self.image_format.items - 1
                 return "%s[clamp(%s, 0, %d)]" % (name, idx, l)
             else:
                 raise NotImplementedError
         else:
             channel = eval(channel.upper())
-            ss = self.color.subsamp(channel)
-            off =  self.color.offset(channel)
-            stride_x = self.color.items
-            l = self.width * self.height * self.color.items - 1
+            ss = self.image_format.subsamp(channel)
+            off =  self.image_format.offset(channel)
+            stride_x = self.image_format.items
+            l = self.width * self.height * self.image_format.items - 1
             return "%s[%s(clamp(%s, 0, %d)) * %d + %d]" % (
                     name,  ss, idx,   l,  stride_x, off)
 
@@ -172,7 +165,7 @@ class CoreImage(object):
                 raise NotImplementedError
             return "%s = clamp(%s, %r, %r)" % (
                 self.getitem(node, channel, idx), value,
-                self.color.minval, self.color.maxval)
+                self.image_format.minval, self.image_format.maxval)
         return self.getitem(node, channel, idx) + ' ' + op + ' ' + value
 
     def getattr(self, node, attr):
@@ -183,7 +176,7 @@ class CoreImage(object):
         elif attr == "pixels":
             return str(self.width * self.height)
         elif attr == "values":
-            return str(self.width * self.height * self.color.items)
+            return str(self.width * self.height * self.image_format.items)
         elif attr == "data":
             return self.csym
         else:

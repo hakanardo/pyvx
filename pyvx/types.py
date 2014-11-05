@@ -6,13 +6,14 @@ class ImageFormatMeta(type):
     def __new__(cls, name, bases, attrs):
         cls = type.__new__(cls, name, bases, attrs)
         if cls.dtype is not None:
+            ImageFormat.color2image_format[cls.color] = cls
             cls.dtype = numpy.dtype(cls.dtype)
             if not cls.ctype:
                 cls.ctype = cls.dtype.name + '_t'
             assert FFI().sizeof(cls.ctype) == cls.dtype.itemsize
             if cls.items == 1:
-                assert cls.dtype not in ImageFormat.dtype2ImageFormat
-                ImageFormat.dtype2ImageFormat[cls.dtype] = cls
+                assert cls.dtype not in ImageFormat.dtype2color
+                ImageFormat.dtype2color[cls.dtype] = cls.color
             try:
                 cls.maxval = numpy.iinfo(cls.dtype).max
                 cls.minval = numpy.iinfo(cls.dtype).min
@@ -23,12 +24,10 @@ class ImageFormatMeta(type):
                 cls.inttype = False
         return cls
 
-    def __eq__(self, other):
-        return self is other or self.enum == other
-
 class ImageFormat(object):
     __metaclass__ = ImageFormatMeta
-    dtype2ImageFormat = {}
+    dtype2color = {}
+    color2image_format = {}
 
     items = 1
     channels = [CHANNEL_0]
@@ -36,7 +35,6 @@ class ImageFormat(object):
     channel_subsamp = [0]
     dtype = None
     ctype = None
-    enum = None
 
     @classmethod
     def subsamp(cls, channel):
@@ -48,7 +46,8 @@ class ImageFormat(object):
     def offset(cls, channel):
         return cls.channel_offsets[cls.channels.index(channel)]
 
-class ImageFormatVIRT(ImageFormat): pass
+class ImageFormatVIRT(ImageFormat): 
+    color = DF_IMAGE_VIRT
 
 class ImageFormatRGB(ImageFormat):
     items = 3
@@ -56,6 +55,7 @@ class ImageFormatRGB(ImageFormat):
     channels = [CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [0, 1, 2] * 2
     channel_subsamp = [0, 0, 0] * 2
+    color = DF_IMAGE_RGB
 
 class ImageFormatRGBX(ImageFormat):
     items = 4
@@ -63,6 +63,7 @@ class ImageFormatRGBX(ImageFormat):
     channels = [CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_0, CHANNEL_1, CHANNEL_2, CHANNEL_3]
     channel_offsets = [0, 1, 2, 0, 1, 2, 3]
     channel_subsamp = [0, 0, 0, 0, 0, 0, 0] 
+    color = DF_IMAGE_RGBX
 
 class ImageFormatUYVY(ImageFormat):
     items = 2
@@ -70,6 +71,7 @@ class ImageFormatUYVY(ImageFormat):
     channels = [CHANNEL_Y, CHANNEL_U, CHANNEL_V, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [1, 0, 2] * 2
     channel_subsamp = [0, 1, 1] * 2
+    color = DF_IMAGE_UYVY
 
 class ImageFormatYUYV(ImageFormat):
     items = 2
@@ -77,42 +79,69 @@ class ImageFormatYUYV(ImageFormat):
     channels = [CHANNEL_Y, CHANNEL_U, CHANNEL_V, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [0, 1, 3] * 2
     channel_subsamp = [0, 1, 1] * 2
+    color = DF_IMAGE_YUYV
 
-class ImageFormatU8(ImageFormat): dtype = 'uint8'
-class ImageFormatS8(ImageFormat): dtype = 'int8'
-class ImageFormatU16(ImageFormat): dtype = 'uint16'
-class ImageFormatS16(ImageFormat): dtype = 'int16'
-class ImageFormatU32(ImageFormat): dtype = 'uint32'
-class ImageFormatS32(ImageFormat): dtype = 'int32'
-class ImageFormatU64(ImageFormat): dtype = 'uint64'
-class ImageFormatS64(ImageFormat): dtype = 'int64'
+class ImageFormatU8(ImageFormat): 
+    dtype = 'uint8'
+    color = DF_IMAGE_U8
+
+class ImageFormatS8(ImageFormat): 
+    dtype = 'int8'
+    color = DF_IMAGE_S8
+
+class ImageFormatU16(ImageFormat): 
+    dtype = 'uint16'
+    color = DF_IMAGE_U16
+
+class ImageFormatS16(ImageFormat): 
+    dtype = 'int16'
+    color = DF_IMAGE_S16
+
+class ImageFormatU32(ImageFormat): 
+    dtype = 'uint32'
+    color = DF_IMAGE_U32
+
+class ImageFormatS32(ImageFormat): 
+    dtype = 'int32'
+    color = DF_IMAGE_S32
+
+class ImageFormatU64(ImageFormat): 
+    dtype = 'uint64'
+    color = DF_IMAGE_U64
+
+class ImageFormatS64(ImageFormat): 
+    dtype = 'int64'
+    color = DF_IMAGE_S64
 
 class ImageFormatF32(ImageFormat): 
     dtype = 'float32'
     ctype = 'float'
+    color = DF_IMAGE_F32
 
 class ImageFormatF64(ImageFormat): 
     dtype = 'float64'
     ctype = 'double'
+    color = DF_IMAGE_F64
 
 try:
     class ImageFormatF128(ImageFormat):
         dtype = 'float128'
         ctype = 'long double'
+        color = DF_IMAGE_F128
 except TypeError:
     pass
 
-def result_color(t0, *color):
+def result_color(t0, *formats):
     if numpy.result_type is None:
         return t0 # FIXME
-    dt = numpy.result_type(*[c.dtype for c in color])
-    return ImageFormat.dtype2ImageFormat[dt]
+    dt = numpy.result_type(*[c.dtype for c in formats])
+    return ImageFormat.dtype2color[dt]
 
 def value_color_type(val):
     dt = numpy.array([val]).dtype
-    return ImageFormat.dtype2ImageFormat[dt]
+    return ImageFormat.dtype2color[dt]
 
-def signed_color(col):
+def signed_format(col):
     return {ImageFormatU8: ImageFormatS8,
             ImageFormatS8: ImageFormatS8,
             ImageFormatU16: ImageFormatS16,
@@ -127,29 +156,7 @@ def signed_color(col):
            }[col]
 
 def image_format(color):
-    if isinstance(color, type):
-        assert issubclass(color, ImageFormat)
-        return color
-    return _image_format[color]
-
-_image_format = {
-    DF_IMAGE_VIRT: ImageFormatVIRT,
-    DF_IMAGE_RGB : ImageFormatRGB,
-    DF_IMAGE_RGBX: ImageFormatRGBX,
-    #DF_IMAGE_NV12: ImageFormatNV12, TODO
-    #DF_IMAGE_NV21: ImageFormatNV21, TODO
-    DF_IMAGE_UYVY: ImageFormatUYVY,
-    DF_IMAGE_YUYV: ImageFormatYUYV,
-    #DF_IMAGE_IYUV: ImageFormatIYUV, TODO
-    #DF_IMAGE_YUV4: ImageFormatYUV4, TODO
-    DF_IMAGE_U8: ImageFormatU8,
-    DF_IMAGE_U16 : ImageFormatU16,
-    DF_IMAGE_S16 : ImageFormatS16,
-    DF_IMAGE_U32 : ImageFormatU32,
-    DF_IMAGE_S32 : ImageFormatS32,
-}
-for k, v in _image_format.items():
-    v.enum = k
+    return ImageFormat.color2image_format[color]
 
 class VerificationError(Exception): pass
 class MultipleWritersError(VerificationError): errno = ERROR_MULTIPLE_WRITERS

@@ -268,6 +268,15 @@ enum vx_df_image_e {
     VX_DF_IMAGE_S32  = ...,
 };
 
+enum vx_additional_df_image_e {
+    VX_DF_IMAGE_S8   = ...,
+    VX_DF_IMAGE_U64  = ...,
+    VX_DF_IMAGE_S64  = ...,
+    VX_DF_IMAGE_F32  = ...,
+    VX_DF_IMAGE_F64  = ...,
+    VX_DF_IMAGE_F128 = ...,
+};
+
 enum vx_reference_attribute_e {
     VX_REF_ATTRIBUTE_COUNT = ...,
     VX_REF_ATTRIBUTE_TYPE = ...,
@@ -601,4 +610,15 @@ typedef void (*vx_log_callback_f)(vx_context context,
                                   vx_reference ref,
                                   vx_status status,
                                   vx_char string[]);
+'''
+
+verify = '''
+enum vx_additional_df_image_e {
+    VX_DF_IMAGE_S8   = VX_DF_IMAGE('S','0','0','8'),
+    VX_DF_IMAGE_U64  = VX_DF_IMAGE('U','0','6','4'),
+    VX_DF_IMAGE_S64  = VX_DF_IMAGE('S','0','6','4'),
+    VX_DF_IMAGE_F32  = VX_DF_IMAGE('F','0','3','2'),
+    VX_DF_IMAGE_F64  = VX_DF_IMAGE('F','0','6','4'),
+    VX_DF_IMAGE_F128 = VX_DF_IMAGE('F','1','2','8'),
+};
 '''

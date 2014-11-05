@@ -12,7 +12,7 @@ and ``compile()``. As an example here is the implementation of the Gaussian3x3No
         signature = "in input, out output"
 
         def verify(self):
-            self.ensure(self.input.color.items == 1)
+            self.ensure(self.input.image_format.items == 1)
             self.output.ensure_similar(self.input)
 
         def compile(self, code):
@@ -106,12 +106,12 @@ class ElementwiseNode(Node):
     def verify(self):
         inputs = self.input_images.values()
         outputs = self.output_images.values() + self.inout_images.values()
-        color = result_color(*[i.color for i in inputs])
+        color = result_color(*[i.image_format for i in inputs])
         for img in outputs:
             img.suggest_color(color)
             img.ensure_similar(inputs[0])
             if self.convert_policy == CONVERT_POLICY_SATURATE:
-                if img.color.ctype not in self.small_ints:
+                if img.image_format.ctype not in self.small_ints:
                     raise ERROR_INVALID_FORMAT("Saturated arithmetic only supported for 8- and 16- bit integers.")
 
     def tmptype(self, ctype):
@@ -124,7 +124,7 @@ class ElementwiseNode(Node):
         iout = self.output_images.items() + self.inout_images.items()
         magic = {'__tmp_image_%s' % name : img 
                  for name, img in iin + iout}
-        setup = ''.join("%s %s;" % (self.tmptype(img.color.ctype), name)
+        setup = ''.join("%s %s;" % (self.tmptype(img.image_format.ctype), name)
                         for name, img in iin + iout)
         inp = ''.join("%s = __tmp_image_%s[__i];" % (name, name)
                       for name, img in iin)
@@ -189,7 +189,7 @@ class TrueDivideNode(ElementwiseNode):
     body = "out = ((double) in1) / ((double) in2);"
 
     def verify(self):
-        self.out.suggest_color(ImageFormatF64)
+        self.out.suggest_color(DF_IMAGE_F64)
         ElementwiseNode.verify(self)
 
 class PowerNode(ElementwiseNode):
@@ -207,10 +207,10 @@ class ChannelExtractNode(Node):
     signature = "in input, in channel, out output"
 
     def verify(self):
-        if self.channel not in self.input.color.channels:
+        if self.channel not in self.input.image_format.channels:
             raise InvalidFormatError(
                 'Cant extract channel %d from %s image.' % (
-                    channel_number[self.channel], self.input.color.__name__))
+                    channel_number[self.channel], self.input.image_format.__name__))
         self.output.ensure_color(DF_IMAGE_U8)        
         self.output.ensure_shape(self.input)
 
@@ -226,7 +226,7 @@ class Gaussian3x3Node(Node):
     signature = "in input, out output"
 
     def verify(self):
-        self.ensure(self.input.color.items == 1)
+        self.ensure(self.input.image_format.items == 1)
         self.output.ensure_similar(self.input)
 
     def compile(self, code):
@@ -244,7 +244,7 @@ class Sobel3x3Node(Node):
     signature = 'in input, out output_x, out output_y'
 
     def verify(self):
-        self.ensure(self.input.color.items == 1)
+        self.ensure(self.input.image_format.items == 1)
         if self.input.color in [DF_IMAGE_U8, DF_IMAGE_U16]:
             ot = DF_IMAGE_S16
         else:
@@ -272,10 +272,10 @@ class MagnitudeNode(ElementwiseNode):
     convert_policy = CONVERT_POLICY_SATURATE
 
     def verify(self):
-        self.ensure(self.grad_x.color.items == 1)
-        self.ensure(self.grad_y.color.items == 1)
-        it = result_color(self.grad_x.color, self.grad_y.color)
-        if it in [DF_IMAGE_U8, DF_IMAGE_U16, ImageFormatS8, DF_IMAGE_S16]:
+        self.ensure(self.grad_x.image_format.items == 1)
+        self.ensure(self.grad_y.image_format.items == 1)
+        it = result_color(self.grad_x.image_format, self.grad_y.image_format)
+        if it in [DF_IMAGE_U8, DF_IMAGE_U16, DF_IMAGE_S8, DF_IMAGE_S16]:
             ot = DF_IMAGE_U16
         else:
             ot = it
@@ -289,8 +289,8 @@ class PhaseNode(ElementwiseNode):
     signature = 'in grad_x, in grad_y, out orientation'
 
     def verify(self):
-        self.ensure(self.grad_x.color.items == 1)
-        self.ensure(self.grad_y.color.items == 1)
+        self.ensure(self.grad_x.image_format.items == 1)
+        self.ensure(self.grad_y.image_format.items == 1)
         self.orientation.suggest_color(DF_IMAGE_U8)
         self.orientation.ensure_similar(self.grad_x)
         self.orientation.ensure_similar(self.grad_y)
