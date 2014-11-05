@@ -247,7 +247,7 @@ class PythonApi(object):
                                          "sys.path = ['.'] + sys.path\\n"
                                          "import pyvx\\n"
                                          "if pyvx.__version__ != %r:\\n"
-                                         "    print 'Version mismatch, exiting...'\\n"
+                                         "    print 'Version mismatch. Please reinstall pyvx and/or recompile your binary. Exiting...'\\n"
                                          "    exit()\\n"
                                          "from pyvx.capi import OpenVxApi\\n"
                                          "from pyvx.codegen import PythonApi\\n"
