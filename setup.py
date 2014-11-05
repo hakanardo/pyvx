@@ -1,5 +1,7 @@
 from distutils.core import setup, Command
 from distutils.command.build import build as BuildCommand
+from distutils.command.install import install as InstallCommand
+from distutils.dir_util import copy_tree, remove_tree, mkpath
 import sys
 import os
 import pyvx.nodes
@@ -7,15 +9,28 @@ import pyvx.capi
 from pyvx import __version__
 
 mydir = os.path.dirname(os.path.abspath(__file__))
+libdir = os.path.join('build', 'lib')
 libs = []
 
 class MyBuild(BuildCommand):
     def run(self):
-        if not os.path.exists('build'):
-            os.mkdir('build')
-        libs.extend(pyvx.capi.build('build'))
         BuildCommand.run(self)
+        if os.path.exists(libdir):
+            remove_tree(libdir)
+        mkpath(libdir)
+        libs.extend(pyvx.capi.build(libdir))
 
+class MyInstall(InstallCommand):
+    def run(self):
+        InstallCommand.run(self)
+        for l in libs:
+            l = os.path.basename(l)
+            l = os.path.join('/usr/local/lib/', l)
+            if os.path.exists(l) or os.path.islink(l):
+                print 'Removing', l
+                os.unlink(l)
+        copy_tree(libdir, '/usr/local/lib/', preserve_symlinks=True)
+        os.system('ldconfig')
 
 class PyTest(Command):
     user_options = []
@@ -52,9 +67,8 @@ setup(
                                                  'headers/VX/vx_nodes.h',
                                                  'headers/VX/vx_types.h',
                                                  'headers/VX/vxu.h',
-                                                 'headers/VX/vx_vendors.h']),
-                      ('/usr/local/lib', libs)],
-        cmdclass={'build': MyBuild, 'test': PyTest},
+                                                 'headers/VX/vx_vendors.h'])],
+        cmdclass={'build': MyBuild, 'test': PyTest, 'install': MyInstall},
         tests_require=['pytest'],
     )
 
