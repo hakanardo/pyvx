@@ -1,4 +1,4 @@
-#include "openvx.h"
+#include <VX/vx.h>
 #include <stdio.h>
 
 int main(int ac, char **av) {
@@ -15,7 +15,7 @@ int main(int ac, char **av) {
     vx_context context = vxCreateContext();
     vx_graph graph = vxCreateGraph(context);
 
-    vx_image img = vxCreateVirtualImage(graph, 0, 0, FOURCC_VIRT);
+    vx_image img = vxCreateVirtualImage(graph, 0, 0, VX_DF_IMAGE_VIRT);
     vxPlayNode(graph, path, img);
     vxShowNode(graph, img, "View");
 

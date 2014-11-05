@@ -10,12 +10,12 @@ def main(fn):
     phi_res = frame.new()    
 
     with Graph() as g:
-        img = Image(w, h, FOURCC_U8, data=frame)
+        img = Image(w, h, DF_IMAGE_U8, data=frame)
         gimg = Gaussian3x3(img)
         dx, dy = Sobel3x3(gimg)
         mag = Magnitude(dx, dy)
         phi = Phase(dx, dy)
-        mag.color = FOURCC_U8
+        mag.color = DF_IMAGE_U8
         mag.force(mag_res)
         phi.force(phi_res)
     g.verify()

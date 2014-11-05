@@ -2,16 +2,16 @@ from pyvx import vx
 
 context = vx.CreateContext()
 images = [
-    vx.CreateImage(context, 640, 480, vx.FOURCC_UYVY),
-    vx.CreateImage(context, 640, 480, vx.FOURCC_U8),
-    vx.CreateImage(context, 640, 480, vx.FOURCC_U8),
+    vx.CreateImage(context, 640, 480, vx.DF_IMAGE_UYVY),
+    vx.CreateImage(context, 640, 480, vx.DF_IMAGE_U8),
+    vx.CreateImage(context, 640, 480, vx.DF_IMAGE_U8),
 ]
 graph = vx.CreateGraph(context)
 virts = [
-    vx.CreateVirtualImage(graph, 0, 0, vx.FOURCC_VIRT),
-    vx.CreateVirtualImage(graph, 0, 0, vx.FOURCC_VIRT),
-    vx.CreateVirtualImage(graph, 0, 0, vx.FOURCC_VIRT),
-    vx.CreateVirtualImage(graph, 0, 0, vx.FOURCC_VIRT),
+    vx.CreateVirtualImage(graph, 0, 0, vx.DF_IMAGE_VIRT),
+    vx.CreateVirtualImage(graph, 0, 0, vx.DF_IMAGE_VIRT),
+    vx.CreateVirtualImage(graph, 0, 0, vx.DF_IMAGE_VIRT),
+    vx.CreateVirtualImage(graph, 0, 0, vx.DF_IMAGE_VIRT),
 ]
 vx.ChannelExtractNode(graph, images[0], vx.CHANNEL_Y, virts[0])
 vx.Gaussian3x3Node(graph, virts[0], virts[1])

@@ -198,7 +198,7 @@ class PythonApi(object):
         self.ffi.cdef('\n'.join(self.cdef))
         lib = self.ffi.dlopen(None)
         for n, cb in self.callbacks.items():
-            setattr(lib, n, cb)
+            setattr(lib, '_' + n, cb)
         self.lib = lib
         self.references = []
         self.freelist = None
@@ -232,6 +232,7 @@ class PythonApi(object):
         tmp = tempfile.mkdtemp()
         try:
             src = os.path.join(tmp, "tmp.c")
+            # FIXME: Move the hardcoded initializing python code out of here
             with open(src, 'w') as fd:
                 fd.write(""" 
                     #include <stdint.h>
@@ -243,17 +244,23 @@ class PythonApi(object):
                       Py_Initialize();
                       PyEval_InitThreads();                  
                       PyRun_SimpleString("import sys\\n"
-                                         "sys.path.append('.')\\n"
+                                         "sys.path = ['.'] + sys.path\\n"
+                                         "import pyvx\\n"
+                                         "if pyvx.__version__ != %r:\\n"
+                                         "    print 'Version mismatch, exiting...'\\n"
+                                         "    exit()\\n"
                                          "from pyvx.capi import OpenVxApi\\n"
                                          "from pyvx.codegen import PythonApi\\n"
-                                         "api = PythonApi(OpenVxApi).load()\\n");
+                                         "from pyvx.inc.vx import ffi\\n"
+                                         "api = PythonApi(OpenVxApi, ffi).load()\\n");
                     }
 
                     static void __deinitialize(void) __attribute__((destructor));
                     void __deinitialize(void) {
                       Py_Finalize();
                     }
-                    """ + '\n'.join(self.cdef) + "\n\n" + '\n'.join(self.stubs))
+                    """ % version + 
+                    '\n'.join(self.cdef) + "\n\n" + '\n'.join(self.stubs))
 
             from distutils.core import Extension
             from cffi.ffiplatform import compile

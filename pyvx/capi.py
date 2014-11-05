@@ -1,6 +1,6 @@
 from codegen import PythonApi, Enum, Reference
 import codegen
-from pyvx import *
+from pyvx import vx
 
 def export(signature, add_ret_to_arg=0, **kwargs):
     return codegen.export(signature, add_ret_to_arg, **kwargs)
@@ -20,7 +20,7 @@ class OpenVxApi(object):
 
     @export("vx_graph(vx_context)")
     def vxCreateGraph(context):
-        return Graph(context, early_verify=False)
+        return vx.CreateGraph(context, early_verify=False)
 
     @export("vx_image(vx_graph, uint32_t, uint32_t, vx_df_image)")
     def vxCreateVirtualImage(graph, width, height, color):
@@ -34,7 +34,7 @@ class OpenVxApi(object):
     def vxProcessGraph(graph):
         return vx.ProcessGraph(graph)
     
-    @export("vx_status(vx_context *)", retrive_args=False)
+    @export("vx_status(vx_context *)", retrive_args=False, add_ret_to_arg=None)
     def vxReleaseContext(context):
         context_obj = OpenVxApi.pyapi.retrive(context[0])
         for r in context_obj.references:

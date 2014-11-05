@@ -275,7 +275,7 @@ class MagnitudeNode(ElementwiseNode):
         self.ensure(self.grad_x.color.items == 1)
         self.ensure(self.grad_y.color.items == 1)
         it = result_color(self.grad_x.color, self.grad_y.color)
-        if it in [DF_IMAGE_U8, DF_IMAGE_U16, DF_IMAGE_S8, DF_IMAGE_S16]:
+        if it in [DF_IMAGE_U8, DF_IMAGE_U16, ImageFormatS8, DF_IMAGE_S16]:
             ot = DF_IMAGE_U16
         else:
             ot = it

@@ -57,8 +57,8 @@ def CreateImage(context, width, height, color):
     return CoreImage(width, height, color, virtual=False, context=context)
 
 
-def CreateGraph(context):
-    return OptimizedGraph(context)
+def CreateGraph(context, early_verify=True):
+    return OptimizedGraph(context, early_verify)
 
 
 def CreateVirtualImage(graph, width, height, color):

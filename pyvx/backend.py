@@ -46,6 +46,14 @@ class CoreImage(object):
         CoreImage.count += 1
         self.count = CoreImage.count
 
+    @property
+    def color(self):
+        return self._color
+    @color.setter
+    def color(self, value):
+        self._color = image_format(value)
+    
+
     def set_data_pointer(self, data):
         if hasattr(data, 'typecode'):
             assert data.typecode == self.color.dtype
@@ -295,7 +303,6 @@ class CoreGraph(object):
         tmpdir = mkdtemp()
         mydir = os.path.dirname(os.path.abspath(__file__))
         vxdir = os.path.join(mydir, '..', 'headers')
-        print vxdir
         try:
             lib = ffi.verify(inc + head + 
                              "int func(void) {" + str(code) + "return VX_SUCCESS;}",
