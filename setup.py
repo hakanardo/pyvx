@@ -52,7 +52,7 @@ setup(
         description='OpenVX implementation',
         long_description=open(os.path.join(mydir, 'README.rst')).read(),
         version=__version__,
-        packages=['pyvx'],
+        packages=['pyvx', 'pyvx.inc'],
         package_data={'pyvx': ['glview.h', 'vlcplay.h', 'glview.c', 'vlcplay.c']},
         zip_safe=False,
         url='http://pyvx.readthedocs.org',
