@@ -62,5 +62,3 @@ def coordinates(x, y, z=None):
         return coordinates2d(x, y)
     else:
         return coordinates3d(x, y, z)
-
-import pdb; pdb.set_trace()
