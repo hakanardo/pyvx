@@ -11,7 +11,7 @@ like this:
     from pyvx import *
 
     with Graph() as g:
-        img = Image(640, 480, FOURCC_UYVY)
+        img = Image(640, 480, DF_IMAGE_UYVY)
         smooth = Gaussian3x3(img.channel_y)
         dx, dy = Sobel3x3(smooth)
         mag = Magnitude(dx, dy)
@@ -49,7 +49,7 @@ This API is generated from the OpenVX API using the following transformations:
 
     - For each ``vxXxxNode`` there is a ``Xxx()`` function that has only the input arguments
       of ``vxXxxNode``. This function will create a 0x0 virtual image with color
-      ``FOURCC_VIRT`` for each of the output and inout arguments. Then it will call 
+      ``DF_IMAGE_VIRT`` for each of the output and inout arguments. Then it will call 
       ``vxXxxNode`` and return the created images. Also, most non-image input arguments 
       have been given default values and can be skipped.
 
@@ -81,10 +81,10 @@ This API is generated from the OpenVX API using the following transformations:
         from pyvx import *
 
         with Graph() as g:
-            img = Image(640, 480, FOURCC_UYVY)
+            img = Image(640, 480, DF_IMAGE_UYVY)
             dx, dy = Sobel3x3(img.channel_y)
             mag = dx*dx + dy*dy
-            mag.color = FOURCC_U32
+            mag.color = DF_IMAGE_U32
             mag.force()
         g.verify()
         g.process()
