@@ -20,14 +20,15 @@ class CoreImage(object):
     count = 0
     optimized_out = False
 
-    def __init__(self, width=0, height=0, color=FOURCC_VIRT,
+    def __init__(self, width=0, height=0, color=DF_IMAGE_VIRT,
                  data=None, context=None, virtual=None, graph=None):
+        color = image_format(color)
         if graph is None:
             graph = CoreGraph.get_current_graph(none_check=False)
         if context is None:
             context = graph.context
         if virtual is None:
-            virtual = (color == FOURCC_VIRT)
+            virtual = (color == DF_IMAGE_VIRT)
         if virtual:
             assert graph is not None
         assert context is not None
@@ -73,22 +74,24 @@ class CoreImage(object):
         if self.height == 0:
             self.height = height
         if self.width != width or self.height != height:
-            raise ERROR_INVALID_FORMAT
+            raise InvalidFormatError
 
     def ensure_color(self, color):
+        color = image_format(color)
         self.suggest_color(color)
         if  self.color != color:
-            raise ERROR_INVALID_FORMAT            
+            raise InvalidFormatError            
 
     def suggest_color(self, color):
-        if self.color == FOURCC_VIRT:
+        color = image_format(color)
+        if self.color.enum == DF_IMAGE_VIRT:
             self.color = color
 
     def ensure_similar(self, image):
         self.ensure_shape(image)
         self.suggest_color(image.color)
         if self.color.items != image.color.items:
-            raise ERROR_INVALID_FORMAT
+            raise InvalidFormatError
 
     def alloc(self):
         if self.optimized_out:
@@ -110,7 +113,7 @@ class CoreImage(object):
             return self.csym
         if channel is None:
             if self.color.items != 1:
-                raise ERROR_INVALID_FORMAT("Cant access pixel of multi channel image without specifying channel.")
+                raise InvalidFormatError("Cant access pixel of multi channel image without specifying channel.")
             channel = CHANNEL_0
         else:                
             channel = eval(channel.upper())
@@ -191,7 +194,7 @@ class ConstantImage(CoreImage):
         return str(self.value)
 
     def setitem(self, node, channel, idx, op, value):
-        raise ERROR_INVALID_GRAPH("ConstantImage's are not writeable.")
+        raise InvalidGraphError("ConstantImage's are not writeable.")
 
     def alloc(self):
         self.cdeclaration = ''
@@ -246,9 +249,9 @@ class CoreGraph(object):
         # Virtual data produced
         for d in self.images:
             if d.virtual and d.producer is None:
-                raise ERROR_INVALID_GRAPH("Virtual data never produced.")
-            if d.color == FOURCC_VIRT:
-                raise ERROR_INVALID_FORMAT("FOURCC_VIRT not resolved into specific type.")
+                raise InvalidGraphError("Virtual data never produced.")
+            if d.color == DF_IMAGE_VIRT:
+                raise InvalidFormatError("DF_IMAGE_VIRT not resolved into specific type.")
 
         self.optimize()
         self.compile()
@@ -261,7 +264,7 @@ class CoreGraph(object):
             scheduler.fire(n)
             one_order.append(n)
         if scheduler.blocked_nodes:
-            raise ERROR_INVALID_GRAPH("Loops not allowed in the graph.")
+            raise InvalidGraphError("Loops not allowed in the graph.")
         return one_order
 
     def compile(self):
@@ -277,9 +280,10 @@ class CoreGraph(object):
             long subsample(long val) {
                 return val & (~1);
             }
-        ''' + Enum(*status_codes, prefix="VX_").typedef('vx_status') + "\n"
+        '''
         code = Code(imgs + "\n")
         code.includes.add('#include <math.h>')
+        code.includes.add('#include <VX/vx.h>')
         for n in self.nodes:
             assert not n.optimized_out
             n.compile(code)
@@ -290,11 +294,14 @@ class CoreGraph(object):
         inc = '\n'.join(code.includes) + '\n'
         tmpdir = mkdtemp()
         mydir = os.path.dirname(os.path.abspath(__file__))
+        vxdir = os.path.join(mydir, '..', 'headers')
+        print vxdir
         try:
             lib = ffi.verify(inc + head + 
                              "int func(void) {" + str(code) + "return VX_SUCCESS;}",
                              extra_compile_args=["-O3", "-march=native", "-std=c99",
-                                                 "-I" + mydir],
+                                                 "-I" + mydir,
+                                                 "-I" + vxdir],
                              extra_link_args=code.extra_link_args,
                              tmpdir=tmpdir)
         finally:
@@ -302,9 +309,7 @@ class CoreGraph(object):
         self.compiled_func = lib.func
 
     def process(self):
-        r = self.compiled_func()
-        r = status_codes[r]
-        return r
+        return self.compiled_func()
 
 class Scheduler(object):
     def __init__(self, nodes, images):
@@ -336,7 +341,7 @@ def parse_signature(signature):
 class Node(object):
     border_mode = BORDER_MODE_UNDEFINED
     border_mode_value = 0
-    convert_policy = CONVERT_POLICY_TRUNCATE
+    convert_policy = CONVERT_POLICY_WRAP
     round_policy = ROUND_POLICY_TO_NEAREST_EVEN
     optimized_out = False
 
@@ -382,21 +387,21 @@ class Node(object):
         # Signle writer
         for d in self.outputs + self.inouts:
             if d.producer is not self:
-                raise ERROR_MULTIPLE_WRITERS
+                raise MultipleWritersError
 
         # Bidirection data not virtual
         for d in self.inouts:
             if d.virtual:
-                raise ERROR_INVALID_GRAPH("Bidirection data cant be virtual.")
+                raise InvalidGraphError("Bidirection data cant be virtual.")
 
         for d in self.inputs:
             if isinstance(d, CoreImage) and (not d.width or not d.height):
-                raise ERROR_INVALID_FORMAT
+                raise InvalidFormatError
         self.verify()
 
     def ensure(self, condition):
         if not condition:
-            raise ERROR_INVALID_FORMAT
+            raise InvalidFormatError
 
 class MergedNode(Node):
 

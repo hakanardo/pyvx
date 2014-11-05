@@ -1,19 +1,8 @@
 from cffi import FFI
 import numpy
+from pyvx.inc.vx import *
 
-class CHANNEL_0: pass
-class CHANNEL_1: pass
-class CHANNEL_2: pass
-class CHANNEL_3: pass
-class CHANNEL_R: pass
-class CHANNEL_G: pass
-class CHANNEL_B: pass
-class CHANNEL_A: pass
-class CHANNEL_Y: pass
-class CHANNEL_U: pass
-class CHANNEL_V: pass
-
-class FourccMeta(type):
+class ImageFormatMeta(type):
     def __new__(cls, name, bases, attrs):
         cls = type.__new__(cls, name, bases, attrs)
         if cls.dtype is not None:
@@ -22,8 +11,8 @@ class FourccMeta(type):
                 cls.ctype = cls.dtype.name + '_t'
             assert FFI().sizeof(cls.ctype) == cls.dtype.itemsize
             if cls.items == 1:
-                assert cls.dtype not in FOURCC.dtype2fourcc
-                FOURCC.dtype2fourcc[cls.dtype] = cls
+                assert cls.dtype not in ImageFormat.dtype2ImageFormat
+                ImageFormat.dtype2ImageFormat[cls.dtype] = cls
             try:
                 cls.maxval = numpy.iinfo(cls.dtype).max
                 cls.minval = numpy.iinfo(cls.dtype).min
@@ -34,9 +23,12 @@ class FourccMeta(type):
                 cls.inttype = False
         return cls
 
-class FOURCC(object):
-    __metaclass__ = FourccMeta
-    dtype2fourcc = {}
+    def __eq__(self, other):
+        return self is other or self.enum == other
+
+class ImageFormat(object):
+    __metaclass__ = ImageFormatMeta
+    dtype2ImageFormat = {}
 
     items = 1
     channels = [CHANNEL_0]
@@ -44,6 +36,7 @@ class FOURCC(object):
     channel_subsamp = [0]
     dtype = None
     ctype = None
+    enum = None
 
     @classmethod
     def subsamp(cls, channel):
@@ -55,55 +48,55 @@ class FOURCC(object):
     def offset(cls, channel):
         return cls.channel_offsets[cls.channels.index(channel)]
 
-class FOURCC_VIRT(FOURCC): pass
+class ImageFormatVIRT(ImageFormat): pass
 
-class FOURCC_RGB(FOURCC):
+class ImageFormatRGB(ImageFormat):
     items = 3
     dtype = 'uint8'
     channels = [CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [0, 1, 2] * 2
     channel_subsamp = [0, 0, 0] * 2
 
-class FOURCC_RGBX(FOURCC):
+class ImageFormatRGBX(ImageFormat):
     items = 4
     dtype = 'uint8'
     channels = [CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_0, CHANNEL_1, CHANNEL_2, CHANNEL_3]
     channel_offsets = [0, 1, 2, 0, 1, 2, 3]
     channel_subsamp = [0, 0, 0, 0, 0, 0, 0] 
 
-class FOURCC_UYVY(FOURCC):
+class ImageFormatUYVY(ImageFormat):
     items = 2
     dtype = 'uint8'
     channels = [CHANNEL_Y, CHANNEL_U, CHANNEL_V, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [1, 0, 2] * 2
     channel_subsamp = [0, 1, 1] * 2
 
-class FOURCC_YUYV(FOURCC):
+class ImageFormatYUYV(ImageFormat):
     items = 2
     dtype = 'uint8'
     channels = [CHANNEL_Y, CHANNEL_U, CHANNEL_V, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [0, 1, 3] * 2
     channel_subsamp = [0, 1, 1] * 2
 
-class FOURCC_U8(FOURCC): dtype = 'uint8'
-class FOURCC_S8(FOURCC): dtype = 'int8'
-class FOURCC_U16(FOURCC): dtype = 'uint16'
-class FOURCC_S16(FOURCC): dtype = 'int16'
-class FOURCC_U32(FOURCC): dtype = 'uint32'
-class FOURCC_S32(FOURCC): dtype = 'int32'
-class FOURCC_U64(FOURCC): dtype = 'uint64'
-class FOURCC_S64(FOURCC): dtype = 'int64'
+class ImageFormatU8(ImageFormat): dtype = 'uint8'
+class ImageFormatS8(ImageFormat): dtype = 'int8'
+class ImageFormatU16(ImageFormat): dtype = 'uint16'
+class ImageFormatS16(ImageFormat): dtype = 'int16'
+class ImageFormatU32(ImageFormat): dtype = 'uint32'
+class ImageFormatS32(ImageFormat): dtype = 'int32'
+class ImageFormatU64(ImageFormat): dtype = 'uint64'
+class ImageFormatS64(ImageFormat): dtype = 'int64'
 
-class FOURCC_F32(FOURCC): 
+class ImageFormatF32(ImageFormat): 
     dtype = 'float32'
     ctype = 'float'
 
-class FOURCC_F64(FOURCC): 
+class ImageFormatF64(ImageFormat): 
     dtype = 'float64'
     ctype = 'double'
 
 try:
-    class FOURCC_F128(FOURCC):
+    class ImageFormatF128(ImageFormat):
         dtype = 'float128'
         ctype = 'long double'
 except TypeError:
@@ -113,44 +106,63 @@ def result_color(t0, *color):
     if numpy.result_type is None:
         return t0 # FIXME
     dt = numpy.result_type(*[c.dtype for c in color])
-    return FOURCC.dtype2fourcc[dt]
+    return ImageFormat.dtype2ImageFormat[dt]
 
 def value_color_type(val):
     dt = numpy.array([val]).dtype
-    return FOURCC.dtype2fourcc[dt]
+    return ImageFormat.dtype2ImageFormat[dt]
 
 def signed_color(col):
-    return {FOURCC_U8: FOURCC_S8,
-            FOURCC_S8: FOURCC_S8,
-            FOURCC_U16: FOURCC_S16,
-            FOURCC_S16: FOURCC_S16,
-            FOURCC_U32: FOURCC_S32,
-            FOURCC_S32: FOURCC_S32,
-            FOURCC_U64: FOURCC_S64,
-            FOURCC_S64: FOURCC_S64,
-            FOURCC_F32: FOURCC_F32,
-            FOURCC_F64: FOURCC_F64,
-            FOURCC_F128: FOURCC_F128,
+    return {ImageFormatU8: ImageFormatS8,
+            ImageFormatS8: ImageFormatS8,
+            ImageFormatU16: ImageFormatS16,
+            ImageFormatS16: ImageFormatS16,
+            ImageFormatU32: ImageFormatS32,
+            ImageFormatS32: ImageFormatS32,
+            ImageFormatU64: ImageFormatS64,
+            ImageFormatS64: ImageFormatS64,
+            ImageFormatF32: ImageFormatF32,
+            ImageFormatF64: ImageFormatF64,
+            ImageFormatF128: ImageFormatF128,
            }[col]
 
-class BORDER_MODE_UNDEFINED: pass
-class BORDER_MODE_CONSTANT: pass
-class BORDER_MODE_REPLICATE: pass
+def image_format(color):
+    if isinstance(color, type):
+        assert issubclass(color, ImageFormat)
+        return color
+    return _image_format[color]
 
-class CONVERT_POLICY_TRUNCATE: pass
-class CONVERT_POLICY_SATURATE: pass
-
-class ROUND_POLICY_TO_ZERO: pass
-class ROUND_POLICY_TO_NEAREST_EVEN: pass
+_image_format = {
+    DF_IMAGE_VIRT: ImageFormatVIRT,
+    DF_IMAGE_RGB : ImageFormatRGB,
+    DF_IMAGE_RGBX: ImageFormatRGBX,
+    #DF_IMAGE_NV12: ImageFormatNV12, TODO
+    #DF_IMAGE_NV21: ImageFormatNV21, TODO
+    DF_IMAGE_UYVY: ImageFormatUYVY,
+    DF_IMAGE_YUYV: ImageFormatYUYV,
+    #DF_IMAGE_IYUV: ImageFormatIYUV, TODO
+    #DF_IMAGE_YUV4: ImageFormatYUV4, TODO
+    DF_IMAGE_U8: ImageFormatU8,
+    DF_IMAGE_U16 : ImageFormatU16,
+    DF_IMAGE_S16 : ImageFormatS16,
+    DF_IMAGE_U32 : ImageFormatU32,
+    DF_IMAGE_S32 : ImageFormatS32,
+}
+for k, v in _image_format.items():
+    v.enum = k
 
 class VerificationError(Exception): pass
-class ERROR_MULTIPLE_WRITERS(VerificationError): pass
-class ERROR_INVALID_GRAPH(VerificationError): pass
-class ERROR_INVALID_VALUE(VerificationError): pass
-class ERROR_INVALID_FORMAT(VerificationError): pass
-class ERROR_INVALID_NODE(VerificationError): pass
-class ERROR_GRAPH_ABANDONED(Exception): pass
-class SUCCESS(object): pass
-status_codes = [SUCCESS, ERROR_MULTIPLE_WRITERS, ERROR_INVALID_GRAPH, 
-                ERROR_INVALID_VALUE, ERROR_INVALID_FORMAT,
-                ERROR_GRAPH_ABANDONED, ERROR_INVALID_NODE]
+class MultipleWritersError(VerificationError): errno = ERROR_MULTIPLE_WRITERS
+class InvalidGraphError(VerificationError):    errno = ERROR_INVALID_GRAPH
+class InvalidValueError(VerificationError):    errno = ERROR_INVALID_VALUE
+class InvalidFormatError(VerificationError):   errno = ERROR_INVALID_FORMAT
+class InvalidNodeError(VerificationError):     errno = ERROR_INVALID_NODE
+
+class GraphAbandonedError(Exception): errno = ERROR_GRAPH_ABANDONED
+
+channel_number = {
+    CHANNEL_0: 0,
+    CHANNEL_1: 1,
+    CHANNEL_2: 2,
+    CHANNEL_3: 3,
+}

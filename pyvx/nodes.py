@@ -34,7 +34,7 @@ and ``compile()``. As an example here is the implementation of the Gaussian3x3No
 - ``Node.verify(self)`` is called during the verification phase and can assume that all 
   nodes it depend on have verified successfully. It is supposed to check the
   arguments and raise one of the ``VerificationError``'s if they don't make sense. Also
-  any output images with width/height set to 0 or color set to FOURCC_VIRT should be given 
+  any output images with width/height set to 0 or color set to DF_IMAGE_VIRT should be given 
   proper values. There are a few helper methods available described below.
 
 - ``Node.compile(self, code)`` is called after verification of the entire graph was
@@ -92,7 +92,7 @@ If some logic is needed to produce the code, ``body`` can be implemented as a
 
 The default ``ElementwiseNode.verify()`` will ensure that the output images are of the same size
 as the input images and will use :func:`pyvx.types.result_color`  to 
-replace  ``FOURCC_VIRT`` colors among the output images. If this is not appropriate 
+replace  ``DF_IMAGE_VIRT`` colors among the output images. If this is not appropriate 
 it can be overridden.
 
 """
@@ -163,9 +163,9 @@ class MultiplyNode(ElementwiseNode):
 
     @property
     def body(self):
-        if self.round_policy is ROUND_POLICY_TO_ZERO:
+        if self.round_policy == ROUND_POLICY_TO_ZERO:
             return "out = in1 * in2 * %r;" % self.scale
-        elif self.round_policy is ROUND_POLICY_TO_NEAREST_EVEN:
+        elif self.round_policy == ROUND_POLICY_TO_NEAREST_EVEN:
             return "out = rint(in1 * in2 * %r);" % self.scale
         else:
             raise NotImplementedError
@@ -177,9 +177,9 @@ class DivideNode(ElementwiseNode):
 
     @property
     def body(self):
-        if self.round_policy is ROUND_POLICY_TO_ZERO:
+        if self.round_policy == ROUND_POLICY_TO_ZERO:
             return "out = (in1 * %r) / in2;" % self.scale
-        elif self.round_policy is ROUND_POLICY_TO_NEAREST_EVEN:
+        elif self.round_policy == ROUND_POLICY_TO_NEAREST_EVEN:
             return "out = rint((in1 * %r) / in2);" % self.scale
         else:
             raise NotImplementedError
@@ -189,7 +189,7 @@ class TrueDivideNode(ElementwiseNode):
     body = "out = ((double) in1) / ((double) in2);"
 
     def verify(self):
-        self.out.suggest_color(FOURCC_F64)
+        self.out.suggest_color(ImageFormatF64)
         ElementwiseNode.verify(self)
 
 class PowerNode(ElementwiseNode):
@@ -200,7 +200,7 @@ class CompareNode(BinaryOperationNode):
     signature = "in in1, in op, in in2, out out"
 
     def verify(self):
-        self.out.suggest_color(FOURCC_U8)
+        self.out.suggest_color(DF_IMAGE_U8)
         ElementwiseNode.verify(self)
 
 class ChannelExtractNode(Node):
@@ -208,18 +208,18 @@ class ChannelExtractNode(Node):
 
     def verify(self):
         if self.channel not in self.input.color.channels:
-            raise ERROR_INVALID_FORMAT(
-                'Cant extract channel %s from %s image.' % (
-                    self.channel.__name__, self.input.color.__name__))
-        self.output.ensure_color(FOURCC_U8)        
+            raise InvalidFormatError(
+                'Cant extract channel %d from %s image.' % (
+                    channel_number[self.channel], self.input.color.__name__))
+        self.output.ensure_color(DF_IMAGE_U8)        
         self.output.ensure_shape(self.input)
 
     def compile(self, code):
         code.add_block(self, """
             for (long i = 0; i < out.pixels; i++) {
-                out[i] = input.%s[i];
+                out[i] = input.channel_%d[i];
             }
-            """ % self.channel.__name__.lower(), 
+            """ % channel_number[self.channel], 
             input=self.input, out=self.output)
 
 class Gaussian3x3Node(Node):
@@ -245,8 +245,8 @@ class Sobel3x3Node(Node):
 
     def verify(self):
         self.ensure(self.input.color.items == 1)
-        if self.input.color in [FOURCC_U8, FOURCC_U16]:
-            ot = FOURCC_S16
+        if self.input.color in [DF_IMAGE_U8, DF_IMAGE_U16]:
+            ot = DF_IMAGE_S16
         else:
             ot = signed_color(self.input.color)
         self.output_x.suggest_color(ot)
@@ -275,8 +275,8 @@ class MagnitudeNode(ElementwiseNode):
         self.ensure(self.grad_x.color.items == 1)
         self.ensure(self.grad_y.color.items == 1)
         it = result_color(self.grad_x.color, self.grad_y.color)
-        if it in [FOURCC_U8, FOURCC_U16, FOURCC_S8, FOURCC_S16]:
-            ot = FOURCC_U16
+        if it in [DF_IMAGE_U8, DF_IMAGE_U16, DF_IMAGE_S8, DF_IMAGE_S16]:
+            ot = DF_IMAGE_U16
         else:
             ot = it
         self.mag.suggest_color(ot)
@@ -291,7 +291,7 @@ class PhaseNode(ElementwiseNode):
     def verify(self):
         self.ensure(self.grad_x.color.items == 1)
         self.ensure(self.grad_y.color.items == 1)
-        self.orientation.suggest_color(FOURCC_U8)
+        self.orientation.suggest_color(DF_IMAGE_U8)
         self.orientation.ensure_similar(self.grad_x)
         self.orientation.ensure_similar(self.grad_y)
 
@@ -349,7 +349,7 @@ class PlayNode(Node):
         if not self.player:
             raise ERROR_INVALID_VALUE("Unable to decode '%s' using vlc." % self.path)
         self.output.ensure_shape(self.player.width, self.player.height)
-        self.output.ensure_color(FOURCC_RGB)
+        self.output.ensure_color(DF_IMAGE_RGB)
         self.output.force()
 
     def compile(self, code):
@@ -404,7 +404,7 @@ class ShowNode(Node):
                     pip install --upgrade --force-reinstall pyvx
 
                 ''')
-        self.input.ensure_color(FOURCC_RGB)
+        self.input.ensure_color(DF_IMAGE_RGB)
         if self.viewer:
             if self.viewer.width == self.input.width and self.viewer.height == self.input.height:
                 return

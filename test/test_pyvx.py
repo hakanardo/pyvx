@@ -5,7 +5,7 @@ class TestPyVx(object):
     def test_gaussian(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_U8, array('B', range(12)))
+            img = Image(3, 4, DF_IMAGE_U8, array('B', range(12)))
             gimg = Gaussian3x3(img)
             gimg.force()
         g.verify()
@@ -16,7 +16,7 @@ class TestPyVx(object):
     def test_replicate_border(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_U8, array('B', range(12)))
+            img = Image(3, 4, DF_IMAGE_U8, array('B', range(12)))
             gimg = Gaussian3x3(img)
             gimg.producer.border_mode = BORDER_MODE_REPLICATE
             gimg.force()
@@ -29,7 +29,7 @@ class TestPyVx(object):
     def test_add_truncate(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_U8, array('B', range(12)))
+            img = Image(3, 4, DF_IMAGE_U8, array('B', range(12)))
             sa = img + img
             sa.force()
         g.verify()
@@ -40,7 +40,7 @@ class TestPyVx(object):
     def test_add_saturate8(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_U8, array('B', [1, 2, 100, 200] * 3))
+            img = Image(3, 4, DF_IMAGE_U8, array('B', [1, 2, 100, 200] * 3))
             sa = img + img
             sa_sat = img + img
             sa_sat.producer.convert_policy = CONVERT_POLICY_SATURATE
@@ -60,7 +60,7 @@ class TestPyVx(object):
     def test_add_saturate16(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_S16, array('h', [1, 2, 10000, 20000] * 3))
+            img = Image(3, 4, DF_IMAGE_S16, array('h', [1, 2, 10000, 20000] * 3))
             sa = img + img
             sa_sat = img + img
             sa_sat.producer.convert_policy = CONVERT_POLICY_SATURATE
@@ -80,7 +80,7 @@ class TestPyVx(object):
     def test_channel_extract_rgb(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_RGB, array('B', range(12*3)))
+            img = Image(3, 4, DF_IMAGE_RGB, array('B', range(12*3)))
             rimg = img.channel_r
             rimg.force()
             gimg = img.channel_g
@@ -97,7 +97,7 @@ class TestPyVx(object):
     def test_channel_extract_uyvu(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_UYVY, array('B', range(12*2)))
+            img = Image(3, 4, DF_IMAGE_UYVY, array('B', range(12*2)))
             yimg = img.channel_y
             yimg.force()
             uimg = img.channel_u
@@ -113,8 +113,8 @@ class TestPyVx(object):
     def test_mul_truncate(self):
         g = Graph()
         with g:
-            img1 = Image(3, 4, FOURCC_U8, array('B', range(12)))
-            img2 = Image(3, 4, FOURCC_U8, array('B', [2]*12))
+            img1 = Image(3, 4, DF_IMAGE_U8, array('B', range(12)))
+            img2 = Image(3, 4, DF_IMAGE_U8, array('B', [2]*12))
             sa = img1 * img2
             sa.producer.scale = 0.25
             sa.force()
@@ -126,8 +126,8 @@ class TestPyVx(object):
     def test_mul_round_even(self):
         g = Graph()
         with g:
-            img1 = Image(3, 4, FOURCC_U8, array('B', range(12)))
-            img2 = Image(3, 4, FOURCC_U8, array('B', [2]*12))
+            img1 = Image(3, 4, DF_IMAGE_U8, array('B', range(12)))
+            img2 = Image(3, 4, DF_IMAGE_U8, array('B', [2]*12))
             sa = img1 * img2
             sa.producer.scale = 0.25
             sa.producer.round_policy = ROUND_POLICY_TO_NEAREST_EVEN
@@ -140,7 +140,7 @@ class TestPyVx(object):
     def test_arithmetic1(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_U8, array('B', range(1,13)))
+            img = Image(3, 4, DF_IMAGE_U8, array('B', range(1,13)))
             sa1 = img + img - 2 * img + 1
             sa2 = (img * img + 5) / img - img
             sa1.force()
@@ -154,7 +154,7 @@ class TestPyVx(object):
     def test_arithmetic2(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_U8, array('B', range(1,13)))
+            img = Image(3, 4, DF_IMAGE_U8, array('B', range(1,13)))
             sa1 = img | (img + 2) << 3 + 0xF
             sa2 = ((img & sa1**2 ) >> 1) ^ img 
             sa3 = sa1 % img
@@ -172,7 +172,7 @@ class TestPyVx(object):
     def test_compare(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_U8, array('B', range(12)))
+            img = Image(3, 4, DF_IMAGE_U8, array('B', range(12)))
             sa1 = (1 < img) & (img <= 2)
             sa2 = img == 3
             sa3 = img != 4

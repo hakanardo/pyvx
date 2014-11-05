@@ -5,7 +5,7 @@ class TestOptimize(object):
     def test_ded_code_removal(self):
         g = Graph()
         with g:
-            img = Image(10, 10, FOURCC_U8, array('B', range(100)))
+            img = Image(10, 10, DF_IMAGE_U8, array('B', range(100)))
             dx, dy = Sobel3x3(img)
             gdx = Gaussian3x3(dx)
             gdy = Gaussian3x3(dy)
@@ -26,8 +26,8 @@ class TestOptimize(object):
     def test_merge_elementwise(self):
         g = Graph()
         with g:
-            img1 = Image(20, 20, FOURCC_U8, array('B', range(200) * 2))
-            img2 = Image(20, 20, FOURCC_U8, array('B', range(200) * 2))
+            img1 = Image(20, 20, DF_IMAGE_U8, array('B', range(200) * 2))
+            img2 = Image(20, 20, DF_IMAGE_U8, array('B', range(200) * 2))
             dx, dy = Sobel3x3(img1)
             t1 = dx + img2
             t2 = 2 * dy
@@ -44,8 +44,8 @@ class TestOptimize(object):
     def test_allocation_removal(self):
         g = Graph()
         with g:
-            img1 = Image(20, 20, FOURCC_U8, array('B', range(200) * 2))
-            img2 = Image(20, 20, FOURCC_U8, array('B', range(200) * 2))
+            img1 = Image(20, 20, DF_IMAGE_U8, array('B', range(200) * 2))
+            img2 = Image(20, 20, DF_IMAGE_U8, array('B', range(200) * 2))
             t1 = img1 + 1
             t2 = img2 + 2
             t3 = t1 - 3

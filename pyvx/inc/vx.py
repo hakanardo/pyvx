@@ -25,9 +25,9 @@ ffi.cdef(types.cdef + kernels.cdef)
 mydir = os.path.dirname(os.path.abspath(__file__))
 d = os.path.join(mydir, '..', '..', 'headers')
 lib = ffi.verify('#include "VX/vx.h"', extra_compile_args=["-I" + d])
-vars = locals()
 for n in dir(lib):
-    vars[n] = getattr(lib, n)
+    if n.lower().startswith('vx_'):
+        locals()[n[3:]] = getattr(lib, n)
 
 def imagepatch_addressing(dim_x=0, dim_y=0, stride_x=0, stride_y=0, 
                           scale_x=0, scale_y=0, step_x=0, step_y=0):

@@ -6,7 +6,7 @@ class TestDiv(object):
     def test_div(self):
         g = Graph()
         with g:
-            img = Image(3, 4, FOURCC_U8, array('B', range(12)))
+            img = Image(3, 4, DF_IMAGE_U8, array('B', range(12)))
             sa1 = img / 2
             sa2 = img // 2
             sa1.force()

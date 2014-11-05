@@ -44,11 +44,7 @@ example on page 12 of the specification would in python look like this:
 from pyvx.backend import CoreImage, Context
 from pyvx.optimize import OptimizedGraph
 from pyvx.nodes import *
-
-import pyvx.inc.vx
-for n in dir(pyvx.inc.vx):
-    if n.lower().startswith('vx_'):
-        locals()[n[3:]] = getattr(pyvx.inc.vx, n)
+from pyvx.inc.vx import *
 
 def CreateContext():
     return Context()
