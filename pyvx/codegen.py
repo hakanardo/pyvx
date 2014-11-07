@@ -239,12 +239,13 @@ class PythonApi(object):
         return self.ffi.callback(tp, f)
 
     def build(self, name, version, soversion, out_path):
+        setup = '\n'.join('"%s\\n"' % l for l in self.api.setup)
         tmp = tempfile.mkdtemp()
         try:
             src = os.path.join(tmp, "tmp.c")
             # FIXME: Move the hardcoded initializing python code out of here
             with open(src, 'w') as fd:
-                fd.write(""" 
+                fd.write("""
                     #include <stdint.h>
                     #include <Python.h>
                     #include <VX/vx.h>
@@ -253,23 +254,14 @@ class PythonApi(object):
                     void __initialize(void) {
                       Py_Initialize();
                       PyEval_InitThreads();                  
-                      PyRun_SimpleString("import sys\\n"
-                                         "sys.path = ['.'] + sys.path\\n"
-                                         "import pyvx\\n"
-                                         "if pyvx.__version__ != %r:\\n"
-                                         "    print 'Version mismatch. Please reinstall pyvx and/or recompile your binary. Exiting...'\\n"
-                                         "    exit()\\n"
-                                         "from pyvx.capi import OpenVxApi\\n"
-                                         "from pyvx.codegen import PythonApi\\n"
-                                         "from pyvx.inc.vx import ffi\\n"
-                                         "api = PythonApi(OpenVxApi, ffi).load()\\n");
+                      PyRun_SimpleString(%s);
                     }
 
                     static void __deinitialize(void) __attribute__((destructor));
                     void __deinitialize(void) {
                       Py_Finalize();
                     }
-                    """ % version +
+                    """ % setup +
                          '\n'.join(self.cdef) + "\n\n" + '\n'.join(self.stubs))
 
             from distutils.core import Extension

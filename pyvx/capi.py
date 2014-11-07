@@ -1,6 +1,7 @@
 from codegen import PythonApi, Enum, Reference
 import codegen
 from pyvx import vx
+from pyvx import __version_info__, __version__
 
 def export(signature, add_ret_to_arg=0, **kwargs):
     return codegen.export(signature, add_ret_to_arg, **kwargs)
@@ -9,6 +10,16 @@ def export(signature, add_ret_to_arg=0, **kwargs):
 
 class OpenVxApi(object):
     wrapped_reference_types = ['vx_context', 'vx_image', 'vx_graph', 'vx_node']
+    setup = ["import sys",
+             "sys.path = ['.'] + sys.path",
+             "import pyvx",
+             "if pyvx.__version__ != %r:" % __version__,
+             "    print 'Version mismatch. Please reinstall pyvx and/or recompile your binary. Exiting...'",
+             "    exit()",
+             "from pyvx.capi import OpenVxApi",
+             "from pyvx.codegen import PythonApi",
+             "from pyvx.inc.vx import ffi",
+             "api = PythonApi(OpenVxApi, ffi).load()"]
 
     @export("vx_context()", add_ret_to_arg=None)
     def vxCreateContext():
@@ -74,7 +85,6 @@ class OpenVxApi(object):
 
 
 def build(out_path='.'):
-    from pyvx import __version_info__, __version__
     from pyvx.inc.vx import ffi
     major, minor, _ = __version_info__
     soversion = '%d.%d' % (major, minor)
