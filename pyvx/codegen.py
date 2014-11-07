@@ -7,19 +7,23 @@
 from pycparser import c_parser, c_ast
 from pycparser.c_generator import CGenerator
 from cffi import FFI
-import tempfile, subprocess, os
+import tempfile
+import subprocess
+import os
 from shutil import rmtree, copy
 
-typedefs = ''.join("typedef int uint%d_t; typedef int int%d_t;" % (n, n) 
+typedefs = ''.join("typedef int uint%d_t; typedef int int%d_t;" % (n, n)
                    for n in [8, 16, 32, 64])
+
 
 def cparse(code):
     parser = c_parser.CParser()
     ast = parser.parse(typedefs + "void f() {" + code + "}")
     func = ast.ext[-1]
-    #func.show()
+    # func.show()
     assert func.decl.name == 'f'
     return func.body
+
 
 def cparse_signature(signature):
     parser = c_parser.CParser()
@@ -27,7 +31,9 @@ def cparse_signature(signature):
     ast = ast.ext[-1]
     return ast
 
+
 class MagicCGenerator(CGenerator):
+
     def __init__(self, cxnode, magic_vars):
         CGenerator.__init__(self)
         self.cxnode = cxnode
@@ -74,10 +80,12 @@ class MagicCGenerator(CGenerator):
         var, channel, index = self.get_magic_array_ref(node.lvalue)
         if var is None:
             return CGenerator.visit_Assignment(self, node)
-        return var.setitem(self.cxnode, channel, index, 
+        return var.setitem(self.cxnode, channel, index,
                            node.op, self.visit(node.rvalue))
 
+
 class Code(object):
+
     """ 
         Represents some generated C-code together with
         a bit of metadata. It has the following public attributes:
@@ -94,7 +102,7 @@ class Code(object):
             lines.
 
     """
-    
+
     def __init__(self, code=''):
         """ Construct a new ``Code`` object and initiate it's code to ``code``.            
         """
@@ -137,15 +145,16 @@ class Code(object):
 
         """
         ast = cparse(code)
-        #ast.show()
+        # ast.show()
         generator = MagicCGenerator(cxnode, magic_vars)
         generator.indent_level = self.indent_level
-        hdr = '\n%s// %s\n' % (' ' * self.indent_level, cxnode.__class__.__name__)
+        hdr = '\n%s// %s\n' % (' ' * self.indent_level,
+                               cxnode.__class__.__name__)
         self.code += hdr + generator.visit(ast)
 
     def add_code(self, code):
         """ Extend the code with ``code`` without any adjustment.
-        """        
+        """
         self.code += code
 
     def __str__(self):
@@ -163,7 +172,9 @@ def export(signature, add_ret_to_arg=None, retrive_args=True, store_result=True)
         return staticmethod(f)
     return decorator
 
+
 class PythonApi(object):
+
     def __init__(self, api, parent_ffi):
         self.ffi = FFI()
         self.ffi.include(parent_ffi)
@@ -171,26 +182,27 @@ class PythonApi(object):
         self.cdef = []
         self.stubs = []
         self.callbacks = {}
-        self.wrapped_reference_types = set(self.ffi.typeof(n) 
+        self.wrapped_reference_types = set(self.ffi.typeof(n)
                                            for n in api.wrapped_reference_types)
-        
+
         api.pyapi = self
 
         for n in dir(api):
             item = getattr(api, n)
             if hasattr(item, 'signature'):
                 fn = item
-                tp = self.ffi._typeof(fn.signature, consider_function_as_funcptr=True)
+                tp = self.ffi._typeof(
+                    fn.signature, consider_function_as_funcptr=True)
                 callback_var = self.ffi.getctype(tp, '_' + n)
                 self.cdef.append("%s;" % callback_var)
-                args = ', '.join(self.ffi.getctype(t, 'a%d' % i) 
+                args = ', '.join(self.ffi.getctype(t, 'a%d' % i)
                                  for i, t in enumerate(tp.args))
                 stub = self.ffi.getctype(tp.result, '%s(%s)' % (n, args))
                 args = ', '.join('a%d' % i for i in xrange(len(tp.args)))
                 if tp.result == 'void':
                     stub += '{_%s(%s);}' % (n, args)
                 else:
-                    stub += '{return _%s(%s);}' % (n, args)                    
+                    stub += '{return _%s(%s);}' % (n, args)
                 self.stubs.append(stub)
                 self.callbacks[n] = self.make_callback(tp, fn)
 
@@ -204,16 +216,15 @@ class PythonApi(object):
         self.freelist = None
         return self
 
-
     def make_callback(self, tp, fn):
         store_result = fn.store_result and \
-                       tp.result in self.wrapped_reference_types
+            tp.result in self.wrapped_reference_types
         add_ret_to_arg = fn.add_ret_to_arg
         retrive_refs = ()
-        if fn.retrive_args:       
-            retrive_refs = tuple([i for i, a in enumerate(tp.args) 
-                                    if a in self.wrapped_reference_types])
-            
+        if fn.retrive_args:
+            retrive_refs = tuple([i for i, a in enumerate(tp.args)
+                                  if a in self.wrapped_reference_types])
+
         def f(*args):
             args = list(args)
             for i in retrive_refs:
@@ -226,7 +237,6 @@ class PythonApi(object):
             return r
         f.__name__ = fn.__name__
         return self.ffi.callback(tp, f)
-
 
     def build(self, name, version, soversion, out_path):
         tmp = tempfile.mkdtemp()
@@ -259,18 +269,18 @@ class PythonApi(object):
                     void __deinitialize(void) {
                       Py_Finalize();
                     }
-                    """ % version + 
-                    '\n'.join(self.cdef) + "\n\n" + '\n'.join(self.stubs))
+                    """ % version +
+                         '\n'.join(self.cdef) + "\n\n" + '\n'.join(self.stubs))
 
             from distutils.core import Extension
             from cffi.ffiplatform import compile
             mydir = os.path.dirname(os.path.abspath(__file__))
             d = os.path.join(mydir, 'inc', 'headers')
-            fn = compile(tmp, Extension(name='lib' + name, 
+            fn = compile(tmp, Extension(name='lib' + name,
                                         sources=[src],
                                         extra_compile_args=["-I" + d],
                                         extra_link_args=['-lpython2.7',
-                                          '-Wl,-soname,lib%s.so.' % name + soversion]))
+                                                         '-Wl,-soname,lib%s.so.' % name + soversion]))
             bfn = os.path.join(out_path, os.path.basename(fn))
             full = bfn + '.' + version
             so = bfn + '.' + soversion
@@ -310,18 +320,21 @@ class PythonApi(object):
         p = int(self.ffi.cast('long', p))
         return self.references[p]
 
+
 class Enum(list):
+
     def __new__(cls, *args, **kwargs):
         return list.__new__(cls, args)
+
     def __init__(self, *args, **kwargs):
         self.prefix = kwargs.get('prefix', '')
         return list.__init__(self, args)
+
     def typedef(self, n):
-        items = ', '.join('%s=%d' % (self.prefix + e.__name__, i) 
+        items = ', '.join('%s=%d' % (self.prefix + e.__name__, i)
                           for i, e in enumerate(self))
         return 'typedef enum {' + items + '} ' + n + ';'
 
 
-class Reference(object): pass
-
-                
+class Reference(object):
+    pass
