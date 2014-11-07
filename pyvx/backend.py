@@ -295,7 +295,7 @@ class CoreGraph(object):
         inc = '\n'.join(code.includes) + '\n'
         tmpdir = mkdtemp()
         mydir = os.path.dirname(os.path.abspath(__file__))
-        vxdir = os.path.join(mydir, '..', 'headers')
+        vxdir = os.path.join(mydir, 'inc', 'headers')
         try:
             lib = ffi.verify(inc + head + 
                              "int func(void) {" + str(code) + "return VX_SUCCESS;}",

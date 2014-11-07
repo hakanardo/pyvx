@@ -265,7 +265,7 @@ class PythonApi(object):
             from distutils.core import Extension
             from cffi.ffiplatform import compile
             mydir = os.path.dirname(os.path.abspath(__file__))
-            d = os.path.join(mydir, '..', 'headers')
+            d = os.path.join(mydir, 'inc', 'headers')
             fn = compile(tmp, Extension(name='lib' + name, 
                                         sources=[src],
                                         extra_compile_args=["-I" + d],

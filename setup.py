@@ -20,7 +20,7 @@ class InstallLibCommand(Command):
 
     def run(self):
         pyvx.capi.build('/usr/local/lib')
-        copy_tree('headers/VX', '/usr/local/include/VX')
+        copy_tree('pyvx/inc/headers/VX', '/usr/local/include/VX')
         os.system('ldconfig')
 
 
@@ -39,7 +39,7 @@ class PyTestCommand(Command):
         sys.exit(errno)
 
 ext_modules = [n.ffi.verifier.get_extension()
-               for n in [pyvx.nodes.PlayNode, pyvx.nodes.ShowNode]
+               for n in [pyvx.nodes.PlayNode, pyvx.nodes.ShowNode, pyvx.inc.vx]
                if n.lib]
 
 setup(
@@ -66,7 +66,15 @@ Further details are provided in the `Documentation`_
         ''',
     version=__version__,
     packages=['pyvx', 'pyvx.inc'],
-    package_data={'pyvx': ['glview.h', 'vlcplay.h', 'glview.c', 'vlcplay.c']},
+    package_data={'pyvx': ['glview.h', 'vlcplay.h', 'glview.c', 'vlcplay.c'],
+                  'pyvx.inc': ['headers/VX/vx_api.h',
+                               'headers/VX/vx.h',
+                               'headers/VX/vx_kernels.h',
+                               'headers/VX/vx_nodes.h',
+                               'headers/VX/vx_types.h',
+                               'headers/VX/vxu.h',
+                               'headers/VX/vx_vendors.h',
+                               ]},
     zip_safe=False,
     url='http://pyvx.readthedocs.org',
     author='Hakan Ardo',
