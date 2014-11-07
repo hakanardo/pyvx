@@ -71,7 +71,7 @@ PyVx as their backend you also need to:
   python setup.py libinstall
 
 This will install `libopenvx.so*` into `/usr/local/lib` and place the official
-`OpenVX` headers in `/usr/local/include/VX`.
+`OpenVX`_ headers in `/usr/local/include/VX`.
 
 .. _`Github`: https://github.com/hakanardo/pyvx
 
