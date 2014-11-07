@@ -1,7 +1,5 @@
 from distutils.core import setup, Command
-from distutils.command.build import build as BuildCommand
-from distutils.command.install import install as InstallCommand
-from distutils.dir_util import copy_tree, remove_tree, mkpath
+from distutils.dir_util import copy_tree
 import sys
 import os
 import pyvx.nodes
@@ -9,35 +7,24 @@ import pyvx.capi
 from pyvx import __version__
 
 mydir = os.path.dirname(os.path.abspath(__file__))
-libdir = os.path.join('build', 'lib')
-libs = []
 
 
-class MyBuild(BuildCommand):
+class InstallLibCommand(Command):
+    user_options = []
 
-    def run(self):
-        BuildCommand.run(self)
-        if os.path.exists(libdir):
-            remove_tree(libdir)
-        mkpath(libdir)
-        libs.extend(pyvx.capi.build(libdir))
+    def initialize_options(self):
+        pass
 
-
-class MyInstall(InstallCommand):
+    def finalize_options(self):
+        pass
 
     def run(self):
-        InstallCommand.run(self)
-        for l in libs:
-            l = os.path.basename(l)
-            l = os.path.join('/usr/local/lib/', l)
-            if os.path.exists(l) or os.path.islink(l):
-                print 'Removing', l
-                os.unlink(l)
-        copy_tree(libdir, '/usr/local/lib/', preserve_symlinks=True)
+        pyvx.capi.build('/usr/local/lib')
+        copy_tree('headers/VX', '/usr/local/include/VX')
         os.system('ldconfig')
 
 
-class PyTest(Command):
+class PyTestCommand(Command):
     user_options = []
 
     def initialize_options(self):
@@ -75,7 +62,7 @@ be aware of the fact that python is used. Also, any C program following the
 Further details are provided in the `Documentation`_
 
 .. _`OpenVX`: https://www.khronos.org/openvx
-.. _`Documentation`: https://pyvx.readthedocs.org        
+.. _`Documentation`: https://pyvx.readthedocs.org
         ''',
     version=__version__,
     packages=['pyvx', 'pyvx.inc'],
@@ -87,14 +74,7 @@ Further details are provided in the `Documentation`_
     license='MIT',
     install_requires=['pycparser', 'cffi'],
     ext_modules=ext_modules,
-    data_files=[('/usr/local/include/VX', ['headers/VX/vx_api.h',
-                                           'headers/VX/vx.h',
-                                           'headers/VX/vx_kernels.h',
-                                           'headers/VX/vx_nodes.h',
-                                           'headers/VX/vx_types.h',
-                                           'headers/VX/vxu.h',
-                                           'headers/VX/vx_vendors.h'])],
-    cmdclass={'build': MyBuild, 'test': PyTest, 'install': MyInstall},
+    cmdclass={'test': PyTestCommand, 'libinstall': InstallLibCommand},
     tests_require=['pytest'],
 )
 
