@@ -1,7 +1,10 @@
 from codegen import PythonApi, Enum, Reference
 import codegen
 from pyvx import vx
+
 from pyvx import __version_info__, __version__
+major, minor, _ = __version_info__
+soversion = '%d.%d' % (major, minor)
 
 def export(signature, add_ret_to_arg=0, **kwargs):
     return codegen.export(signature, add_ret_to_arg, **kwargs)
@@ -86,8 +89,6 @@ class OpenVxApi(object):
 
 def build(out_path='.'):
     from pyvx.inc.vx import ffi
-    major, minor, _ = __version_info__
-    soversion = '%d.%d' % (major, minor)
     api = PythonApi(OpenVxApi, ffi)
     api.build('openvx', __version__, soversion, out_path)
     return api.library_names
