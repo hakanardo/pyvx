@@ -35,7 +35,8 @@ welcome.
 Installation
 ============
 
-Before installing, make sure all dependencies are installed:
+Before installing, make sure all dependencies are installed (the package
+will install anyway, but some functionality will be missing):
 
 .. code-block:: bash
 
@@ -61,6 +62,16 @@ Then there are a few different ways to install PyVX:
   cd pyvx
   python setup.py install
 
+This will install the backend and the python API. If you also want the C API
+which allows you to compile `OpenVX`_ programs written in C and have them use 
+PyVx as their backend you also need to:
+
+.. code-block:: bash
+
+  python setup.py libinstall
+
+This will install `libopenvx.so*` into `/usr/local/lib` and place the official
+`OpenVX` headers in `/usr/local/include/VX`.
 
 .. _`Github`: https://github.com/hakanardo/pyvx
 
