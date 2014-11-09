@@ -63,9 +63,9 @@ class TestVerify(object):
         with g:
             img = Image(640, 480, DF_IMAGE_U8)
             with py.test.raises(InvalidFormatError):
-                ChannelExtract(img, CHANNEL_G)
+                ChannelExtract(img, CHANNEL_R)
             img = Image(640, 480, DF_IMAGE_RGB)
             with py.test.raises(InvalidFormatError):
-                ChannelExtract(img, CHANNEL_A)
+                ChannelExtract(img, CHANNEL_U)
             ChannelExtract(img, CHANNEL_R)
 

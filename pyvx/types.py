@@ -2,6 +2,28 @@ from cffi import FFI
 import numpy
 from pyvx.inc.vx import *
 
+class CHANNEL_R: pass
+class CHANNEL_G: pass
+class CHANNEL_B: pass
+class CHANNEL_A: pass
+class CHANNEL_Y: pass
+class CHANNEL_U: pass
+class CHANNEL_V: pass
+
+channel_char = {
+    CHANNEL_0: '0',
+    CHANNEL_1: '1',
+    CHANNEL_2: '2',
+    CHANNEL_3: '3',
+    CHANNEL_R: 'r',
+    CHANNEL_G: 'g',
+    CHANNEL_B: 'b',
+    CHANNEL_A: 'a',
+    CHANNEL_Y: 'y',
+    CHANNEL_U: 'u',
+    CHANNEL_V: 'v',
+}
+
 class ImageFormatMeta(type):
     def __new__(cls, name, bases, attrs):
         cls = type.__new__(cls, name, bases, attrs)
@@ -167,9 +189,3 @@ class InvalidNodeError(VerificationError):     errno = ERROR_INVALID_NODE
 
 class GraphAbandonedError(Exception): errno = ERROR_GRAPH_ABANDONED
 
-channel_number = {
-    CHANNEL_0: 0,
-    CHANNEL_1: 1,
-    CHANNEL_2: 2,
-    CHANNEL_3: 3,
-}

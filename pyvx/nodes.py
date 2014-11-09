@@ -236,8 +236,8 @@ class ChannelExtractNode(Node):
     def verify(self):
         if self.channel not in self.input.image_format.channels:
             raise InvalidFormatError(
-                'Cant extract channel %d from %s image.' % (
-                    channel_number[self.channel], self.input.image_format.__name__))
+                'Cant extract CHANNEL_%s from %s image.' % (
+                    channel_char[self.channel].upper(), self.input.image_format.__name__))
         self.output.ensure_color(DF_IMAGE_U8)
         self.output.ensure_shape(self.input)
 
