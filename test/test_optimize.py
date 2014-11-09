@@ -1,7 +1,9 @@
 from pyvx import *
 from array import array
 
+
 class TestOptimize(object):
+
     def test_ded_code_removal(self):
         g = Graph()
         with g:
@@ -37,9 +39,9 @@ class TestOptimize(object):
         assert t1.producer is t2.producer
         assert t3.producer is not t1.producer
         g.process()
-        assert t3.data[9*20 + 9] == 147
-        assert t3.data[10*20 + 10] == 70
-        assert t3.data[11*20 + 11] == 37
+        assert t3.data[9 * 20 + 9] == 147
+        assert t3.data[10 * 20 + 10] == 70
+        assert t3.data[11 * 20 + 11] == 37
 
     def test_allocation_removal(self):
         g = Graph()
@@ -56,11 +58,10 @@ class TestOptimize(object):
             res = sa * Gaussian3x3(t5)
             res.force()
         g.verify()
-        assert len(set([t1.producer, t2.producer, t3.producer, 
+        assert len(set([t1.producer, t2.producer, t3.producer,
                         t4.producer, t5.producer, t6.producer,
                         sa.producer])) == 1
         g.process()
-        assert res.data[9*20 + 9] == 98
-        assert res.data[10*20 + 10] == 30
-        assert res.data[11*20 + 11] == 36
-
+        assert res.data[9 * 20 + 9] == 98
+        assert res.data[10 * 20 + 10] == 30
+        assert res.data[11 * 20 + 11] == 36
