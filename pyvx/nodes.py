@@ -203,6 +203,19 @@ class CompareNode(BinaryOperationNode):
         self.out.suggest_color(DF_IMAGE_U8)
         ElementwiseNode.verify(self)
 
+class ColorConvertNode(Node):
+    signature = 'in input, out output'
+
+    def verify(self):
+        for im in (self.input, self.output):
+            if im.color_space != COLOR_SPACE_DEFAULT:
+                raise NotImplementedError
+            if im.channel_range != CHANNEL_RANGE_FULL:
+                raise NotImplementedError
+
+    def compile(self, code):
+        pass
+        
 class ChannelExtractNode(Node):
     signature = "in input, in channel, out output"
 

@@ -19,6 +19,8 @@ class Context(object):
 class CoreImage(object):
     count = 0
     optimized_out = False
+    color_space = COLOR_SPACE_DEFAULT
+    channel_range = CHANNEL_RANGE_FULL
 
     def __init__(self, width=0, height=0, color=DF_IMAGE_VIRT,
                  data=None, context=None, virtual=None, graph=None):
