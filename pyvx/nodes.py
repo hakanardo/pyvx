@@ -218,6 +218,7 @@ class CompareNode(BinaryOperationNode):
 
 class ColorConvertNode(Node):
     signature = 'in input, out output'
+    convert_policy = CONVERT_POLICY_SATURATE
 
     def verify(self):
         for im in (self.input, self.output):
@@ -225,9 +226,28 @@ class ColorConvertNode(Node):
                 raise NotImplementedError
             if im.channel_range != CHANNEL_RANGE_FULL:
                 raise NotImplementedError
+        self.output.ensure_shape(self.input)
 
     def compile(self, code):
-        pass
+        in_channels = self.input.image_format.channels
+        out_channels = self.output.image_format.channels
+        if CHANNEL_R in in_channels and CHANNEL_Y in out_channels:
+            code.add_block(self, """
+                double kr = 0.2126, kb = 0.0722, kg = 1.0 - kr - kb;
+                for (long i = 0; i < out.pixels; i++) {
+                    double r = ((double)input.channel_r[i]) / 256.0;
+                    double g = ((double)input.channel_g[i]) / 256.0;
+                    double b = ((double)input.channel_b[i]) / 256.0;
+                    double y = kr*r + kg*g + kb*b;
+                    double u = b/2.0 - (kr*r + kg*g) / (2.0 - 2.0*kb);
+                    double v = r/2.0 - (kb*b + kg*g) / (2.0 - 2.0*kr);
+                    out.channel_y[i] = y * 256.0;
+                    out.channel_u[i] = floor(u * 256.0 + 128.0);
+                    out.channel_v[i] = floor(u * 256.0 + 128.0);
+                }
+            """, out=self.output, input=self.input)
+        else:
+            raise NotImplementedError
 
 
 class ChannelExtractNode(Node):
@@ -244,10 +264,36 @@ class ChannelExtractNode(Node):
     def compile(self, code):
         code.add_block(self, """
             for (long i = 0; i < out.pixels; i++) {
-                out[i] = input.channel_%d[i];
+                out[i] = input.channel_%s[i];
             }
-            """ % channel_number[self.channel],
+            """ % channel_char[self.channel],
                        input=self.input, out=self.output)
+
+
+class ChannelCombineNode(Node):
+    signature = 'in plane0, in plane1, in plane2, in plane3, out output'
+    plane2 = None
+    plane3 = None
+
+    def verify(self):
+        self.output.suggest_color(DF_IMAGE_RGB)
+        if self.output.color != DF_IMAGE_RGB:
+            raise NotImplementedError
+        if self.plane2 is None or self.plane3 is not None:
+            raise InvalidNodeError('RGB image requires 3 planes.')
+        self.output.ensure_shape(self.plane0)
+        self.plane1.ensure_shape(self.plane0)
+        self.plane2.ensure_shape(self.plane0)
+
+    def compile(self, code):
+        code.add_block(self, """
+            for (long i = 0; i < out.pixels; i++) {
+                out.channel_r[i] = red[i];
+                out.channel_g[i] = green[i];
+                out.channel_b[i] = blue[i];
+            }
+            """, red=self.plane0, green=self.plane1, blue=self.plane2, out=self.output)
+
 
 
 class Gaussian3x3Node(Node):
