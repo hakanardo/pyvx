@@ -113,7 +113,7 @@ class ElementwiseNode(Node):
             img.ensure_similar(inputs[0])
             if self.convert_policy == CONVERT_POLICY_SATURATE:
                 if img.image_format.ctype not in self.small_ints:
-                    raise ERROR_INVALID_FORMAT(
+                    raise InvalidFormatError(
                         "Saturated arithmetic only supported for 8- and 16- bit integers.")
 
     def tmptype(self, ctype):
@@ -409,7 +409,7 @@ class PlayNode(Node):
 
     def verify(self):
         if self.lib is None:
-            raise ERROR_INVALID_NODE('''
+            raise InvalidValueError('''
                                      
                 PlayNode failed to compile. See error message from the compiler above,
                 and make sure you have vlc installed. On Debian:
@@ -425,7 +425,7 @@ class PlayNode(Node):
         if not self.player:
             self.player = self.lib.vlcplay_create(self.path)
         if not self.player:
-            raise ERROR_INVALID_VALUE(
+            raise InvalidValueError(
                 "Unable to decode '%s' using vlc." % self.path)
         self.output.ensure_shape(self.player.width, self.player.height)
         self.output.ensure_color(DF_IMAGE_RGB)
@@ -471,7 +471,7 @@ class ShowNode(Node):
 
     def verify(self):
         if self.lib is None:
-            raise ERROR_INVALID_NODE('''
+            raise InvalidValueError('''
 
                 ShowNode failed to compile. See error message from the compiler above,
                 and make sure you have glut GL and GLU installed. On Debian:
