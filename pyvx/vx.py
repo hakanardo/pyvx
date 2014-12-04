@@ -1,5 +1,5 @@
 """ 
-:mod:`pyvx.vx` --- Standards compliant API
+:mod:`pyvx.vx` --- C-like Python API
 ==========================================
 
 This module provides the functions as specified by the `OpenVX`_ standard.
