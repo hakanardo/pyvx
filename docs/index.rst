@@ -68,9 +68,9 @@ PyVx as their backend you also need to:
 
 .. code-block:: bash
 
-  python setup.py libinstall
+  sudo python -mpyvx.capi build /usr/local/
 
-This will install `libopenvx.so*` into `/usr/local/lib` and place the official
+This will install `libopenvx.so*` into `/usr/local/lib` and place the
 `OpenVX`_ headers in `/usr/local/include/VX`.
 
 .. _`Github`: https://github.com/hakanardo/pyvx

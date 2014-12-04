@@ -2,8 +2,7 @@ all: simple view
 
 %: %.c
 	-rm -rf ../pyvx/__pycache__
-	cd .. && python -mpyvx.capi build
-	gcc -o $@ $^ -g -I../headers -L.. -lopenvx
+	-ln -s ../pyvx .
+	cd .. && python -mpyvx.capi build build
+	gcc -o $@ $^ -g -I../build/include -L../build/lib -Wl,-rpath,`pwd`/../build/lib/ -lopenvx
 
-run-%: %
-	LD_LIBRARY_PATH=.. ./$^

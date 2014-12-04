@@ -1,3 +1,24 @@
+""" 
+:mod:`pyvx.capi` --- C API
+==========================================
+
+This module allows the use of this python implementation as an `OpenVX`_ backend 
+from a C program. A shared library is provided that embeds python and exports a C API
+following the `OpenVX`_ specification. That way the C program does not need to
+be aware of the fact that python is used. Also, any C program following the
+`OpenVX`_ specification should be compilable with this backend.
+
+.. code-block:: bash
+
+  sudo python -mpyvx.capi build /usr/local/
+
+This will install `libopenvx.so*` into `/usr/local/lib` and place the
+`OpenVX`_ headers in `/usr/local/include/VX`.
+
+.. _`OpenVX`: https://www.khronos.org/openvx
+
+"""
+
 from codegen import PythonApi, Enum, Reference
 import codegen
 from pyvx import vx
@@ -87,15 +108,29 @@ class OpenVxApi(object):
         return vx.ShowNode(graph, input, name)
 
 
-def build(out_path='.'):
+def build(prefix='/usr/local'):
     from pyvx.inc.vx import ffi
+    import os
+    from distutils.dir_util import copy_tree
+
+    libdir = os.path.join(prefix, 'lib')
+    incdir = os.path.join(prefix, 'include', 'VX')
+    if not os.path.exists(libdir):
+        os.makedirs(libdir)
+    if not os.path.exists(incdir):
+        os.makedirs(incdir)
+
     api = PythonApi(OpenVxApi, ffi)
-    api.build('openvx', __version__, soversion, out_path)
+    api.build('openvx', __version__, soversion, libdir)
+    srcdir = os.path.join(os.path.dirname(__file__), 'inc', 'headers', 'VX')
+    copy_tree(srcdir, incdir)
+    os.system('ldconfig')
+
     return api.library_names
 
 if __name__ == '__main__':
     import sys
-    if sys.argv[1] == 'build' and len(sys.argv) == 2:
-        build()
+    if sys.argv[1] == 'build' and len(sys.argv) in (2,3):
+        build(*sys.argv[2:])
     else:
-        print 'Usage: %s build' % sys.argv[0]
+        print 'Usage: %s build [<prefix>]' % sys.argv[0]
