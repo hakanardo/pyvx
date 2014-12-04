@@ -2,7 +2,7 @@
 :mod:`pyvx.vx` --- C-like Python API
 ==========================================
 
-This module provides the functions as specified by the `OpenVX`_ standard.
+This module provides the functions specified by the `OpenVX`_ standard.
 Please refer to the `OpenVX speficication`_ for a description of the API. The
 module name vx is used instead of a vx prefix on all symbols. The initial
 example on page 12 of the specification would in python look like this:

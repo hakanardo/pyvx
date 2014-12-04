@@ -81,7 +81,7 @@ Modules
 The main modules of PyVX are:
 
 :mod:`pyvx.vx`
-    Python API following the standardized `OpenVX`_ API as strictly as possible.
+    C-like Python API following the `OpenVX`_ API as strictly as possible.
 
 :mod:`pyvx.pythonic`
     A more python friendly version of the `OpenVX`_ API.
@@ -89,8 +89,7 @@ The main modules of PyVX are:
 :mod:`pyvx.capi`
     A specification of a C API that is used generate a shared
     library and a header file  that embeds python and calls the ``pyvx.vx``
-    functions. This
-    provides the C API of the `OpenVX`_ standard.
+    functions. This aims to provide the C API as it is specified by the `OpenVX`_ standard.
 
 :mod:`pyvx.nodes`
     The implementation of the different processing nodes.
