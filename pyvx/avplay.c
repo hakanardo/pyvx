@@ -55,12 +55,17 @@ struct avplay *avplay_new(char *fn) {
     p->frame    = av_frame_alloc();
 #else
     p->frame = avcodec_alloc_frame();
- #endif
+#endif
 
     uint8_t *buffer;
     int numBytes;
  
+#ifdef AV_PIX_FMT_RGB24
     enum AVPixelFormat pFormat = AV_PIX_FMT_RGB24;
+#else
+    enum PixelFormat pFormat = PIX_FMT_RGB24;
+#endif
+
     numBytes = avpicture_get_size(pFormat, p->codec_ctx->width, p->codec_ctx->height);
     buffer = (uint8_t *) av_malloc(numBytes*sizeof(uint8_t));
     if (!buffer) return NULL;
