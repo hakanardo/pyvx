@@ -5,6 +5,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
 #include <libswscale/swscale.h>
+#include <libavutil/pixfmt.h>
 
 struct avplay {
     AVCodecContext  *codec_ctx;
