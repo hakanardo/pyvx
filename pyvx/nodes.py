@@ -390,43 +390,43 @@ class PlayNode(Node):
 
     ffi = cffi.FFI()
     ffi.cdef("""
-            struct vlcplay {
+            struct avplay {
                 int width, height;
                 ...;
             };
-
-            struct vlcplay *vlcplay_create(char *path);
-            int vlcplay_next(struct vlcplay *m, unsigned char *buf);
-            void vlcplay_release(struct vlcplay *m);
+            struct avplay *avplay_new(char *fn);
+            int avplay_next(struct avplay *p, uint8_t *img);
             """)
     try:
-        lib = ffi.verify(open(os.path.join(mydir, 'vlcplay.c')).read(),
+        lib = ffi.verify(open(os.path.join(mydir, 'avplay.c')).read(),
                          extra_compile_args=['-O3'],
-                         libraries=['vlc'],
+                         libraries=['avformat', 'avcodec', 'avutil',
+                                    'swscale', 'avdevice'],
                          )
     except (cffi.VerificationError, IOError) as e:
+        print e
         lib = None
 
     def verify(self):
         if self.lib is None:
             raise InvalidValueError('''
                                      
-                PlayNode failed to compile. See error message from the compiler above,
-                and make sure you have vlc installed. On Debian:
+    PlayNode failed to compile. See error message from the compiler above,
+    and make sure you have the libav libs installed. On Debian:
 
-                    apt-get install vlc libvlc-dev
+        apt-get install libavformat-dev libswscale-dev libavdevice-dev
 
-                If pyvx is installed centraly it needs to be reinstalled after the
-                issue have been resolved. Using pip that is achieved with:
+    If pyvx is installed centraly it needs to be reinstalled after the
+    issue have been resolved. Using pip that is achieved with:
 
-                    pip install --upgrade --force-reinstall pyvx
+        pip install --upgrade --force-reinstall pyvx
 
                 ''')
         if not self.player:
-            self.player = self.lib.vlcplay_create(self.path)
+            self.player = self.lib.avplay_new(self.path)
         if not self.player:
             raise InvalidValueError(
-                "Unable to decode '%s' using vlc." % self.path)
+                "Unable to decode '%s'." % self.path)
         self.output.ensure_shape(self.player.width, self.player.height)
         self.output.ensure_color(DF_IMAGE_RGB)
         self.output.force()
@@ -434,12 +434,13 @@ class PlayNode(Node):
     def compile(self, code):
         adr = int(self.ffi.cast('long', self.player))
         code.add_block(
-            self, "if (vlcplay_next((void *)0x%x, img.data)) return VX_ERROR_GRAPH_ABANDONED;" % adr, img=self.output)
+            self, "if (avplay_next((void *)0x%x, img.data)) return VX_ERROR_GRAPH_ABANDONED;" % adr, img=self.output)
         code.extra_link_args.append(self.ffi.verifier.modulefilename)
-        code.includes.add('#include "vlcplay.h"')
+        code.includes.add('#include "avplay.h"')
 
-    def __del__(self):
-        self.lib.vlcplay_release(self.player)
+    # FIXME
+    #def __del__(self):
+    #    self.lib.avplay_release(self.player) 
 
 
 class ShowNode(Node):

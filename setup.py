@@ -66,7 +66,7 @@ Further details are provided in the `Documentation`_
         ''',
     version=__version__,
     packages=['pyvx', 'pyvx.inc'],
-    package_data={'pyvx': ['glview.h', 'vlcplay.h', 'glview.c', 'vlcplay.c'],
+    package_data={'pyvx': ['glview.h', 'avplay.h', 'glview.c', 'avplay.c'],
                   'pyvx.inc': ['headers/VX/vx_api.h',
                                'headers/VX/vx.h',
                                'headers/VX/vx_kernels.h',
@@ -90,7 +90,7 @@ if pyvx.nodes.PlayNode.lib is None:
     print
     print "Warning: PlayNode not availible due to mssing dependencies. Try:"
     print
-    print "    apt-get install vlc libvlc-dev"
+    print "    apt-get install libavformat-dev libswscale-dev libavdevice-dev"
     print
 
 if pyvx.nodes.ShowNode.lib is None:
