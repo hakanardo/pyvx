@@ -397,15 +397,15 @@ class PlayNode(Node):
             struct avplay *avplay_new(char *fn);
             int avplay_next(struct avplay *p, uint8_t *img);
             """)
-    #try:
-    lib = ffi.verify(open(os.path.join(mydir, 'avplay.c')).read(),
-                     extra_compile_args=['-O3'],
-                     libraries=['avformat', 'avcodec', 'avutil',
-                                'swscale', 'avdevice'],
-                     )
-    #except (cffi.VerificationError, IOError) as e:
-    #    print e
-    #    lib = None
+    try:
+        lib = ffi.verify(open(os.path.join(mydir, 'avplay.c')).read(),
+                         extra_compile_args=['-O3'],
+                         libraries=['avformat', 'avcodec', 'avutil',
+                                    'swscale', 'avdevice'],
+                         )
+    except (cffi.VerificationError, IOError) as e:
+        print e
+        lib = None
 
     def verify(self):
         if self.lib is None:
