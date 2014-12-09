@@ -27,7 +27,7 @@ enum vx_vendor_id_e {
     /* Add new vendor code above this line */
 
     VX_ID_MAX       = 0xFFF,
-    VX_ID_DEFAULT = VX_ID_MAX,
+    VX_ID_DEFAULT = ...,
 };
 '''
 
