@@ -108,6 +108,9 @@ class OpenVxApi(object):
     def vxShowNode(graph, input, name):
         return vx.ShowNode(graph, input, name)
 
+    # ========================================================================
+    # PARAMETER
+    # ========================================================================
     @export("vx_parameter(vx_node, vx_uint32 index)")
     def vxGetParameterByIndex(node, index):
         return vx.GetParameterByIndex(node, index)
@@ -118,6 +121,16 @@ class OpenVxApi(object):
         OpenVxApi.pyapi.discard(param[0])
         param[0] = OpenVxApi.pyapi.ffi.NULL
         return vx.ReleaseParameter(param_obj)
+
+    @export("vx_status(vx_parameter, vx_enum, void *, vx_size)")
+    def vxQueryParameter(param, attribute, ptr, size):
+        if size != OpenVxApi.pyapi.ffi.sizeof("vx_uint32"):
+            return vx.FAILURE
+        status, value = vx.QueryParameter(param, attribute)
+        ptr = OpenVxApi.pyapi.ffi.cast("vx_uint32 *", ptr)
+        ptr[0] = value
+        return status
+
 
 
 def build(prefix='/usr/local'):

@@ -108,13 +108,15 @@ def QueryParameter(param, attribute):
     """
         status, value = QueryParameter(param, attribute)
     """
+    attr_name = {PARAMETER_ATTRIBUTE_INDEX: 'index',
+                 PARAMETER_ATTRIBUTE_DIRECTION: 'direction',
+                 PARAMETER_ATTRIBUTE_TYPE: 'data_type',
+                 PARAMETER_ATTRIBUTE_STATE: 'state'}
     if attribute == PARAMETER_ATTRIBUTE_REF:
         val = getattr(param.node, param.name)
         val = Reference(param.context, val, param.data_type)
+    elif attribute in attr_name:
+        val = getattr(param, attr_name[attribute])
     else:
-        val = getattr(param, {PARAMETER_ATTRIBUTE_INDEX: 'index',
-                              PARAMETER_ATTRIBUTE_DIRECTION: 'direction',
-                              PARAMETER_ATTRIBUTE_TYPE: 'data_type',
-                              PARAMETER_ATTRIBUTE_STATE: 'state',
-                              }[attribute])
+        return FAILURE, 0
     return SUCCESS, val
