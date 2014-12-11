@@ -49,8 +49,10 @@ from pyvx.optimize import OptimizedGraph
 from pyvx.nodes import *
 from pyvx.inc.vx import *
 
+
 def CreateContext():
     return Context()
+
 
 def ReleaseContext(context):
     pass
@@ -75,26 +77,32 @@ def VerifyGraph(graph):
         return e.__class__
     return SUCCESS
 
+
 def ProcessGraph(graph):
     return graph.process()
 
-# ==============================================================================
+# ========================================================================
 # PARAMETER
-# ==============================================================================
+# ========================================================================
+
 
 def GetParameterByIndex(node, index):
     return node.parameters[index]
 
+
 def ReleaseParameter(param):
     return SUCCESS
+
 
 def SetParameterByIndex(node, index, value):
     setattr(node, node.parameters[index].name, value)
     return SUCCESS
 
+
 def SetParameterByReference(parameter, value):
     setattr(parameter.node, parameter.name, value)
     return SUCCESS
+
 
 def QueryParameter(param, attribute):
     """
@@ -107,7 +115,5 @@ def QueryParameter(param, attribute):
                               PARAMETER_ATTRIBUTE_DIRECTION: 'direction',
                               PARAMETER_ATTRIBUTE_TYPE: 'data_type',
                               PARAMETER_ATTRIBUTE_STATE: 'state',
-                             }[attribute])
+                              }[attribute])
     return SUCCESS, val
-
-
