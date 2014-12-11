@@ -41,17 +41,21 @@ class CoreImage(object):
         self.graph = graph
         self.producer = None
         if data is not None:
-            self.set_data_pointer(data)
+            self._set_data_pointer(data)
         else:
             self.data = None
         CoreImage.count += 1
         self.count = CoreImage.count
 
     @property
+    def imagepatch_addressing(self):
+        return self.image_format.imagepatch_addressing(self.width, self.height)
+
+    @property
     def image_format(self):
         return image_format(self.color)
 
-    def set_data_pointer(self, data):
+    def _set_data_pointer(self, data):
         if hasattr(data, 'typecode'):
             assert data.typecode == self.image_format.dtype
         if hasattr(data, 'to_cffi'):

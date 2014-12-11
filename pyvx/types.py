@@ -54,7 +54,7 @@ class ImageFormat(object):
     items = 1
     channels = [CHANNEL_0]
     channel_offsets = [0]
-    channel_subsamp = [0]
+    channel_subsamp = [False]
     dtype = None
     ctype = None
 
@@ -68,6 +68,17 @@ class ImageFormat(object):
     def offset(cls, channel):
         return cls.channel_offsets[cls.channels.index(channel)]
 
+    @classmethod
+    def imagepatch_addressing(cls, width, height):
+        stride = len(cls.channels)
+        ss = cls.channel_subsamp[:cls.items]
+        steps = [2 if s else 1 for s in ss]
+        return [imagepatch_addressing(dim_x=width, dim_y=height,
+                                      stride_x=stride, stride_y=stride*width,
+                                      step_x=st, step_y=1,
+                                      scale_x=SCALE_UNITY/st, scale_y=SCALE_UNITY)
+                for st in steps]
+
 class ImageFormatVIRT(ImageFormat): 
     color = DF_IMAGE_VIRT
 
@@ -76,7 +87,7 @@ class ImageFormatRGB(ImageFormat):
     dtype = 'uint8'
     channels = [CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [0, 1, 2] * 2
-    channel_subsamp = [0, 0, 0] * 2
+    channel_subsamp = [False, False, False] * 2
     color = DF_IMAGE_RGB
 
 class ImageFormatRGBX(ImageFormat):
@@ -84,7 +95,7 @@ class ImageFormatRGBX(ImageFormat):
     dtype = 'uint8'
     channels = [CHANNEL_R, CHANNEL_G, CHANNEL_B, CHANNEL_0, CHANNEL_1, CHANNEL_2, CHANNEL_3]
     channel_offsets = [0, 1, 2, 0, 1, 2, 3]
-    channel_subsamp = [0, 0, 0, 0, 0, 0, 0] 
+    channel_subsamp = [False, False, False, False, False, False, False] 
     color = DF_IMAGE_RGBX
 
 class ImageFormatUYVY(ImageFormat):
@@ -92,7 +103,7 @@ class ImageFormatUYVY(ImageFormat):
     dtype = 'uint8'
     channels = [CHANNEL_Y, CHANNEL_U, CHANNEL_V, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [1, 0, 2] * 2
-    channel_subsamp = [0, 1, 1] * 2
+    channel_subsamp = [False, True, True] * 2
     color = DF_IMAGE_UYVY
 
 class ImageFormatYUYV(ImageFormat):
@@ -100,7 +111,7 @@ class ImageFormatYUYV(ImageFormat):
     dtype = 'uint8'
     channels = [CHANNEL_Y, CHANNEL_U, CHANNEL_V, CHANNEL_0, CHANNEL_1, CHANNEL_2]
     channel_offsets = [0, 1, 3] * 2
-    channel_subsamp = [0, 1, 1] * 2
+    channel_subsamp = [False, True, True] * 2
     color = DF_IMAGE_YUYV
 
 class ImageFormatU8(ImageFormat): 
