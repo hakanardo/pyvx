@@ -3,9 +3,12 @@ from pyvx.codegen import Code, Enum
 from cffi import FFI
 from collections import defaultdict
 from itertools import chain
-import threading, os, re
+import threading
+import os
+import re
 from tempfile import mkdtemp
 from shutil import rmtree
+
 
 class Context(object):
     references = []
@@ -15,6 +18,7 @@ class Context(object):
 
     def clear_references(self):
         self.references = []
+
 
 class CoreImage(object):
     count = 0
@@ -65,7 +69,8 @@ class CoreImage(object):
             assert l == self.width * self.height * self.image_format.items
             self.data = FFI().cast(self.image_format.ctype + ' *', addr)
         else:
-            raise NotImplementedError("Dont know how to convert %r to a cffi buffer" % data)
+            raise NotImplementedError(
+                "Dont know how to convert %r to a cffi buffer" % data)
         self._keep_alive_original_data = data
 
     def force(self, data=None):
@@ -87,8 +92,8 @@ class CoreImage(object):
 
     def ensure_color(self, color):
         self.suggest_color(color)
-        if  self.color != color:
-            raise InvalidFormatError            
+        if self.color != color:
+            raise InvalidFormatError
 
     def suggest_color(self, color):
         if self.color == DF_IMAGE_VIRT:
@@ -105,7 +110,7 @@ class CoreImage(object):
             self.ctype = self.image_format.ctype
             self.csym = "__img%d" % self.count
             self.cdeclaration = "%s %s;\n" % (self.ctype, self.csym)
-        else:            
+        else:
             if self.data is None:
                 items = self.width * self.height * self.image_format.items
                 self.data = FFI().new(self.image_format.ctype + '[]', items)
@@ -113,35 +118,36 @@ class CoreImage(object):
             self.ctype = self.image_format.ctype + " *"
             self.csym = "__img%d" % self.count
             self.cdeclaration = "%s __restrict__ %s = ((%s) 0x%x);\n" % (
-                    self.ctype, self.csym, self.ctype, addr)
+                self.ctype, self.csym, self.ctype, addr)
 
     def getitem2d(self, node, channel, x, y):
         if self.optimized_out:
             return self.csym
         if channel is None:
             if self.image_format.items != 1:
-                raise InvalidFormatError("Cant access pixel of multi channel image without specifying channel.")
+                raise InvalidFormatError(
+                    "Cant access pixel of multi channel image without specifying channel.")
             channel = CHANNEL_0
-        else:                
+        else:
             channel = eval(channel.upper())
         name = self.csym
         ss = self.image_format.subsamp(channel)
-        off =  self.image_format.offset(channel)
+        off = self.image_format.offset(channel)
         stride_y = self.width * self.image_format.items
         stride_x = self.image_format.items
         if node.border_mode == BORDER_MODE_UNDEFINED:
             l = self.width * self.height - 1
             return "%s[clamp( %s(%s) * %d + %s(%s) * %d + %d, 0, %d )]" % (
-                    name,     ss, y,stride_y, ss,x,  stride_x, off,    l)
+                name,     ss, y, stride_y, ss, x,  stride_x, off,    l)
         elif node.border_mode == BORDER_MODE_REPLICATE:
             return "%s[%s(clamp(%s, 0, %d)) * %d + %s(clamp(%s, 0, %d)) * %d + %d]" % (
-                   name, ss, y, self.height-1, stride_y, ss, x, self.width-1, stride_x, off)
+                   name, ss, y, self.height - 1, stride_y, ss, x, self.width - 1, stride_x, off)
         else:
             raise NotImplementedError
 
     def getitem(self, node, channel, idx):
         if self.optimized_out:
-            return self.csym        
+            return self.csym
         if isinstance(idx, tuple):
             return self.getitem2d(node, channel, *idx)
 
@@ -157,11 +163,11 @@ class CoreImage(object):
         else:
             channel = eval(channel.upper())
             ss = self.image_format.subsamp(channel)
-            off =  self.image_format.offset(channel)
+            off = self.image_format.offset(channel)
             stride_x = self.image_format.items
             l = self.width * self.height * self.image_format.items - 1
             return "%s[%s(clamp(%s, 0, %d)) * %d + %d]" % (
-                    name,  ss, idx,   l,  stride_x, off)
+                name,  ss, idx,   l,  stride_x, off)
 
     def setitem(self, node, channel, idx, op, value):
         if self.optimized_out:
@@ -188,7 +194,9 @@ class CoreImage(object):
         else:
             raise AttributeError
 
+
 class ConstantImage(CoreImage):
+
     def __init__(self, width, height, value):
         self.width = width
         self.height = height
@@ -205,6 +213,7 @@ class ConstantImage(CoreImage):
 
     def alloc(self):
         self.cdeclaration = ''
+
 
 class CoreGraph(object):
     default_context = None
@@ -236,14 +245,15 @@ class CoreGraph(object):
     @staticmethod
     def get_current_graph(none_check=True):
         if none_check and CoreGraph.local_state.current_graph is None:
-            raise AssertionError("This function can only be called from within a 'width Graph():' block.")
-        return CoreGraph.local_state.current_graph            
+            raise AssertionError(
+                "This function can only be called from within a 'width Graph():' block.")
+        return CoreGraph.local_state.current_graph
 
     def _add_node(self, node):
         self.nodes.append(node)
 
     def verify(self):
-        self.images = set()        
+        self.images = set()
         for node in self.nodes:
             for d in node.inputs + node.outputs + node.inouts:
                 if isinstance(d, CoreImage):
@@ -258,7 +268,8 @@ class CoreGraph(object):
             if d.virtual and d.producer is None:
                 raise InvalidGraphError("Virtual data never produced.")
             if d.color == DF_IMAGE_VIRT:
-                raise InvalidFormatError("DF_IMAGE_VIRT not resolved into specific type.")
+                raise InvalidFormatError(
+                    "DF_IMAGE_VIRT not resolved into specific type.")
 
         self.optimize()
         self.compile()
@@ -303,8 +314,9 @@ class CoreGraph(object):
         mydir = os.path.dirname(os.path.abspath(__file__))
         vxdir = os.path.join(mydir, 'inc', 'headers')
         try:
-            lib = ffi.verify(inc + head + 
-                             "int func(void) {" + str(code) + "return VX_SUCCESS;}",
+            lib = ffi.verify(inc + head +
+                             "int func(void) {" + str(code) +
+                             "return VX_SUCCESS;}",
                              extra_compile_args=["-O3", "-march=native", "-std=c99",
                                                  "-I" + mydir,
                                                  "-I" + vxdir],
@@ -317,11 +329,13 @@ class CoreGraph(object):
     def process(self):
         return self.compiled_func()
 
+
 class Scheduler(object):
+
     def __init__(self, nodes, images):
         self.nodes = nodes
         self.images = images
-        self.present = defaultdict(lambda : True)
+        self.present = defaultdict(lambda: True)
         for d in self.images:
             self.present[d] = not d.virtual
         for n in self.nodes:
@@ -340,6 +354,7 @@ class Scheduler(object):
                 self.blocked_nodes.remove(n)
                 self.loaded_nodes.add(n)
 
+
 def parse_signature(signature):
     sig = [re.split('\s+', v.strip()) for v in signature.split(',')]
     return [(v[0].lower(), v[1].upper(), v[2]) for v in sig]
@@ -353,11 +368,14 @@ class Parameter(object):
         self.node = node
         self.name = name
         self.index = index
-        self.direction = {'in': INPUT, 'out': OUTPUT, 'inout': BIDIRECTIONAL}[direction]
+        self.direction = {
+            'in': INPUT, 'out': OUTPUT, 'inout': BIDIRECTIONAL}[direction]
         self.data_type = data_type
         self.state = state
 
+
 class Reference(object):
+
     def __init__(self, context, value, vxtype):
         self.context = context
         self.value = value
@@ -378,12 +396,15 @@ class Node(object):
         self.input_images, self.output_images, self.inout_images = {}, {}, {}
         for i, (direction, data_type, name) in enumerate(parse_signature(self.signature)):
             data_type = eval('TYPE_' + data_type)
-            state = PARAMETER_STATE_OPTIONAL if hasattr(self, name) else PARAMETER_STATE_REQUIRED
-            self.parameters.append(Parameter(self, name, i, direction, data_type, state))
+            state = PARAMETER_STATE_OPTIONAL if hasattr(
+                self, name) else PARAMETER_STATE_REQUIRED
+            self.parameters.append(
+                Parameter(self, name, i, direction, data_type, state))
             if i < len(args):
                 val = args[i]
                 if name in kwargs:
-                    raise TypeError("Got multiple values for keyword argument '%s'" % name)
+                    raise TypeError(
+                        "Got multiple values for keyword argument '%s'" % name)
             elif name in kwargs:
                 val = kwargs[name]
             else:
@@ -399,9 +420,10 @@ class Node(object):
             elif direction == 'inout':
                 self.inouts.append(val)
                 if isinstance(val, CoreImage):
-                    self.inout_images[name] = val                
+                    self.inout_images[name] = val
             else:
-                raise TypeError("Bad direction '%s' of argument '%s'" % (direction, name))
+                raise TypeError(
+                    "Bad direction '%s' of argument '%s'" % (direction, name))
             setattr(self, name, val)
         self.setup()
 
@@ -433,6 +455,7 @@ class Node(object):
         if not condition:
             raise InvalidFormatError
 
+
 class MergedNode(Node):
 
     def __init__(self, graph, nodes):
@@ -449,14 +472,13 @@ class MergedNode(Node):
         self.inputs = list(self.inputs)
         self.outputs = list(self.outputs)
         self.inouts = list(self.inouts)
-        self.input_images = {i: img for i, img in enumerate(self.inputs) 
-                                    if isinstance(img, CoreImage)}
-        self.output_images = {i: img for i, img in enumerate(self.outputs) 
-                                     if isinstance(img, CoreImage)}
-        self.inout_images = {i: img for i, img in enumerate(self.inouts) 
-                                    if isinstance(img, CoreImage)}
+        self.input_images = {i: img for i, img in enumerate(self.inputs)
+                             if isinstance(img, CoreImage)}
+        self.output_images = {i: img for i, img in enumerate(self.outputs)
+                              if isinstance(img, CoreImage)}
+        self.inout_images = {i: img for i, img in enumerate(self.inouts)
+                             if isinstance(img, CoreImage)}
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
             assert d.producer in nodes
             d.producer = self
-
