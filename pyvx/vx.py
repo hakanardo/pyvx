@@ -39,6 +39,9 @@ example on page 12 of the specification would in python look like this:
 
 .. _`OpenVX`: https://www.khronos.org/openvx
 .. _`OpenVX speficication`: https://www.khronos.org/registry/vx/specs/OpenVX_1.0_Provisional_Specifications.zip
+
+In cases listed below, the C-API returns data by passing in pointers to the 
+functions. In those cases the python functions return multiple values instead.
 """
 
 from pyvx.backend import CoreImage, Context
@@ -74,4 +77,37 @@ def VerifyGraph(graph):
 
 def ProcessGraph(graph):
     return graph.process()
+
+# ==============================================================================
+# PARAMETER
+# ==============================================================================
+
+def GetParameterByIndex(node, index):
+    return node.parameters[index]
+
+def ReleaseParameter(param):
+    return SUCCESS
+
+def SetParameterByIndex(node, index, value):
+    setattr(node, node.parameters[index].name, value)
+    return SUCCESS
+
+def SetParameterByReference(parameter, value):
+    setattr(parameter.node, parameter.name, value)
+    return SUCCESS
+
+def QueryParameter(param, attribute):
+    """
+        status, value = QueryParameter(param, attribute)
+    """
+    if attribute == PARAMETER_ATTRIBUTE_REF:
+        val = getattr(param.node, param.name)
+    else:
+        val = getattr(param, {PARAMETER_ATTRIBUTE_INDEX: 'index',
+                              PARAMETER_ATTRIBUTE_DIRECTION: 'direction',
+                              PARAMETER_ATTRIBUTE_TYPE: 'data_type',
+                              PARAMETER_ATTRIBUTE_STATE: 'state',
+                             }[attribute])
+    return SUCCESS, val
+
 

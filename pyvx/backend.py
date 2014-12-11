@@ -3,7 +3,7 @@ from pyvx.codegen import Code, Enum
 from cffi import FFI
 from collections import defaultdict
 from itertools import chain
-import threading, os
+import threading, os, re
 from tempfile import mkdtemp
 from shutil import rmtree
 
@@ -341,8 +341,18 @@ class Scheduler(object):
                 self.loaded_nodes.add(n)
 
 def parse_signature(signature):
-    sig = [v.strip().split(' ') for v in signature.split(',')]
-    return [(v[0].lower(), v[-1]) for v in sig]
+    sig = [re.split('\s+', v.strip()) for v in signature.split(',')]
+    return [(v[0].lower(), v[1].upper(), v[2]) for v in sig]
+
+class Parameter(object):
+    def __init__(self, node, name, index, direction, data_type, state):
+        self.node = node
+        self.name = name
+        self.index = index
+        self.direction = {'in': INPUT, 'out': OUTPUT, 'inout': BIDIRECTIONAL}[direction]
+        self.data_type = data_type
+        self.state = state
+        
 
 class Node(object):
     border_mode = BORDER_MODE_UNDEFINED
@@ -354,8 +364,12 @@ class Node(object):
     def __init__(self, graph, *args, **kwargs):
         self.graph = graph
         self.inputs, self.outputs, self.inouts = [], [], []
+        self.parameters = []
         self.input_images, self.output_images, self.inout_images = {}, {}, {}
-        for i, (direction, name) in enumerate(parse_signature(self.signature)):
+        for i, (direction, data_type, name) in enumerate(parse_signature(self.signature)):
+            data_type = eval('TYPE_' + data_type)
+            state = PARAMETER_STATE_OPTIONAL if hasattr(self, name) else PARAMETER_STATE_REQUIRED
+            self.parameters.append(Parameter(self, name, i, direction, data_type, state))
             if i < len(args):
                 val = args[i]
                 if name in kwargs:

@@ -9,7 +9,7 @@ and ``compile()``. As an example here is the implementation of the Gaussian3x3No
 .. code-block:: python 
 
     class Gaussian3x3Node(Node):
-        signature = "in input, out output"
+        signature = "in image input, out image output"
 
         def verify(self):
             self.ensure(self.input.image_format.items == 1)
@@ -76,7 +76,7 @@ of the ``PowerNode``:
 .. code-block:: python 
 
     class PowerNode(ElementwiseNode):
-        signature = "in in1, in in2, in convert_policy, out out"
+        signature = "in image in1, in image in2, in enum convert_policy, out image out"
         body = "out = pow(in1, in2);"
 
 If some logic is needed to produce the code, ``body`` can be implemented as a 
@@ -85,7 +85,7 @@ If some logic is needed to produce the code, ``body`` can be implemented as a
 .. code-block:: python 
 
     class BinaryOperationNode(ElementwiseNode):
-        signature = "in in1, in op, in in2, in convert_policy, out out"
+        signature = "in image in1, in image op, in image in2, in enum convert_policy, out image out"
         @property
         def body(self):
             return "out = in1 %s in2;" % self.op
@@ -157,7 +157,7 @@ class MergedElementwiseNode(MergedNode):
 
 
 class BinaryOperationNode(ElementwiseNode):
-    signature = "in in1, in op, in in2, in convert_policy, out out"
+    signature = "in image in1, in reference op, in image in2, in enum convert_policy, out image out"
 
     @property
     def body(self):
@@ -165,7 +165,7 @@ class BinaryOperationNode(ElementwiseNode):
 
 
 class MultiplyNode(ElementwiseNode):
-    signature = "in in1, in in2, in scale, in convert_policy, in round_policy, out out"
+    signature = "in image in1, in image in2, in scalar scale, in enum convert_policy, in enum round_policy, out image out"
     scale = 1
     round_policy = ROUND_POLICY_TO_ZERO
 
@@ -180,7 +180,7 @@ class MultiplyNode(ElementwiseNode):
 
 
 class DivideNode(ElementwiseNode):
-    signature = "in in1, in in2, in scale, in convert_policy, in round_policy, out out"
+    signature = "in image in1, in image in2, in scalar scale, in enum convert_policy, in enum round_policy, out image out"
     scale = 1
     round_policy = ROUND_POLICY_TO_ZERO
 
@@ -195,7 +195,7 @@ class DivideNode(ElementwiseNode):
 
 
 class TrueDivideNode(ElementwiseNode):
-    signature = "in in1, in in2, out out"
+    signature = "in image in1, in image in2, out image out"
     body = "out = ((double) in1) / ((double) in2);"
 
     def verify(self):
@@ -204,12 +204,12 @@ class TrueDivideNode(ElementwiseNode):
 
 
 class PowerNode(ElementwiseNode):
-    signature = "in in1, in in2, in convert_policy, out out"
+    signature = "in image in1, in image in2, in enum convert_policy, out image out"
     body = "out = pow(in1, in2);"
 
 
 class CompareNode(BinaryOperationNode):
-    signature = "in in1, in op, in in2, out out"
+    signature = "in image in1, in reference op, in image in2, out image out"
 
     def verify(self):
         self.out.suggest_color(DF_IMAGE_U8)
@@ -217,7 +217,7 @@ class CompareNode(BinaryOperationNode):
 
 
 class ColorConvertNode(Node):
-    signature = 'in input, out output'
+    signature = 'in image input, out image output'
     convert_policy = CONVERT_POLICY_SATURATE
 
     def verify(self):
@@ -251,7 +251,7 @@ class ColorConvertNode(Node):
 
 
 class ChannelExtractNode(Node):
-    signature = "in input, in channel, out output"
+    signature = "in image input, in enum channel, out image output"
 
     def verify(self):
         if self.channel not in self.input.image_format.channels:
@@ -271,7 +271,7 @@ class ChannelExtractNode(Node):
 
 
 class ChannelCombineNode(Node):
-    signature = 'in plane0, in plane1, in plane2, in plane3, out output'
+    signature = 'in image plane0, in image plane1, in image plane2, in image plane3, out image output'
     plane2 = None
     plane3 = None
 
@@ -297,7 +297,7 @@ class ChannelCombineNode(Node):
 
 
 class Gaussian3x3Node(Node):
-    signature = "in input, out output"
+    signature = "in image input, out image output"
 
     def verify(self):
         self.ensure(self.input.image_format.items == 1)
@@ -316,7 +316,7 @@ class Gaussian3x3Node(Node):
 
 
 class Sobel3x3Node(Node):
-    signature = 'in input, out output_x, out output_y'
+    signature = 'in image input, out image output_x, out image output_y'
 
     def verify(self):
         self.ensure(self.input.image_format.items == 1)
@@ -344,7 +344,7 @@ class Sobel3x3Node(Node):
 
 
 class MagnitudeNode(ElementwiseNode):
-    signature = 'in grad_x, in grad_y, out mag'
+    signature = 'in image grad_x, in image grad_y, out image mag'
     convert_policy = CONVERT_POLICY_SATURATE
 
     def verify(self):
@@ -363,7 +363,7 @@ class MagnitudeNode(ElementwiseNode):
 
 
 class PhaseNode(ElementwiseNode):
-    signature = 'in grad_x, in grad_y, out orientation'
+    signature = 'in image grad_x, in image grad_y, out image orientation'
 
     def verify(self):
         self.ensure(self.grad_x.image_format.items == 1)
@@ -376,7 +376,7 @@ class PhaseNode(ElementwiseNode):
 
 
 class AccumulateImageNode(Node):
-    signature = 'in input, inout accum'
+    signature = 'in image input, inout image accum'
 
     def verify(self):
         pass
@@ -385,7 +385,7 @@ mydir = os.path.dirname(os.path.abspath(__file__))
 
 
 class PlayNode(Node):
-    signature = 'in path, out output'
+    signature = 'in reference path, out image output'
     player = None
 
     ffi = cffi.FFI()
@@ -444,7 +444,7 @@ class PlayNode(Node):
 
 
 class ShowNode(Node):
-    signature = "in input, in name"
+    signature = "in image input, in reference name"
     viewer = None
     name = "View"
 

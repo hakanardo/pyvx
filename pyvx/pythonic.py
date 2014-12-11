@@ -259,9 +259,9 @@ def _get_default_repr(cls, name):
 
 def _make_pythonic_node(pname, cls):
     sig = parse_signature(cls.signature)
-    outputs = [n for d, n in sig if d in ('out', 'inout')]
-    inputs = [n for d, n in sig  if d=='in']
-    allputs = [n for d, n in sig]
+    outputs = [n for d, t, n in sig if d in ('out', 'inout')]
+    inputs = [n for d, t, n in sig  if d=='in']
+    allputs = [n for d, t, n in sig]
     args = [n + '=' + _get_default_repr(cls, n) if hasattr(cls, n) else n 
             for n in inputs]
 
