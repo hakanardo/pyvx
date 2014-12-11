@@ -95,12 +95,12 @@ def ReleaseParameter(param):
 
 
 def SetParameterByIndex(node, index, value):
-    setattr(node, node.parameters[index].name, value)
+    setattr(node, node.parameters[index].name, value.value)
     return SUCCESS
 
 
 def SetParameterByReference(parameter, value):
-    setattr(parameter.node, parameter.name, value)
+    setattr(parameter.node, parameter.name, value.value)
     return SUCCESS
 
 
@@ -110,6 +110,7 @@ def QueryParameter(param, attribute):
     """
     if attribute == PARAMETER_ATTRIBUTE_REF:
         val = getattr(param.node, param.name)
+        val = Reference(param.context, val, param.data_type)
     else:
         val = getattr(param, {PARAMETER_ATTRIBUTE_INDEX: 'index',
                               PARAMETER_ATTRIBUTE_DIRECTION: 'direction',

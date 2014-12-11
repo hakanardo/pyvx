@@ -344,15 +344,25 @@ def parse_signature(signature):
     sig = [re.split('\s+', v.strip()) for v in signature.split(',')]
     return [(v[0].lower(), v[1].upper(), v[2]) for v in sig]
 
+
 class Parameter(object):
+    vxtype = TYPE_PARAMETER
+
     def __init__(self, node, name, index, direction, data_type, state):
+        self.context = node.graph.context
         self.node = node
         self.name = name
         self.index = index
         self.direction = {'in': INPUT, 'out': OUTPUT, 'inout': BIDIRECTIONAL}[direction]
         self.data_type = data_type
         self.state = state
-        
+
+class Reference(object):
+    def __init__(self, context, value, vxtype):
+        self.context = context
+        self.value = value
+        self.vxtype = vxtype
+
 
 class Node(object):
     border_mode = BORDER_MODE_UNDEFINED
