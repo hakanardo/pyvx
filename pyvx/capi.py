@@ -33,7 +33,8 @@ def export(signature, add_ret_to_arg=0, **kwargs):
 
 
 class OpenVxApi(object):
-    wrapped_reference_types = ['vx_context', 'vx_image', 'vx_graph', 'vx_node']
+    wrapped_reference_types = ['vx_context', 'vx_image', 'vx_graph', 
+                               'vx_node', 'vx_parameter']
     setup = ["import sys",
              "sys.path = ['.'] + sys.path",
              "import pyvx",
@@ -69,7 +70,7 @@ class OpenVxApi(object):
     def vxProcessGraph(graph):
         return vx.ProcessGraph(graph)
     
-    @export("vx_status(vx_context *)", retrive_args=False, add_ret_to_arg=None)
+    @export("vx_status(vx_context *)")
     def vxReleaseContext(context):
         context_obj = OpenVxApi.pyapi.retrive(context[0])
         for r in context_obj.references:
@@ -106,6 +107,17 @@ class OpenVxApi(object):
     @export("vx_node(vx_graph, vx_image, char *)")
     def vxShowNode(graph, input, name):
         return vx.ShowNode(graph, input, name)
+
+    @export("vx_parameter(vx_node, vx_uint32 index)")
+    def vxGetParameterByIndex(node, index):
+        return vx.GetParameterByIndex(node, index)
+    
+    @export("vx_status(vx_parameter *)")
+    def vxReleaseParameter(param):
+        param_obj = OpenVxApi.pyapi.retrive(param[0])
+        OpenVxApi.pyapi.discard(param[0])
+        param[0] = OpenVxApi.pyapi.ffi.NULL
+        return vx.ReleaseParameter(param_obj)
 
 
 def build(prefix='/usr/local'):

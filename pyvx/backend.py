@@ -13,6 +13,9 @@ from shutil import rmtree
 class Context(object):
     references = []
 
+    def __init__(self):
+        self.context = self
+
     def add_reference(self, ref):
         self.references.append(ref)
 
@@ -230,9 +233,6 @@ class CoreGraph(object):
         self.nodes = []
         self.early_verify = early_verify
 
-    def add_reference(self, *args):
-        return self.context.add_reference(*args)
-
     def __enter__(self):
         assert CoreGraph.local_state.current_graph is None
         CoreGraph.local_state.current_graph = self
@@ -391,6 +391,7 @@ class Node(object):
 
     def __init__(self, graph, *args, **kwargs):
         self.graph = graph
+        self.context = graph.context
         self.inputs, self.outputs, self.inouts = [], [], []
         self.parameters = []
         self.input_images, self.output_images, self.inout_images = {}, {}, {}
