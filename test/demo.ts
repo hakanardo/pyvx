@@ -29,17 +29,21 @@
     ck_assert(!context);
 
 #test view
-    vx_context context = vxCreateContext();
-    vx_graph graph = vxCreateGraph(context);
+    if (!getenv("DISPLAY") || !getenv("DISPLAY")[0]) {
+        printf("Skipping, no DISPLAY\n");
+    } else {
+        vx_context context = vxCreateContext();
+        vx_graph graph = vxCreateGraph(context);
 
-    vx_image img = vxCreateVirtualImage(graph, 0, 0, VX_DF_IMAGE_VIRT);
-    vxPlayNode(graph, "test.avi", img);
-    vxShowNode(graph, img, "View");
+        vx_image img = vxCreateVirtualImage(graph, 0, 0, VX_DF_IMAGE_VIRT);
+        vxPlayNode(graph, "test.avi", img);
+        vxShowNode(graph, img, "View");
 
-    vx_status status = vxVerifyGraph(graph);
-    ck_assert(status == VX_SUCCESS);
-    while (status == VX_SUCCESS) {
-        status = vxProcessGraph(graph);
+        vx_status status = vxVerifyGraph(graph);
+        ck_assert(status == VX_SUCCESS);
+        while (status == VX_SUCCESS) {
+            status = vxProcessGraph(graph);
+        }
+        vxReleaseContext(&context); // this will release everything 
+        ck_assert(!context);
     }
-    vxReleaseContext(&context); // this will release everything 
-    ck_assert(!context);
