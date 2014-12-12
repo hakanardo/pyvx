@@ -1,7 +1,7 @@
 all: python_test c_test
 
 python_test:
-	cd .. && py.test -v
+	cd .. && py.test -v -s
 
 c_test:
 	-rm -rf ../pyvx/__pycache__
