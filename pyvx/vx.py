@@ -50,6 +50,7 @@ from pyvx.optimize import OptimizedGraph
 from pyvx.nodes import *
 from pyvx.inc.vx import *
 
+verbose = True
 
 def CreateContext():
     return Context()
@@ -70,11 +71,19 @@ def CreateGraph(context, early_verify=True):
 def CreateVirtualImage(graph, width, height, color):
     return CoreImage(width, height, color, virtual=True, graph=graph)
 
+def ReleaseImage(image):
+    return SUCCESS
+
+def ReleaseKernel(kernel):
+    return SUCCESS
 
 def VerifyGraph(graph):
     try:
         graph.verify()
     except VerificationError as e:
+        if verbose:
+            import traceback
+            traceback.print_exc()
         return e.errno
     return SUCCESS
 
@@ -98,6 +107,17 @@ def GetGraphParameterByIndex(graph, index):
         return 0
     return graph.parameters[index]
 
+def GetKernelByName(context, name):
+    return get_kernel(context, name)
+
+def GetKernelByEnum(context, kernel):
+    return get_kernel(context, kernel)
+
+def CreateGenericNode(graph, kernel):
+    return kernel.node_class(graph, _ignore_missin_parameters=True)
+
+def ReleaseNode(node):
+    return SUCCESS
 
 # ========================================================================
 # PARAMETER

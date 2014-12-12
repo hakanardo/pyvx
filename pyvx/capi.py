@@ -21,7 +21,7 @@ This will install `libopenvx.so*` into `/usr/local/lib` and place the
 
 from codegen import PythonApi, Enum, Reference
 import codegen
-from pyvx import vx
+from pyvx import vx, inc
 from pyvx.types import enum2ctype
 
 from pyvx import __version_info__, __version__
@@ -36,7 +36,7 @@ def export(signature, add_ret_to_arg=0, exception_return=vx.FAILURE, **kwargs):
 class OpenVxApi(object):
     wrapped_reference_types = ['vx_context', 'vx_image', 'vx_graph', 
                                'vx_node', 'vx_parameter', 'vx_reference',
-                               'vx_scalar']
+                               'vx_scalar', 'vx_kernel']
     setup = ["import sys",
              "sys.path = ['.'] + sys.path",
              "import pyvx",
@@ -121,6 +121,36 @@ class OpenVxApi(object):
     @export("vx_parameter(vx_graph, vx_uint32)")
     def vxGetGraphParameterByIndex(graph, index):
         return vx.GetGraphParameterByIndex(graph, index)
+
+    @export("vx_kernel(vx_context, vx_char *)", exception_return=inc.vx.ffi.NULL)
+    def vxGetKernelByName(context, name):
+        return vx.GetKernelByName(context, OpenVxApi.pyapi.ffi.string(name))
+
+    @export("vx_kernel(vx_context, vx_enum)", exception_return=inc.vx.ffi.NULL)
+    def vxGetKernelByEnum(context, kernel):
+        return vx.GetKernelByEnum(context, kernel)
+
+    @export("vx_status(vx_image *)")
+    def vxReleaseImage(image):
+        image_obj = OpenVxApi.pyapi.retrive(image[0])
+        image[0] = OpenVxApi.pyapi.ffi.NULL
+        return vx.ReleaseImage(image)
+
+    @export("vx_status(vx_kernel *)")
+    def vxReleaseKernel(kernel):
+        kernel_obj = OpenVxApi.pyapi.retrive(kernel[0])
+        kernel[0] = OpenVxApi.pyapi.ffi.NULL
+        return vx.ReleaseKernel(kernel)
+
+    @export("vx_node(vx_graph, vx_kernel)")
+    def vxCreateGenericNode(graph, kernel):
+        return vx.CreateGenericNode(graph, kernel)
+
+    @export("vx_status(vx_node *)")
+    def vxReleaseNode(node):
+        node_obj = OpenVxApi.pyapi.retrive(node[0])
+        node[0] = OpenVxApi.pyapi.ffi.NULL
+        return vx.ReleaseNode(node)
 
 
     # ========================================================================

@@ -69,3 +69,20 @@ class TestVerify(object):
                 ChannelExtract(img, CHANNEL_U)
             ChannelExtract(img, CHANNEL_R)
 
+    def test_required_params(self):
+        g = Graph()
+        with py.test.raises(InvalidParametersError):
+            node = ChannelExtractNode(g, _ignore_missin_parameters=True)
+
+        g = Graph(early_verify=False)
+        node = ChannelExtractNode(g, _ignore_missin_parameters=True)
+        with py.test.raises(InvalidParametersError):
+            g.verify()
+
+        img = Image(640, 480, DF_IMAGE_RGB, context=Graph.default_context)
+        out = Image(graph=g)
+        node.input = img
+        node.channel = CHANNEL_R
+        node.output = out
+        g.verify()
+

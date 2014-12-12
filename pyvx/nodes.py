@@ -166,6 +166,7 @@ class MultiplyNode(ElementwiseNode):
     signature = "in image in1, in image in2, in scalar scale, in enum convert_policy, in enum round_policy, out image out"
     scale = 1
     round_policy = ROUND_POLICY_TO_ZERO
+    kernel_enum =  KERNEL_MULTIPLY
 
     @property
     def body(self):
@@ -217,6 +218,7 @@ class CompareNode(BinaryOperationNode):
 class ColorConvertNode(Node):
     signature = 'in image input, out image output'
     convert_policy = CONVERT_POLICY_SATURATE
+    kernel_enum = KERNEL_COLOR_CONVERT 
 
     def verify(self):
         for im in (self.input, self.output):
@@ -250,6 +252,7 @@ class ColorConvertNode(Node):
 
 class ChannelExtractNode(Node):
     signature = "in image input, in enum channel, out image output"
+    kernel_enum = KERNEL_CHANNEL_EXTRACT 
 
     def verify(self):
         if self.channel not in self.input.image_format.channels:
@@ -272,6 +275,7 @@ class ChannelCombineNode(Node):
     signature = 'in image plane0, in image plane1, in image plane2, in image plane3, out image output'
     plane2 = None
     plane3 = None
+    kernel_enum = KERNEL_CHANNEL_COMBINE
 
     def verify(self):
         self.output.suggest_color(DF_IMAGE_RGB)
@@ -296,6 +300,7 @@ class ChannelCombineNode(Node):
 
 class Gaussian3x3Node(Node):
     signature = "in image input, out image output"
+    kernel_enum = KERNEL_GAUSSIAN_3x3
 
     def verify(self):
         self.ensure(self.input.image_format.items == 1)
@@ -315,6 +320,7 @@ class Gaussian3x3Node(Node):
 
 class Sobel3x3Node(Node):
     signature = 'in image input, out image output_x, out image output_y'
+    kernel_enum = KERNEL_SOBEL_3x3
 
     def verify(self):
         self.ensure(self.input.image_format.items == 1)
@@ -344,6 +350,7 @@ class Sobel3x3Node(Node):
 class MagnitudeNode(ElementwiseNode):
     signature = 'in image grad_x, in image grad_y, out image mag'
     convert_policy = CONVERT_POLICY_SATURATE
+    kernel_enum = KERNEL_MAGNITUDE
 
     def verify(self):
         self.ensure(self.grad_x.image_format.items == 1)
@@ -362,6 +369,7 @@ class MagnitudeNode(ElementwiseNode):
 
 class PhaseNode(ElementwiseNode):
     signature = 'in image grad_x, in image grad_y, out image orientation'
+    kernel_enum = KERNEL_PHASE
 
     def verify(self):
         self.ensure(self.grad_x.image_format.items == 1)
@@ -375,6 +383,7 @@ class PhaseNode(ElementwiseNode):
 
 class AccumulateImageNode(Node):
     signature = 'in image input, inout image accum'
+    kernel_enum = KERNEL_ACCUMULATE
 
     def verify(self):
         pass
@@ -504,3 +513,25 @@ class ShowNode(Node):
     def __del__(self):
         if self.viewer:
             self.lib.glview_release(self.viewer)
+
+class Median3x3Node(Node):
+    kernel_enum = KERNEL_MEDIAN_3x3
+    signature = 'in image input, out image output'
+
+    def verify(self):
+        # FIXME
+        self.output.ensure_similar(self.input)
+
+    def compile(self, code):
+        pass # FIXME
+
+class HarrisCornersNode(Node):
+    kernel_enum = KERNEL_HARRIS_CORNERS
+    signature = 'in image input, in scalar strength_thresh, in scalar min_distance, in scalar sensitivity, in int32 gradient_size, in int32 block_size, out array corners, out scalar num_corners'
+    num_corners = Scalar(None, None, None) # FIXME
+
+    def verify(self):
+        pass # FIXME
+
+    def compile(self, code):
+        pass # FIXME

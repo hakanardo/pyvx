@@ -257,7 +257,10 @@ class CoreGraph(object):
     def verify(self):
         self.images = set()
         for node in self.nodes:
+            node.reload_parameter_values()
             for d in node.inputs + node.outputs + node.inouts:
+                if d is Missing:
+                    raise InvalidParametersError('Required parameter missing')
                 if isinstance(d, CoreImage):
                     self.images.add(d)
         self.nodes = self.schedule()
@@ -333,11 +336,11 @@ class CoreGraph(object):
             self.verify()
         return self.compiled_func()
 
-    def add_parameter(parameter):
+    def add_parameter(self, parameter):
         if not isinstance(parameter, Parameter):
-            raise InvalidReferenceError
+            raise InvalidReferenceError('The reference parameter is not a Parameter object')
         if parameter.node.graph is not self:
-            raise InvalidParametersError
+            raise InvalidParametersError('Parameter does not belong to a node in this graph')
         self.parameters.append(parameter)
 
 
@@ -361,6 +364,9 @@ class Scheduler(object):
             for d in node.outputs:
                 self.present[d] = True
         for n in list(self.blocked_nodes):
+            # print n
+            # for d in n.inputs:
+            #     print '    ', d, self.present[d]
             if all(self.present[d] for d in n.inputs):
                 self.blocked_nodes.remove(n)
                 self.loaded_nodes.add(n)
@@ -391,9 +397,40 @@ class Scalar(object):
         self.context = context
         self.vxtype = vxtype
         self.value = value
+        self.producer = None
 
+class Kernel(object):
+    def __init__(self, context, node_class):
+        self.context = context
+        self.name = node_class.kernel_name
+        self.enumeration = node_class.kernel_enum
+        self.node_class = node_class
+        
+
+class NodeMeta(type):
+    kernels = {}
+    def __new__(cls, name, bases, attrs):
+        cls = type.__new__(cls, name, bases, attrs)
+        if hasattr(cls, 'kernel_enum'):
+            assert cls.kernel_enum not in NodeMeta.kernels
+            NodeMeta.kernels[cls.kernel_enum] = cls
+        if 'kernel_name' not in attrs:
+            assert name.endswith('Node')
+            cls.kernel_name = name[:-4]
+        assert cls.kernel_name not in NodeMeta.kernels
+        NodeMeta.kernels[cls.kernel_name] = cls
+        return cls
+
+def get_kernel(context, kernel):
+    try:
+        return Kernel(context, NodeMeta.kernels[kernel])
+    except KeyError:
+        raise InvalidValueError('Cant find kernel %r' % kernel)
+
+class Missing(object): pass
 
 class Node(object):
+    __metaclass__ = NodeMeta
     border_mode = BORDER_MODE_UNDEFINED
     border_mode_value = 0
     convert_policy = CONVERT_POLICY_WRAP
@@ -403,7 +440,6 @@ class Node(object):
     def __init__(self, graph, *args, **kwargs):
         self.graph = graph
         self.context = graph.context
-        self.inputs, self.outputs, self.inouts = [], [], []
         self.parameters = []
         for i, (direction, data_type, name) in enumerate(parse_signature(self.signature)):
             data_type = eval('TYPE_' + data_type)
@@ -418,19 +454,29 @@ class Node(object):
                         "Got multiple values for keyword argument '%s'" % name)
             elif name in kwargs:
                 val = kwargs[name]
+            elif hasattr(self, name):
+                val = getattr(self, name)
             else:
-                raise TypeError("Required argument missing")
-            if direction == 'in':
-                self.inputs.append(val)
-            elif direction == 'out':
-                self.outputs.append(val)
-            elif direction == 'inout':
-                self.inouts.append(val)
-            else:
-                raise TypeError(
-                    "Bad direction '%s' of argument '%s'" % (direction, name))
+                if kwargs.get('_ignore_missin_parameters', False): 
+                    val = Missing
+                else:
+                    raise TypeError("Required argument missing")
             setattr(self, name, val)
+        self.reload_parameter_values()
         self.setup()
+    
+    def reload_parameter_values(self):
+        self.inputs, self.outputs, self.inouts = [], [], []
+        for p in self.parameters:
+            val = getattr(self, p.name)
+            #print '%s: %r' % (p.name, val)
+            if p.direction == INPUT:
+                self.inputs.append(val)
+            elif p.direction == OUTPUT:
+                self.outputs.append(val)
+            elif p.direction == BIDIRECTIONAL:
+                self.inouts.append(val)
+
 
     @property
     def input_images(self):
@@ -447,14 +493,21 @@ class Node(object):
     def setup(self):
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
-            if d.producer is None:
+            if d is not Missing and d.producer is None:
                 d.producer = self
         if self.graph.early_verify:
             self.do_verify()
 
     def do_verify(self):
+        # All arguments are assigned
+        for d in self.inputs + self.outputs + self.inouts:
+            if d is Missing:
+                raise InvalidParametersError('Required parameter missing')
+
         # Signle writer
         for d in self.outputs + self.inouts:
+            if d.producer is None:
+                d.producer = self
             if d.producer is not self:
                 raise MultipleWritersError
 
@@ -465,7 +518,7 @@ class Node(object):
 
         for d in self.inputs:
             if isinstance(d, CoreImage) and (not d.width or not d.height):
-                raise InvalidFormatError
+                raise InvalidFormatError('Input image dimentions unknown')
         self.verify()
 
     def ensure(self, condition):
@@ -493,3 +546,6 @@ class MergedNode(Node):
         for d in self.outputs + self.inouts:
             assert d.producer in nodes
             d.producer = self
+
+    def reload_parameter_values(self):
+        pass # XXX!!
