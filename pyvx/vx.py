@@ -75,7 +75,7 @@ def VerifyGraph(graph):
     try:
         graph.verify()
     except VerificationError as e:
-        return e.__class__
+        return e.errno
     return SUCCESS
 
 

@@ -163,12 +163,14 @@ class Code(object):
         return self.code
 
 
-def export(signature, add_ret_to_arg=None, retrive_args=True, store_result=True):
+def export(signature, add_ret_to_arg=None, retrive_args=True, store_result=True,
+           exception_return=-1):
     def decorator(f):
         f.signature = signature
         f.add_ret_to_arg = add_ret_to_arg
         f.retrive_args = retrive_args
         f.store_result = store_result
+        f.exception_return = exception_return
         return staticmethod(f)
     return decorator
 
@@ -229,7 +231,12 @@ class PythonApi(object):
             args = list(args)
             for i in retrive_refs:
                 args[i] = self.retrive(args[i])
-            r = fn(*args)
+            try:
+                r = fn(*args)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return fn.exception_return
             if store_result:
                 r = self.store(r)
             if add_ret_to_arg is not None:

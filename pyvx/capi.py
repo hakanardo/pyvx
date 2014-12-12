@@ -28,8 +28,8 @@ from pyvx import __version_info__, __version__
 major, minor, _ = __version_info__
 soversion = '%d.%d' % (major, minor)
 
-def export(signature, add_ret_to_arg=0, **kwargs):
-    return codegen.export(signature, add_ret_to_arg, **kwargs)
+def export(signature, add_ret_to_arg=0, exception_return=vx.FAILURE, **kwargs):
+    return codegen.export(signature, add_ret_to_arg, exception_return=exception_return, **kwargs)
 
 
 
@@ -104,7 +104,7 @@ class OpenVxApi(object):
 
     @export("vx_node(vx_graph, char *, vx_image)")
     def vxPlayNode(graph, fn, output):
-        return vx.PlayNode(graph, fn, output)
+        return vx.PlayNode(graph, OpenVxApi.pyapi.ffi.string(fn), output)
 
     @export("vx_node(vx_graph, vx_image, char *)")
     def vxShowNode(graph, input, name):
