@@ -40,8 +40,9 @@ example on page 12 of the specification would in python look like this:
 .. _`OpenVX`: https://www.khronos.org/openvx
 .. _`OpenVX speficication`: https://www.khronos.org/registry/vx/specs/OpenVX_1.0_Provisional_Specifications.zip
 
-In cases listed below, the C-API returns data by passing in pointers to the 
-functions. In those cases the python functions return multiple values instead.
+In cases listed below, the C-API uses pointers to pass data in and out
+of functions. As there are no similar concept in python, direct values 
+and multiple return values are used instead.
 """
 
 from pyvx.backend import CoreImage, Context

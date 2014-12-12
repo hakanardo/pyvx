@@ -89,6 +89,13 @@ This API is generated from the OpenVX API using the following transformations:
         g.verify()
         g.process()
 
+- Normal python ``int`` and ``float`` objects are used instead of ``Scalar``
+  objects.
+
+- Node parameters are availible as attributes on the nodes (both for reading 
+  and changeing). There is a ``node.signature`` that gives a human readable
+  string describing the parameters (position, type, name and direction). The
+  same formation is also availible in parsed form in ``node.parameters``.
 
 """
 
