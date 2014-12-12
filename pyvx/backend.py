@@ -232,6 +232,7 @@ class CoreGraph(object):
         self.context = context
         self.nodes = []
         self.early_verify = early_verify
+        self.compiled_func = None
 
     def __enter__(self):
         assert CoreGraph.local_state.current_graph is None
@@ -327,6 +328,8 @@ class CoreGraph(object):
         self.compiled_func = lib.func
 
     def process(self):
+        if self.compiled_func is None:
+            self.verify()
         return self.compiled_func()
 
 
