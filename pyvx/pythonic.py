@@ -95,6 +95,7 @@ This API is generated from the OpenVX API using the following transformations:
 from pyvx.types import *
 import pyvx.nodes as nodes
 from pyvx.backend import *
+from pyvx import vx
 
 class Image(CoreImage):
 

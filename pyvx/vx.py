@@ -95,11 +95,15 @@ def ReleaseParameter(param):
 
 
 def SetParameterByIndex(node, index, value):
-    setattr(node, node.parameters[index].name, value.value)
+    if isinstance(value, IntReference):
+        value = value.value
+    setattr(node, node.parameters[index].name, value)
     return SUCCESS
 
 
 def SetParameterByReference(parameter, value):
+    if isinstance(value, IntReference):
+        value = value.value
     setattr(parameter.node, parameter.name, value.value)
     return SUCCESS
 
@@ -114,7 +118,8 @@ def QueryParameter(param, attribute):
                  PARAMETER_ATTRIBUTE_STATE: 'state'}
     if attribute == PARAMETER_ATTRIBUTE_REF:
         val = getattr(param.node, param.name)
-        val = Reference(param.context, val, param.data_type)
+        if isinstance(val, int):
+            val = IntReference(param.context, val, param.data_type)
     elif attribute in attr_name:
         val = getattr(param, attr_name[attribute])
     else:

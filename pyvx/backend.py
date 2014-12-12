@@ -374,7 +374,7 @@ class Parameter(object):
         self.state = state
 
 
-class Reference(object):
+class IntReference(object):
 
     def __init__(self, context, value, vxtype):
         self.context = context

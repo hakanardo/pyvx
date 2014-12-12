@@ -34,7 +34,7 @@ def export(signature, add_ret_to_arg=0, **kwargs):
 
 class OpenVxApi(object):
     wrapped_reference_types = ['vx_context', 'vx_image', 'vx_graph', 
-                               'vx_node', 'vx_parameter']
+                               'vx_node', 'vx_parameter', 'vx_reference']
     setup = ["import sys",
              "sys.path = ['.'] + sys.path",
              "import pyvx",
@@ -124,12 +124,30 @@ class OpenVxApi(object):
 
     @export("vx_status(vx_parameter, vx_enum, void *, vx_size)")
     def vxQueryParameter(param, attribute, ptr, size):
-        if size != OpenVxApi.pyapi.ffi.sizeof("vx_uint32"):
+        attr_type = {vx.PARAMETER_ATTRIBUTE_INDEX: 'vx_uint32',
+                     vx.PARAMETER_ATTRIBUTE_DIRECTION: 'vx_enum',
+                     vx.PARAMETER_ATTRIBUTE_TYPE: 'vx_enum',
+                     vx.PARAMETER_ATTRIBUTE_STATE: 'vx_enum',
+                     vx.PARAMETER_ATTRIBUTE_REF: 'vx_reference'}
+
+        if attribute not in attr_type:
+            return vx.FAILURE
+        if size != OpenVxApi.pyapi.ffi.sizeof(attr_type[attribute]):
             return vx.FAILURE
         status, value = vx.QueryParameter(param, attribute)
-        ptr = OpenVxApi.pyapi.ffi.cast("vx_uint32 *", ptr)
-        ptr[0] = value
+        ptr = OpenVxApi.pyapi.ffi.cast(attr_type[attribute] + "*", ptr)
+        if attr_type[attribute] == 'vx_reference':
+            ptr[0] = OpenVxApi.pyapi.store(value)
+        else:
+            ptr[0] = value
         return status
+
+    # ========================================================================
+    # FOR TESTS
+    # ========================================================================
+    @export("int(vx_reference, vx_reference)")
+    def same_pyobj(ref1, ref2):
+        return ref1 is ref2
 
 
 

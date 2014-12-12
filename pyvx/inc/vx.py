@@ -22,6 +22,17 @@ ffi.cdef(vendors.cdef)
 ffi.cdef(types.cdef + kernels.cdef)
 # ffi.cdef(kernels.cdef)
 
+class Enum(int):
+    def __new__(cls, name, val):
+        self = int.__new__(cls, val)
+        self.name = name
+        return self
+
+    def __str__(self):
+        return self.name
+        
+    __repr__ = __str__
+
 mydir = os.path.dirname(os.path.abspath(__file__))
 d = os.path.join(mydir, 'headers')
 lib = ffi.verify('#include "VX/vx.h"\n' + types.verify,
@@ -29,7 +40,10 @@ lib = ffi.verify('#include "VX/vx.h"\n' + types.verify,
                  modulename='__pyvx_inc_vx2')
 for n in dir(lib):
     if n.lower().startswith('vx_'):
-        locals()[n[3:]] = getattr(lib, n)
+        obj = getattr(lib, n)
+        if isinstance(obj, int):
+            obj = Enum('vx.' + n[3:], obj)
+        locals()[n[3:]] = obj
 
 
 def imagepatch_addressing(dim_x=0, dim_y=0, stride_x=0, stride_y=0,
