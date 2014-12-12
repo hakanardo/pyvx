@@ -30,6 +30,23 @@
     ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_STATE, 
                                &e, sizeof(e)) == VX_SUCCESS);    
     ck_assert(e == VX_PARAMETER_STATE_REQUIRED);
+    vx_reference ref;
+    ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_REF, 
+                               &ref, sizeof(ref)) == VX_SUCCESS);
+    ck_assert(vxAccessScalarValue((vx_scalar) ref, &e) == VX_SUCCESS);
+    ck_assert(e == VX_CHANNEL_Y);
+    ck_assert(vxReleaseParameter(&param) == VX_SUCCESS);
+    ck_assert(!param);
+
+    param = vxGetParameterByIndex(node, 1);
+    e = VX_CHANNEL_G;
+    vx_scalar val = vxCreateScalar(context, VX_TYPE_ENUM, &e);
+    ck_assert(vxSetParameterByIndex(node, 1, (vx_reference) val) == VX_SUCCESS);
+    e = VX_CHANNEL_Y;
+    ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_REF, 
+                               &ref, sizeof(ref)) == VX_SUCCESS);
+    ck_assert(vxAccessScalarValue((vx_scalar) ref, &e) == VX_SUCCESS);
+    ck_assert(e == VX_CHANNEL_G);
     ck_assert(vxReleaseParameter(&param) == VX_SUCCESS);
     ck_assert(!param);
 
@@ -37,7 +54,6 @@
     ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_TYPE, 
                                &e, sizeof(e)) == VX_SUCCESS);
     ck_assert(e == VX_TYPE_IMAGE);    
-    vx_reference ref;
     ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_REF, 
                                &ref, sizeof(ref)) == VX_SUCCESS);
     ck_assert(same_pyobj(ref, (vx_reference) img1));
@@ -54,8 +70,6 @@
     ck_assert(!same_pyobj(ref, (vx_reference) img2));
     ck_assert(vxReleaseParameter(&param) == VX_SUCCESS);
     ck_assert(!param);
-
-    // FIXME: test int parameters
 
 #test scalar
     vx_context context = vxCreateContext();
