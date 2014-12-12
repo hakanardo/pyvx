@@ -104,7 +104,7 @@ def SetParameterByIndex(node, index, value):
 def SetParameterByReference(parameter, value):
     if isinstance(value, IntReference):
         value = value.value
-    setattr(parameter.node, parameter.name, value.value)
+    setattr(parameter.node, parameter.name, value)
     return SUCCESS
 
 

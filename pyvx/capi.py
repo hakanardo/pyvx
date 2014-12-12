@@ -121,6 +121,14 @@ class OpenVxApi(object):
         OpenVxApi.pyapi.discard(param[0])
         param[0] = OpenVxApi.pyapi.ffi.NULL
         return vx.ReleaseParameter(param_obj)
+    
+    @export('vx_status(vx_node, vx_uint32, vx_reference)')    
+    def vxSetParameterByIndex(node, index, value):
+        return vx.SetParameterByIndex(node, index, value)
+
+    @export('vx_status(vx_parameter, vx_reference)')
+    def vxSetParameterByReference(parameter, value):
+        return vx.SetParameterByReference(parameter, value)
 
     @export("vx_status(vx_parameter, vx_enum, void *, vx_size)")
     def vxQueryParameter(param, attribute, ptr, size):

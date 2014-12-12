@@ -34,12 +34,25 @@
     ck_assert(!param);
 
     param = vxGetParameterByIndex(node, 0);
+    ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_TYPE, 
+                               &e, sizeof(e)) == VX_SUCCESS);
+    ck_assert(e == VX_TYPE_IMAGE);    
     vx_reference ref;
     ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_REF, 
                                &ref, sizeof(ref)) == VX_SUCCESS);
     ck_assert(same_pyobj(ref, (vx_reference) img1));
-    ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_TYPE, 
-                               &e, sizeof(e)) == VX_SUCCESS);
-    ck_assert(e == VX_TYPE_IMAGE);    
+    ck_assert(!same_pyobj(ref, (vx_reference) img2));
+    ck_assert(vxSetParameterByIndex(node, 0, (vx_reference) img2) == VX_SUCCESS);
+    ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_REF, 
+                               &ref, sizeof(ref)) == VX_SUCCESS);
+    ck_assert(!same_pyobj(ref, (vx_reference) img1));
+    ck_assert(same_pyobj(ref, (vx_reference) img2));
+    ck_assert(vxSetParameterByReference(param, (vx_reference) img1) == VX_SUCCESS);
+    ck_assert(vxQueryParameter(param, VX_PARAMETER_ATTRIBUTE_REF, 
+                               &ref, sizeof(ref)) == VX_SUCCESS);
+    ck_assert(same_pyobj(ref, (vx_reference) img1));
+    ck_assert(!same_pyobj(ref, (vx_reference) img2));
     ck_assert(vxReleaseParameter(&param) == VX_SUCCESS);
     ck_assert(!param);
+
+    // FIXME: test int parameters
