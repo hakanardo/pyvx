@@ -82,12 +82,31 @@ def VerifyGraph(graph):
 def ProcessGraph(graph):
     return graph.process()
 
+def AddParameterToGraph(graph, parameter):
+    try:
+        graph.add_parameter(parameter)
+    except VxError as e:
+        return e.errno
+    return SUCCESS
+
+def SetGraphParameterByIndex(graph, index, value):
+    param = graph.parameters[index]
+    return SetParameterByReference(param, value)
+
+def GetGraphParameterByIndex(graph, index):
+    if index >= len(graph.parameters):
+        return 0
+    return graph.parameters[index]
+
+
 # ========================================================================
 # PARAMETER
 # ========================================================================
 
 
 def GetParameterByIndex(node, index):
+    if index >= len(node.parameters):
+        return 0
     return node.parameters[index]
 
 

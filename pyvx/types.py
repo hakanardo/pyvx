@@ -191,15 +191,18 @@ def signed_format(col):
 def image_format(color):
     return ImageFormat.color2image_format[color]
 
-class VerificationError(Exception): pass
+class VxError(Exception): pass
+class VerificationError(VxError): pass
+
 class MultipleWritersError(VerificationError): errno = ERROR_MULTIPLE_WRITERS
 class InvalidGraphError(VerificationError):    errno = ERROR_INVALID_GRAPH
 class InvalidValueError(VerificationError):    errno = ERROR_INVALID_VALUE
 class InvalidFormatError(VerificationError):   errno = ERROR_INVALID_FORMAT
 class InvalidNodeError(VerificationError):     errno = ERROR_INVALID_NODE
 
-class GraphAbandonedError(Exception): errno = ERROR_GRAPH_ABANDONED
-
+class GraphAbandonedError(VxError): errno = ERROR_GRAPH_ABANDONED
+class InvalidReferenceError(VxError): errno = ERROR_INVALID_REFERENCE
+class InvalidParametersError(VxError): errno = ERROR_INVALID_PARAMETERS
 
 enum2ctype = {
     TYPE_CHAR    : 'vx_char',

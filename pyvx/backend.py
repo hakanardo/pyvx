@@ -233,6 +233,7 @@ class CoreGraph(object):
         self.nodes = []
         self.early_verify = early_verify
         self.compiled_func = None
+        self.parameters = []
 
     def __enter__(self):
         assert CoreGraph.local_state.current_graph is None
@@ -331,6 +332,13 @@ class CoreGraph(object):
         if self.compiled_func is None:
             self.verify()
         return self.compiled_func()
+
+    def add_parameter(parameter):
+        if not isinstance(parameter, Parameter):
+            raise InvalidReferenceError
+        if parameter.node.graph is not self:
+            raise InvalidParametersError
+        self.parameters.append(parameter)
 
 
 class Scheduler(object):

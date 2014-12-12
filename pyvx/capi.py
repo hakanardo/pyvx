@@ -110,6 +110,19 @@ class OpenVxApi(object):
     def vxShowNode(graph, input, name):
         return vx.ShowNode(graph, input, name)
 
+    @export("vx_status(vx_graph, vx_parameter)")
+    def vxAddParameterToGraph(graph, parameter):
+        return vx.AddParameterToGraph(graph, parameter)
+
+    @export("vx_status(vx_graph, vx_uint32, vx_reference)")
+    def vxSetGraphParameterByIndex(graph, index, value):
+        return vx.SetGraphParameterByIndex(graph, index, value)
+
+    @export("vx_parameter(vx_graph, vx_uint32)")
+    def vxGetGraphParameterByIndex(graph, index):
+        return vx.GetGraphParameterByIndex(graph, index)
+
+
     # ========================================================================
     # PARAMETER
     # ========================================================================

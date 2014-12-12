@@ -1,8 +1,10 @@
+#suite Basic
+
 #include <check.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <VX/vx.h>
 
-#suite Basic
 
 #test params
     vx_context context = vxCreateContext();
