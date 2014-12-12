@@ -200,3 +200,21 @@ class InvalidNodeError(VerificationError):     errno = ERROR_INVALID_NODE
 
 class GraphAbandonedError(Exception): errno = ERROR_GRAPH_ABANDONED
 
+
+enum2ctype = {
+    TYPE_CHAR    : 'vx_char',
+    TYPE_INT8    : 'vx_int8',
+    TYPE_UINT8   : 'vx_uint8',
+    TYPE_INT16   : 'vx_int16',
+    TYPE_UINT16  : 'vx_uint16',
+    TYPE_INT32   : 'vx_int32',
+    TYPE_UINT32  : 'vx_uint32',
+    TYPE_INT64   : 'vx_int64',
+    TYPE_UINT64  : 'vx_uint64',
+    TYPE_FLOAT32 : 'vx_float32',
+    TYPE_FLOAT64 : 'vx_float64',
+    TYPE_ENUM    : 'vx_enum',
+    TYPE_SIZE    : 'vx_size',
+    TYPE_DF_IMAGE: 'vx_df_image',
+    TYPE_BOOL    : 'vx_bool',
+}

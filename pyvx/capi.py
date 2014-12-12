@@ -22,6 +22,7 @@ This will install `libopenvx.so*` into `/usr/local/lib` and place the
 from codegen import PythonApi, Enum, Reference
 import codegen
 from pyvx import vx
+from pyvx.types import enum2ctype
 
 from pyvx import __version_info__, __version__
 major, minor, _ = __version_info__
@@ -34,7 +35,8 @@ def export(signature, add_ret_to_arg=0, **kwargs):
 
 class OpenVxApi(object):
     wrapped_reference_types = ['vx_context', 'vx_image', 'vx_graph', 
-                               'vx_node', 'vx_parameter', 'vx_reference']
+                               'vx_node', 'vx_parameter', 'vx_reference',
+                               'vx_scalar']
     setup = ["import sys",
              "sys.path = ['.'] + sys.path",
              "import pyvx",
@@ -149,6 +151,46 @@ class OpenVxApi(object):
         else:
             ptr[0] = value
         return status
+
+    # ==============================================================================
+    # SCALAR
+    # =============================================================================
+
+    @export("vx_scalar(vx_context, vx_enum, void *)")
+    def vxCreateScalar(context, data_type, ptr):
+        ctype = enum2ctype[data_type]
+        ptr = OpenVxApi.pyapi.ffi.cast(ctype + '*', ptr)
+        return vx.CreateScalar(context, data_type, ptr[0])
+
+    @export("vx_status(vx_scalar *)")
+    def vxReleaseScalar(scalar):
+        scalar_obj = OpenVxApi.pyapi.retrive(scalar[0])
+        scalar[0] = OpenVxApi.pyapi.ffi.NULL
+        return vx.ReleaseScalar(scalar_obj)
+
+    @export("vx_status(vx_scalar, vx_enum , void *, vx_size)")
+    def vxQueryScalar(scalar, attribute, ptr, size):
+        if size != OpenVxApi.pyapi.ffi.sizeof('vx_enum'):
+            return FAILURE
+        ptr = OpenVxApi.pyapi.ffi.cast("vx_enum *", ptr)
+        status, value = vx.QueryScalar(scalar, attribute)
+        ptr[0] = value
+        return status
+
+
+    @export("vx_status(vx_scalar, void *)")
+    def vxAccessScalarValue(ref, ptr):
+        status, value = vx.AccessScalarValue(ref)
+        ctype = enum2ctype[ref.vxtype]
+        ptr = OpenVxApi.pyapi.ffi.cast(ctype + "*", ptr)
+        ptr[0] = value
+        return status
+
+    @export("vx_status(vx_scalar, void *)")
+    def vxCommitScalarValue(ref, ptr):
+        ctype = enum2ctype[ref.vxtype]
+        ptr = OpenVxApi.pyapi.ffi.cast(ctype + "*", ptr)
+        return vx.CommitScalarValue(ref, ptr[0])
 
     # ========================================================================
     # FOR TESTS

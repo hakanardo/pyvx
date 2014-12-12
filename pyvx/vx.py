@@ -95,14 +95,14 @@ def ReleaseParameter(param):
 
 
 def SetParameterByIndex(node, index, value):
-    if isinstance(value, IntReference):
+    if isinstance(value, Scalar):
         value = value.value
     setattr(node, node.parameters[index].name, value)
     return SUCCESS
 
 
 def SetParameterByReference(parameter, value):
-    if isinstance(value, IntReference):
+    if isinstance(value, Scalar):
         value = value.value
     setattr(parameter.node, parameter.name, value)
     return SUCCESS
@@ -118,10 +118,45 @@ def QueryParameter(param, attribute):
                  PARAMETER_ATTRIBUTE_STATE: 'state'}
     if attribute == PARAMETER_ATTRIBUTE_REF:
         val = getattr(param.node, param.name)
-        if isinstance(val, int):
-            val = IntReference(param.context, val, param.data_type)
+        if isinstance(val, (int, float)):
+            val = Scalar(param.context, param.data_type, val)
     elif attribute in attr_name:
         val = getattr(param, attr_name[attribute])
     else:
         return FAILURE, 0
     return SUCCESS, val
+
+# ==============================================================================
+# SCALAR
+# =============================================================================*/
+
+
+def CreateScalar(context, data_type, initial_value):
+    """
+        scalar = CreateScalar(context, data_type, initial_value)
+    """
+    return Scalar(context, data_type, initial_value)
+
+def ReleaseScalar(scalar):
+    return SUCCESS
+
+def QueryScalar(scalar, attribute):
+    """
+        status, value = QueryScalar(scalar, attribute)
+    """
+    if attribute == SCALAR_ATTRIBUTE_TYPE:
+        return SUCCESS, scalar.vxtype
+    return FAILURE, 0
+
+def AccessScalarValue(ref):
+    """
+        status, value = AccessScalarValue(ref)
+    """
+    return SUCCESS, ref.value
+
+def CommitScalarValue(ref, new_value):
+    """
+        status = CommitScalarValue(vx_scalar ref, new_value)
+    """
+    ref.value = new_value
+    return SUCCESS

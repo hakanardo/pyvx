@@ -374,12 +374,12 @@ class Parameter(object):
         self.state = state
 
 
-class IntReference(object):
+class Scalar(object):
 
-    def __init__(self, context, value, vxtype):
+    def __init__(self, context, vxtype, value):
         self.context = context
-        self.value = value
         self.vxtype = vxtype
+        self.value = value
 
 
 class Node(object):

@@ -56,3 +56,27 @@
     ck_assert(!param);
 
     // FIXME: test int parameters
+
+#test scalar
+    vx_context context = vxCreateContext();
+    uint8_t bval = 7;
+    vx_scalar bscalar = vxCreateScalar(context, VX_TYPE_UINT8, &bval);
+
+    vx_enum e;
+    ck_assert(vxQueryScalar(bscalar, VX_SCALAR_ATTRIBUTE_TYPE, &e, sizeof(e)) == VX_SUCCESS);
+    ck_assert(e == VX_TYPE_UINT8);
+
+    uint8_t v;
+    ck_assert(vxAccessScalarValue(bscalar, &v) == VX_SUCCESS);
+    ck_assert(v == bval);
+
+    v = 42;
+    ck_assert(vxCommitScalarValue(bscalar, &v) == VX_SUCCESS);
+
+    v = 0;
+    ck_assert(vxAccessScalarValue(bscalar, &v) == VX_SUCCESS);
+    ck_assert(v == 42);
+
+    ck_assert(vxReleaseScalar(&bscalar) == VX_SUCCESS);
+    ck_assert(!bscalar);
+
