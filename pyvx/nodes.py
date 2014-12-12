@@ -105,8 +105,8 @@ class ElementwiseNode(Node):
     small_ints = ('uint8_t', 'int8_t', 'uint16_t', 'int16_t')
 
     def verify(self):
-        inputs = self.input_images.values()
-        outputs = self.output_images.values() + self.inout_images.values()
+        inputs = self.input_images
+        outputs = self.output_images + self.inout_images
         color = result_color(*[i.image_format for i in inputs])
         for img in outputs:
             img.suggest_color(color)
@@ -122,21 +122,19 @@ class ElementwiseNode(Node):
         return ctype
 
     def compile(self, code, noloop=False):
-        iin = self.input_images.items() + self.inout_images.items()
-        iout = self.output_images.items() + self.inout_images.items()
-        magic = {'__tmp_image_%s' % name: img
-                 for name, img in iin + iout}
-        setup = ''.join("%s %s;" % (self.tmptype(img.image_format.ctype), name)
-                        for name, img in iin + iout)
-        inp = ''.join("%s = __tmp_image_%s[__i];" % (name, name)
-                      for name, img in iin)
-        outp = ''.join("__tmp_image_%s[__i] = %s;" % (name, name)
-                       for name, img in iout)
+        iin = [p.name for p in self.parameters 
+                      if p.direction != OUTPUT and p.data_type == TYPE_IMAGE]
+        iout = [p.name for p in self.parameters 
+                      if p.direction != INPUT and p.data_type == TYPE_IMAGE]
+        magic = {'__tmp_image_%s' % name: getattr(self, name) for name in iin + iout}
+        setup = ''.join("%s %s;" % (self.tmptype(getattr(self, name).image_format.ctype), name)
+                        for name in iin + iout)
+        inp = ''.join("%s = __tmp_image_%s[__i];" % (name, name) for name in iin)
+        outp = ''.join("__tmp_image_%s[__i] = %s;" % (name, name) for name in iout)
         if noloop:
             head = ""
         else:
-            head = "for (long __i = 0; __i < __tmp_image_%s.values; __i++) " % iin[
-                0][0]
+            head = "for (long __i = 0; __i < __tmp_image_%s.values; __i++) " % iin[0]
         body = inp + self.body + outp
         block = head + "{" + body + "}"
         code.add_block(self, setup + block, **magic)
@@ -145,7 +143,7 @@ class ElementwiseNode(Node):
 class MergedElementwiseNode(MergedNode):
 
     def compile(self, code):
-        img = self.original_nodes[0].input_images.values()[0]
+        img = self.original_nodes[0].input_images[0]
         code.add_code("\n// MergedElementwiseNode\n")
         code.indent_level += 4
         code.add_code("for (long __i = 0; __i < %s; __i++) {\n" %

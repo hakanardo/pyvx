@@ -394,7 +394,6 @@ class Node(object):
         self.context = graph.context
         self.inputs, self.outputs, self.inouts = [], [], []
         self.parameters = []
-        self.input_images, self.output_images, self.inout_images = {}, {}, {}
         for i, (direction, data_type, name) in enumerate(parse_signature(self.signature)):
             data_type = eval('TYPE_' + data_type)
             state = PARAMETER_STATE_OPTIONAL if hasattr(
@@ -412,21 +411,27 @@ class Node(object):
                 raise TypeError("Required argument missing")
             if direction == 'in':
                 self.inputs.append(val)
-                if isinstance(val, CoreImage):
-                    self.input_images[name] = val
             elif direction == 'out':
                 self.outputs.append(val)
-                if isinstance(val, CoreImage):
-                    self.output_images[name] = val
             elif direction == 'inout':
                 self.inouts.append(val)
-                if isinstance(val, CoreImage):
-                    self.inout_images[name] = val
             else:
                 raise TypeError(
                     "Bad direction '%s' of argument '%s'" % (direction, name))
             setattr(self, name, val)
         self.setup()
+
+    @property
+    def input_images(self):
+        return [i for i in self.inputs if isinstance(i, CoreImage)]
+
+    @property
+    def output_images(self):
+        return [i for i in self.outputs if isinstance(i, CoreImage)]
+
+    @property
+    def inout_images(self):
+        return [i for i in self.inouts if isinstance(i, CoreImage)]
 
     def setup(self):
         self.graph._add_node(self)
@@ -473,12 +478,6 @@ class MergedNode(Node):
         self.inputs = list(self.inputs)
         self.outputs = list(self.outputs)
         self.inouts = list(self.inouts)
-        self.input_images = {i: img for i, img in enumerate(self.inputs)
-                             if isinstance(img, CoreImage)}
-        self.output_images = {i: img for i, img in enumerate(self.outputs)
-                              if isinstance(img, CoreImage)}
-        self.inout_images = {i: img for i, img in enumerate(self.inouts)
-                             if isinstance(img, CoreImage)}
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
             assert d.producer in nodes

@@ -48,11 +48,11 @@ class OptimizedGraph(CoreGraph):
                     self.remove_image(item)
                     worklist.append(item.producer)
             elif isinstance(item, Node):
-                imgs = item.output_images.values() + item.inout_images.values()
+                imgs = item.output_images + item.inout_images
                 if all(i.optimized_out for i in imgs):
                     self.remove_node(item)
-                    worklist.extend(item.input_images.values())
-                    worklist.extend(item.inout_images.values())
+                    worklist.extend(item.input_images)
+                    worklist.extend(item.inout_images)
             else:
                 assert False
 
