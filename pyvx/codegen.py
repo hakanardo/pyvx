@@ -217,9 +217,9 @@ class PythonApi(object):
         return self
 
     def make_callback(self, tp, fn):
-        store_result = fn.store_result and \
-            tp.result in self.wrapped_reference_types
-        add_ret_to_arg = fn.add_ret_to_arg
+        refret = tp.result in self.wrapped_reference_types
+        store_result = fn.store_result and refret
+        add_ret_to_arg = fn.add_ret_to_arg if refret else None
         retrive_refs = ()
         if fn.retrive_args:
             retrive_refs = tuple([i for i, a in enumerate(tp.args)
@@ -233,7 +233,7 @@ class PythonApi(object):
             if store_result:
                 r = self.store(r)
             if add_ret_to_arg is not None:
-                args[add_ret_to_arg].add_reference(r)
+                args[add_ret_to_arg].context.add_reference(r)
             return r
         f.__name__ = fn.__name__
         return self.ffi.callback(tp, f)
