@@ -1,7 +1,9 @@
 from pyvx.inc import vx
 from pyvx.types import VxError
 
+
 class attribute(object):
+
     def __init__(self, enum, vxtype, default=None):
         self.enum = enum
         self.vxtype = vxtype
@@ -17,9 +19,10 @@ class attribute(object):
 
     def __set__(self, instance, value):
         setattr(instance, '_' + self.name, value)
-        
+
 
 class VxObjectMeta(type):
+
     def __new__(cls, name, bases, attrs):
         attributes = {}
         for b in bases:
@@ -33,11 +36,13 @@ class VxObjectMeta(type):
         cls._attributes = attributes
         return cls
 
+
 class VxObject(object):
     __metaclass__ = VxObjectMeta
 
 
 class api(object):
+
     def __init__(self, name):
         self.name = name
 
@@ -47,7 +52,9 @@ class api(object):
         fn.apis.append(self)
         return fn
 
+
 class capi(object):
+
     def __init__(self, cdecl):
         self.cdecl = cdecl
 
@@ -59,11 +66,12 @@ class capi(object):
 
 ##############################################################################
 
+
 class Reference(VxObject):
     _type = vx.TYPE_REFERENCE
 
     count = attribute(vx.REF_ATTRIBUTE_COUNT, vx.TYPE_UINT32, 1)
-    type =  attribute(vx.REF_ATTRIBUTE_TYPE, vx.TYPE_ENUM, vx.TYPE_REFERENCE)
+    type = attribute(vx.REF_ATTRIBUTE_TYPE, vx.TYPE_ENUM, vx.TYPE_REFERENCE)
 
     def query(self, attribute):
         return vx.SUCCESS, getattr(self, self._attributes[attribute].name)
@@ -79,6 +87,7 @@ class Reference(VxObject):
     def add_log_entry(self, status, message):
         if status != vx.SUCCESS:
             print 'LOG:', status, self, message
+
 
 @api('QueryContext')
 @api('QueryImage')
@@ -99,6 +108,7 @@ class Reference(VxObject):
 @api('QueryArray')
 def query(ref, attribute):
     return ref.query(attribute)
+
 
 @capi('vx_status vxQueryContext(vx_context context, vx_enum attribute, void *ptr, vx_size size)')
 @capi('vx_status vxQueryImage(vx_image image, vx_enum attribute, void *ptr, vx_size size)')
@@ -122,7 +132,8 @@ def c_query(ref, attribute, ptr, size):
     if a is None:
         return vx.FAILURE
     if size != vx.ffi.sizeof(a.vxtype.ctype):
-        ref.add_log_entry(vx.FAILURE, "Bad size %d in query, expected %d\n" % (size, vx.ffi.sizeof(a.vxtype.ctype)))
+        ref.add_log_entry(vx.FAILURE, "Bad size %d in query, expected %d\n" % (
+            size, vx.ffi.sizeof(a.vxtype.ctype)))
         return vx.FAILURE
     status, value = query(ref, attribute)
     ptr = vx.ffi.cast(a.vxtype.ctype + "*", ptr)
@@ -131,6 +142,7 @@ def c_query(ref, attribute, ptr, size):
     else:
         ptr[0] = value
     return status
+
 
 @api('SetContextAttribute')
 @api('SetImageAttribute')
@@ -142,6 +154,7 @@ def c_query(ref, attribute, ptr, size):
 @api('SetMetaFormatAttribute')
 def set_attribute(ref, attribute):
     return ref.set_attribute(attribute)
+
 
 @capi('vx_status vxSetContextAttribute(vx_context context, vx_enum attribute, void *ptr, vx_size size)')
 @capi('vx_status vxSetImageAttribute(vx_image image, vx_enum attribute, void *out, vx_size size)')
@@ -156,7 +169,8 @@ def c_set_attribute(ref, attribute, ptr, size):
     if a is None:
         return vx.FAILURE
     if size != vx.ffi.sizeof(a.vxtype.ctype):
-        ref.add_log_entry(vx.FAILURE, "Bad size %d in set attribute, expected %d\n" % (size, vx.ffi.sizeof(a.vxtype.ctype)))
+        ref.add_log_entry(vx.FAILURE, "Bad size %d in set attribute, expected %d\n" % (
+            size, vx.ffi.sizeof(a.vxtype.ctype)))
         return vx.FAILURE
     ptr = vx.ffi.cast(a.vxtype.ctype + "*", ptr)
     return ref.set_attribute(ptr[0])
@@ -180,6 +194,7 @@ def c_set_attribute(ref, attribute, ptr, size):
 @api('ReleaseArray')
 def release(ref):
     pass
+
 
 @capi('vx_status vxReleaseContext(vx_context *context)')
 @capi('vx_status vxReleaseImage(vx_image *image)')
@@ -205,12 +220,16 @@ def c_release(ref):
 
 ##############################################################################
 
+
 class Context(Reference):
     _type = vx.TYPE_CONTEXT
 
-    vendor_id = attribute(vx.CONTEXT_ATTRIBUTE_VENDOR_ID, vx.TYPE_UINT16, vx.ID_DEFAULT)
-    version = attribute(vx.CONTEXT_ATTRIBUTE_VERSION, vx.TYPE_UINT16, vx.VERSION)
-    unique_kernels = attribute(vx.CONTEXT_ATTRIBUTE_UNIQUE_KERNELS, vx.TYPE_UINT32)
+    vendor_id = attribute(
+        vx.CONTEXT_ATTRIBUTE_VENDOR_ID, vx.TYPE_UINT16, vx.ID_DEFAULT)
+    version = attribute(
+        vx.CONTEXT_ATTRIBUTE_VERSION, vx.TYPE_UINT16, vx.VERSION)
+    unique_kernels = attribute(
+        vx.CONTEXT_ATTRIBUTE_UNIQUE_KERNELS, vx.TYPE_UINT32)
     # FIXME: ...
 
     def __init__(self):
@@ -223,11 +242,13 @@ class Context(Reference):
     def create_graph(self, early_verify):
         raise NotImplementedError
 
+
 @api('CreateContext')
 @capi('vx_context vxCreateContext()')
 def create_context():
     from pyvx.optimized_backend import Context
     return Context()
+
 
 @api('GetContext')
 @capi('vx_context vxGetContext(vx_reference reference)')
@@ -264,10 +285,12 @@ def register_user_struct(context, size):
 class Image(Reference):
     _type = vx.TYPE_IMAGE
 
+
 @api('CreateImage')
 @capi('vx_image vxCreateImage(vx_context context, vx_uint32 width, vx_uint32 height, vx_df_image color)')
 def create_image(context, width, height, color):
     return context.create_image(width, height, color)
+
 
 @api('CreateImageFromROI')
 @capi('vx_image vxCreateImageFromROI(vx_image img, vx_rectangle_t *rect)')
@@ -280,10 +303,12 @@ def create_image_from_roi(img, rect):
 def create_uniform_image(context, width, height, color, value):
     raise NotImplementedError
 
+
 @api('CreateVirtualImage')
 @capi('vx_image vxCreateVirtualImage(vx_graph graph, vx_uint32 width, vx_uint32 height, vx_df_image color)')
 def create_virtual_image(graph, width, height, color):
     return graph.context.create_virtual_image(graph, width, height, color)
+
 
 @api('CreateImageFromHandle')
 @capi('vx_image vxCreateImageFromHandle(vx_context context, vx_df_image color, vx_imagepatch_addressing_t addrs[], void *ptrs[], vx_enum import_type)')
@@ -328,8 +353,10 @@ def get_valid_region_image(image, rect):
 
 ##############################################################################
 
+
 class Kernel(Reference):
     _type = vx.TYPE_KERNEL
+
 
 @api('LoadKernels')
 @capi('vx_status vxLoadKernels(vx_context context, vx_char *module)')
@@ -380,6 +407,7 @@ def get_kernel_parameter_by_index(kernel, index):
 
 ##############################################################################
 
+
 class Graph(Reference):
     _type = vx.TYPE_GRAPH
 
@@ -389,10 +417,12 @@ class Graph(Reference):
     def process(self):
         raise NotImplementedError
 
+
 @api('CreateGraph')
 @capi('vx_graph vxCreateGraph(vx_context context)')
 def create_graph(context, early_verify=True):
     return context.create_graph(early_verify)
+
 
 @api('VerifyGraph')
 @capi('vx_status vxVerifyGraph(vx_graph graph)')
@@ -405,10 +435,12 @@ def verify_graph(graph):
         return e.errno
     return vx.SUCCESS
 
+
 @api('ProcessGraph')
 @capi('vx_status vxProcessGraph(vx_graph graph)')
 def process_graph(graph):
-    return graph.process()       
+    return graph.process()
+
 
 @api('ScheduleGraph')
 @capi('vx_status vxScheduleGraph(vx_graph graph)')
@@ -447,8 +479,10 @@ def is_graph_verified(graph):
 
 ##############################################################################
 
+
 class Node(Reference):
     _type = vx.TYPE_NODE
+
 
 @api('CreateGenericNode')
 @capi('vx_node vxCreateGenericNode(vx_graph graph, vx_kernel kernel)')
@@ -479,6 +513,7 @@ def retrieve_node_callback(node):
 class Parameter(Reference):
     _type = vx.TYPE_PARAMETER
 
+
 @api('GetParameterByIndex')
 @capi('vx_parameter vxGetParameterByIndex(vx_node node, vx_uint32 index)')
 def get_parameter_by_index(node, index):
@@ -502,6 +537,7 @@ def set_parameter_by_reference(parameter, value):
 class Scalar(Reference):
     _type = vx.TYPE_SCALAR
 
+
 @api('CreateScalar')
 @capi('vx_scalar vxCreateScalar(vx_context context, vx_enum data_type, void *ptr)')
 def create_scalar(context, data_type, ptr):
@@ -521,8 +557,10 @@ def commit_scalar_value(ref, ptr):
 
 ##############################################################################
 
+
 class Delay(Reference):
     _type = vx.TYPE_DELAY
+
 
 @api('CreateDelay')
 @capi('vx_delay vxCreateDelay(vx_context context, vx_reference exemplar, vx_size count)')
@@ -540,12 +578,13 @@ def get_reference_from_delay(delay, index):
 @capi('vx_status vxAgeDelay(vx_delay delay)')
 def age_delay(delay):
     raise NotImplementedError
-  
+
 
 ##############################################################################
 
 class Logging(Reference):
     _type = vx.TYPE_LOGGING
+
 
 @api('AddLogEntry')
 def add_log_entry(ref, status, message):
@@ -556,6 +595,7 @@ def add_log_entry(ref, status, message):
 # def add_log_entry(ref, status, message, ...):
 #     raise NotImplementedError
 
+
 @api('RegisterLogCallback')
 @capi('void vxRegisterLogCallback(vx_context context, vx_log_callback_f callback, vx_bool reentrant)')
 def register_log_callback(context, callback, reentrant):
@@ -563,8 +603,10 @@ def register_log_callback(context, callback, reentrant):
 
 ##############################################################################
 
+
 class Lut(Reference):
     _type = vx.TYPE_LUT
+
 
 @api('CreateLUT')
 @capi('vx_lut vxCreateLUT(vx_context context, vx_enum data_type, vx_size count)')
@@ -585,8 +627,10 @@ def commit_lut(lut, ptr):
 
 ##############################################################################
 
+
 class Distribution(Reference):
     _type = vx.TYPE_DISTRIBUTION
+
 
 @api('CreateDistribution')
 @capi('vx_distribution vxCreateDistribution(vx_context context, vx_size numBins, vx_size offset, vx_size range)')
@@ -607,8 +651,10 @@ def commit_distribution(distribution, ptr):
 
 ##############################################################################
 
+
 class Threshold(Reference):
     _type = vx.TYPE_THRESHOLD
+
 
 @api('CreateThreshold')
 @capi('vx_threshold vxCreateThreshold(vx_context c, vx_enum thresh_type, vx_enum data_type)')
@@ -617,8 +663,10 @@ def create_threshold(c, thresh_type, data_type):
 
 ##############################################################################
 
+
 class Matrix(Reference):
     _type = vx.TYPE_MATRIX
+
 
 @api('CreateMatrix')
 @capi('vx_matrix vxCreateMatrix(vx_context c, vx_enum data_type, vx_size columns, vx_size rows)')
@@ -639,9 +687,11 @@ def commit_matrix(mat, array):
 
 ##############################################################################
 
+
 class Convolution(Reference):
     _type = vx.TYPE_CONVOLUTION
-    
+
+
 @api('CreateConvolution')
 @capi('vx_convolution vxCreateConvolution(vx_context context, vx_size columns, vx_size rows)')
 def create_convolution(context, columns, rows):
@@ -661,9 +711,11 @@ def commit_convolution_coefficients(conv, array):
 
 ##############################################################################
 
+
 class Pyramid(Reference):
     _type = vx.TYPE_PYRAMID
-    
+
+
 @api('CreatePyramid')
 @capi('vx_pyramid vxCreatePyramid(vx_context context, vx_size levels, vx_float32 scale, vx_uint32 width, vx_uint32 height, vx_df_image format)')
 def create_pyramid(context, levels, scale, width, height, format):
@@ -683,9 +735,11 @@ def get_pyramid_level(pyr, index):
 
 ##############################################################################
 
+
 class Remap(Reference):
     _type = vx.TYPE_REMAP
-    
+
+
 @api('CreateRemap')
 @capi('vx_remap vxCreateRemap(vx_context context, vx_uint32 src_width, vx_uint32 src_height, vx_uint32 dst_width, vx_uint32 dst_height)')
 def create_remap(context, src_width, src_height, dst_width, dst_height):
@@ -705,9 +759,11 @@ def get_remap_point(table, dst_x, dst_y, src_x, src_y):
 
 ##############################################################################
 
+
 class Array(Reference):
     _type = vx.TYPE_ARRAY
-    
+
+
 @api('CreateArray')
 @capi('vx_array vxCreateArray(vx_context context, vx_enum item_type, vx_size capacity)')
 def create_array(context, item_type, capacity):
@@ -744,6 +800,7 @@ def commit_array_range(arr, start, end, ptr):
     raise NotImplementedError
 
 ##############################################################################
+
 
 class MetaFormat(Reference):
     _type = vx.TYPE_META_FORMAT
