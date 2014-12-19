@@ -190,7 +190,7 @@ class CApiBuilder(object):
     def add_function(self, cdecl, method):
         tp = self.ffi._typeof(cdecl, 
                               consider_function_as_funcptr=True)
-        n = re.search(r'^[^\*\s]+\*?\s*([^\(\s]+)\s*\(', cdecl).group(1) # XXX: use parser
+        n = re.search(r'^\s*[^\s]+\s*\*?\s*([^\(\s]+)\s*\(', f).group(1) # XXX: use parser
         callback_var = self.ffi.getctype(tp, '_' + n)
         callback_var = callback_var.replace('()', '(void)')
         self.cdef.append("%s;" % callback_var)
