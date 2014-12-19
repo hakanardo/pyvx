@@ -7,7 +7,7 @@
 
 #test version
     vx_context context = vxCreateContext();
-    vx_uint32 version;
+    vx_uint16 version;
     ck_assert(vxQueryContext(context, VX_CONTEXT_ATTRIBUTE_VERSION, 
                              &version, sizeof(version)) == VX_SUCCESS);
     ck_assert(version == VX_VERSION);

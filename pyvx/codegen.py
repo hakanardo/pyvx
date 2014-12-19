@@ -190,7 +190,7 @@ class CApiBuilder(object):
     def add_function(self, cdecl, method):
         tp = self.ffi._typeof(cdecl, 
                               consider_function_as_funcptr=True)
-        n = re.search(r'^\s*[^\s]+\s*\*?\s*([^\(\s]+)\s*\(', f).group(1) # XXX: use parser
+        n = re.search(r'^\s*[^\s]+\s*\*?\s*([^\(\s]+)\s*\(', cdecl).group(1) # XXX: use parser
         callback_var = self.ffi.getctype(tp, '_' + n)
         callback_var = callback_var.replace('()', '(void)')
         self.cdef.append("%s;" % callback_var)
@@ -222,7 +222,7 @@ class CApiBuilder(object):
                 r = fn(*args)
                 if store_result:
                     r = r.new_handle()
-            except Exception as e:
+            except Exception:
                 import traceback
                 traceback.print_exc()
                 return exception_return
@@ -351,6 +351,7 @@ class PythonApi(object):
             except Exception as e:
                 import traceback
                 traceback.print_exc()
+                exit()
                 return fn.exception_return
             if store_result:
                 r = self.store(r)
@@ -435,7 +436,7 @@ class PythonApi(object):
         return self.references[p]
 
 
-class Enum(list):
+class Enum(list): # FIXME: Kill?
 
     def __new__(cls, *args, **kwargs):
         return list.__new__(cls, args)
@@ -450,5 +451,5 @@ class Enum(list):
         return 'typedef enum {' + items + '} ' + n + ';'
 
 
-class Reference(object):
+class Reference(object):# FIXME: Kill?
     pass

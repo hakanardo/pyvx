@@ -38,11 +38,14 @@ d = os.path.join(mydir, 'headers')
 lib = ffi.verify('#include "VX/vx.h"\n' + types.verify,
                  extra_compile_args=["-I" + d],
                  modulename='__pyvx_inc_vx2')
+int2enum = {}
 for n in dir(lib):
     if n.lower().startswith('vx_'):
         obj = getattr(lib, n)
         if isinstance(obj, int):
-            obj = Enum('vx.' + n[3:], obj)
+            e = Enum('vx.' + n[3:], obj)
+            int2enum[obj] = e
+            obj = e
         locals()[n[3:]] = obj
 
 def imagepatch_addressing(dim_x=0, dim_y=0, stride_x=0, stride_y=0,

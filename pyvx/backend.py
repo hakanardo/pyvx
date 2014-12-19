@@ -20,6 +20,16 @@ class Context(model.Context):
     def create_graph(self, early_verify):
         return CoreGraph(self, early_verify)
 
+    def create_scalar(self, data_type, initial_value):
+        return Scalar(self, data_type, initial_value)
+
+    def get_kernel(self, kernel):
+        try:
+            return Kernel(self, NodeMeta.kernels[kernel])
+        except KeyError:
+            raise InvalidValueError('Cant find kernel %r' % kernel)
+        
+
 class CoreImage(model.Image):
     count = 0
     optimized_out = False
@@ -377,29 +387,29 @@ def parse_signature(signature):
     return [(v[0].lower(), eval('TYPE_' + v[1].upper()), v[2]) for v in sig]
 
 
-class Parameter(object):
+class Parameter(model.Parameter):
     vxtype = TYPE_PARAMETER
 
     def __init__(self, node, name, index, direction, data_type, state):
         self.context = node.graph.context
         self.node = node
         self.name = name
-        self.index = index
-        self.direction = {
+        self._index = index
+        self._direction = {
             'in': INPUT, 'out': OUTPUT, 'inout': BIDIRECTIONAL}[direction]
-        self.data_type = data_type
-        self.state = state
+        self._data_type = data_type
+        self._state = state
 
 
-class Scalar(object):
+class Scalar(model.Scalar):
 
-    def __init__(self, context, vxtype, value):
+    def __init__(self, context, data_type, value):
         self.context = context
-        self.vxtype = vxtype
+        self.data_type = data_type
         self.value = value
         self.producer = None
 
-class Kernel(object):
+class Kernel(model.Kernel):
     def __init__(self, context, node_class):
         self.context = context
         self.name = node_class.kernel_name
@@ -420,12 +430,6 @@ class NodeMeta(model.VxObjectMeta):
         assert cls.kernel_name not in NodeMeta.kernels
         NodeMeta.kernels[cls.kernel_name] = cls
         return cls
-
-def get_kernel(context, kernel):
-    try:
-        return Kernel(context, NodeMeta.kernels[kernel])
-    except KeyError:
-        raise InvalidValueError('Cant find kernel %r' % kernel)
 
 class Missing(object): pass
 

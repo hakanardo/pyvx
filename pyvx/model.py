@@ -74,7 +74,7 @@ class Reference(VxObject):
     type = attribute(vx.REF_ATTRIBUTE_TYPE, vx.TYPE_ENUM, vx.TYPE_REFERENCE)
 
     def query(self, attribute):
-        return vx.SUCCESS, getattr(self, self._attributes[attribute].name)
+        return getattr(self, self._attributes[attribute].name)
 
     def new_handle(self):
         h = vx.ffi.new_handle(self)
@@ -87,6 +87,10 @@ class Reference(VxObject):
     def add_log_entry(self, status, message):
         if status != vx.SUCCESS:
             print 'LOG:', status, self, message
+
+    def set_attribute(ref, attribute):
+        raise NotImplementedError
+
 
 
 @api('QueryContext')
@@ -107,7 +111,7 @@ class Reference(VxObject):
 @api('QueryRemap')
 @api('QueryArray')
 def query(ref, attribute):
-    return ref.query(attribute)
+    return vx.SUCCESS, ref.query(attribute)
 
 
 @capi('vx_status vxQueryContext(vx_context context, vx_enum attribute, void *ptr, vx_size size)')
@@ -135,13 +139,13 @@ def c_query(ref, attribute, ptr, size):
         ref.add_log_entry(vx.FAILURE, "Bad size %d in query, expected %d\n" % (
             size, vx.ffi.sizeof(a.vxtype.ctype)))
         return vx.FAILURE
-    status, value = query(ref, attribute)
+    value = ref.query(attribute)
     ptr = vx.ffi.cast(a.vxtype.ctype + "*", ptr)
     if isinstance(value, VxObject):
-        ptr[0] = ref.context.new_handle(value)
+        ptr[0] = value.new_handle()
     else:
         ptr[0] = value
-    return status
+    return vx.SUCCESS
 
 
 @api('SetContextAttribute')
@@ -242,6 +246,12 @@ class Context(Reference):
     def create_graph(self, early_verify):
         raise NotImplementedError
 
+    def create_scalar(self, data_type, initial_value):
+        raise NotImplementedError
+
+    def get_kernel(self, name):
+        raise NotImplementedError
+
 
 @api('CreateContext')
 @capi('vx_context vxCreateContext()')
@@ -312,7 +322,7 @@ def create_virtual_image(graph, width, height, color):
 
 @api('CreateImageFromHandle')
 @capi('vx_image vxCreateImageFromHandle(vx_context context, vx_df_image color, vx_imagepatch_addressing_t addrs[], void *ptrs[], vx_enum import_type)')
-def create_image_from_handle(context, color, addrs[], ptrs[], import_type):
+def create_image_from_handle(context, color, addrs, ptrs, import_type):
     raise NotImplementedError
 
 
@@ -356,7 +366,11 @@ def get_valid_region_image(image, rect):
 
 class Kernel(Reference):
     _type = vx.TYPE_KERNEL
-
+    parameters = attribute(vx.KERNEL_ATTRIBUTE_PARAMETERS, vx.TYPE_UINT32)
+    name = attribute(vx.KERNEL_ATTRIBUTE_NAME, "vx_char[VX_MAX_KERNEL_NAME]") # FIXME: use ctypes instead?
+    enum = attribute(vx.KERNEL_ATTRIBUTE_ENUM, vx.TYPE_ENUM)    
+    local_data_size = attribute(vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, vx.TYPE_SIZE)
+    local_data_ptr = attribute(vx.KERNEL_ATTRIBUTE_LOCAL_DATA_PTR , "void *")
 
 @api('LoadKernels')
 @capi('vx_status vxLoadKernels(vx_context context, vx_char *module)')
@@ -366,19 +380,14 @@ def load_kernels(context, module):
 
 @api('GetKernelByName')
 @capi('vx_kernel vxGetKernelByName(vx_context context, vx_char *name)')
-def get_kernel_by_name(context, name):
-    raise NotImplementedError
-
-
 @api('GetKernelByEnum')
 @capi('vx_kernel vxGetKernelByEnum(vx_context context, vx_enum kernel)')
-def get_kernel_by_enum(context, kernel):
-    raise NotImplementedError
-
+def get_kernel_by_name(context, name):
+    return context.get_kernel(name)
 
 @api('AddKernel')
-@capi('vx_kernel vxAddKernel(vx_context context, vx_char name[VX_MAX_KERNEL_NAME], vx_enum enumeration, vx_kernel_f func_ptr, vx_uint32 numParams, vx_kernel_input_validate_f input, vx_kernel_output_validate_f output, vx_kernel_initialize_f init, vx_kernel_deinitialize_f deinit)')
-def add_kernel(context, name[VX_MAX_KERNEL_NAME], enumeration, func_ptr, numParams, input, output, init, deinit):
+@capi('vx_kernel vxAddKernel(vx_context context, vx_char *name, vx_enum enumeration, vx_kernel_f func_ptr, vx_uint32 numParams, vx_kernel_input_validate_f input, vx_kernel_output_validate_f output, vx_kernel_initialize_f init, vx_kernel_deinitialize_f deinit)')
+def add_kernel(context, name, enumeration, func_ptr, numParams, input, output, init, deinit):
     raise NotImplementedError
 
 
@@ -420,7 +429,7 @@ class Graph(Reference):
 
 @api('CreateGraph')
 @capi('vx_graph vxCreateGraph(vx_context context)')
-def create_graph(context, early_verify=True):
+def create_graph(context, early_verify=False):
     return context.create_graph(early_verify)
 
 
@@ -457,20 +466,26 @@ def wait_graph(graph):
 @api('AddParameterToGraph')
 @capi('vx_status vxAddParameterToGraph(vx_graph graph, vx_parameter parameter)')
 def add_parameter_to_graph(graph, parameter):
-    raise NotImplementedError
+    try:
+        graph.add_parameter(parameter)
+    except VxError as e:
+        return e.errno # FIXME: Make generic exception handling
+    return vx.SUCCESS
 
 
 @api('SetGraphParameterByIndex')
 @capi('vx_status vxSetGraphParameterByIndex(vx_graph graph, vx_uint32 index, vx_reference value)')
 def set_graph_parameter_by_index(graph, index, value):
-    raise NotImplementedError
+    param = graph.parameters[index]
+    return set_parameter_by_reference(param, value)
 
 
 @api('GetGraphParameterByIndex')
 @capi('vx_parameter vxGetGraphParameterByIndex(vx_graph graph, vx_uint32 index)')
 def get_graph_parameter_by_index(graph, index):
-    raise NotImplementedError
-
+    if index >= len(graph.parameters):
+        return 0
+    return graph.parameters[index]
 
 @api('IsGraphVerified')
 @capi('vx_bool vxIsGraphVerified(vx_graph graph)')
@@ -487,7 +502,7 @@ class Node(Reference):
 @api('CreateGenericNode')
 @capi('vx_node vxCreateGenericNode(vx_graph graph, vx_kernel kernel)')
 def create_generic_node(graph, kernel):
-    raise NotImplementedError
+    return kernel.node_class(graph, _ignore_missin_parameters=True)
 
 
 @api('RemoveNode')
@@ -512,48 +527,85 @@ def retrieve_node_callback(node):
 
 class Parameter(Reference):
     _type = vx.TYPE_PARAMETER
+    index = attribute(vx.PARAMETER_ATTRIBUTE_INDEX, vx.TYPE_UINT32)
+    direction = attribute(vx.PARAMETER_ATTRIBUTE_DIRECTION, vx.TYPE_ENUM)
+    data_type = attribute(vx.PARAMETER_ATTRIBUTE_TYPE, vx.TYPE_ENUM)
+    state = attribute(vx.PARAMETER_ATTRIBUTE_STATE, vx.TYPE_ENUM)
+    ref = attribute(vx.PARAMETER_ATTRIBUTE_REF, vx.TYPE_REFERENCE)
+
+    def query(self, attribute): # FIXME: Kill this special case?
+        if attribute == vx.PARAMETER_ATTRIBUTE_REF:
+            val = getattr(self.node, self.name)
+            if isinstance(val, (int, float)):
+                val = self.context.create_scalar(self.data_type, val)
+            return val
+        return getattr(self, self._attributes[attribute].name)
 
 
 @api('GetParameterByIndex')
 @capi('vx_parameter vxGetParameterByIndex(vx_node node, vx_uint32 index)')
 def get_parameter_by_index(node, index):
-    raise NotImplementedError
+    if index >= len(node.parameters):
+        return 0
+    return node.parameters[index]
 
 
 @api('SetParameterByIndex')
 @capi('vx_status vxSetParameterByIndex(vx_node node, vx_uint32 index, vx_reference value)')
 def set_parameter_by_index(node, index, value):
-    raise NotImplementedError
+    if isinstance(value, Scalar):
+        value = value.value
+    setattr(node, node.parameters[index].name, value)
+    return vx.SUCCESS
 
 
 @api('SetParameterByReference')
 @capi('vx_status vxSetParameterByReference(vx_parameter parameter, vx_reference value)')
 def set_parameter_by_reference(parameter, value):
-    raise NotImplementedError
+    if isinstance(value, Scalar):
+        value = value.value
+    setattr(parameter.node, parameter.name, value)
+    return vx.SUCCESS
 
 
 ##############################################################################
 
 class Scalar(Reference):
     _type = vx.TYPE_SCALAR
+    data_type = attribute(vx.SCALAR_ATTRIBUTE_TYPE, vx.TYPE_ENUM)
 
 
 @api('CreateScalar')
-@capi('vx_scalar vxCreateScalar(vx_context context, vx_enum data_type, void *ptr)')
-def create_scalar(context, data_type, ptr):
-    raise NotImplementedError
+def create_scalar(context, data_type, initial_value):
+    return context.create_scalar(data_type, initial_value)
 
+@capi('vx_scalar vxCreateScalar(vx_context context, vx_enum data_type, void *ptr)')
+def c_create_scalar(context, data_type, ptr):
+    data_type = vx.int2enum[data_type]
+    ptr = vx.ffi.cast(data_type.ctype + '*', ptr)
+    return context.create_scalar(data_type, ptr[0])
 
 @api('AccessScalarValue')
+def access_scalar_value(ref):
+    return vx.SUCCESS, ref.value
+    
 @capi('vx_status vxAccessScalarValue(vx_scalar ref, void *ptr)')
-def access_scalar_value(ref, ptr):
-    raise NotImplementedError
-
+def c_access_scalar_value(ref, ptr):
+    ptr = vx.ffi.cast(ref.data_type.ctype + "*", ptr)
+    ptr[0] = ref.value
+    return vx.SUCCESS
 
 @api('CommitScalarValue')
+def commit_scalar_value(ref, new_value):
+    ref.value = new_value
+    return vx.SUCCESS
+
 @capi('vx_status vxCommitScalarValue(vx_scalar ref, void *ptr)')
-def commit_scalar_value(ref, ptr):
-    raise NotImplementedError
+def c_commit_scalar_value(ref, ptr):
+    ptr = vx.ffi.cast(ref.data_type.ctype + "*", ptr)
+    ref.value = ptr[0]
+    return vx.SUCCESS
+
 
 ##############################################################################
 
@@ -581,10 +633,6 @@ def age_delay(delay):
 
 
 ##############################################################################
-
-class Logging(Reference):
-    _type = vx.TYPE_LOGGING
-
 
 @api('AddLogEntry')
 def add_log_entry(ref, status, message):
@@ -804,3 +852,9 @@ def commit_array_range(arr, start, end, ptr):
 
 class MetaFormat(Reference):
     _type = vx.TYPE_META_FORMAT
+
+##############################################################################
+
+@capi("int same_pyobj(vx_reference, vx_reference)")
+def same_pyobj(ref1, ref2):
+    return ref1 is ref2
