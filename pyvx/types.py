@@ -192,32 +192,55 @@ def image_format(color):
     return ImageFormat.color2image_format[color]
 
 class VxError(Exception): pass
-class VerificationError(VxError): pass
 
-class MultipleWritersError(VerificationError): errno = ERROR_MULTIPLE_WRITERS
-class InvalidGraphError(VerificationError):    errno = ERROR_INVALID_GRAPH
-class InvalidValueError(VerificationError):    errno = ERROR_INVALID_VALUE
-class InvalidFormatError(VerificationError):   errno = ERROR_INVALID_FORMAT
-class InvalidNodeError(VerificationError):     errno = ERROR_INVALID_NODE
+class MultipleWritersError(VxError): errno = ERROR_MULTIPLE_WRITERS
+class InvalidGraphError(VxError):    errno = ERROR_INVALID_GRAPH
+class InvalidValueError(VxError):    errno = ERROR_INVALID_VALUE
+class InvalidFormatError(VxError):   errno = ERROR_INVALID_FORMAT
+class InvalidNodeError(VxError):     errno = ERROR_INVALID_NODE
 
 class GraphAbandonedError(VxError): errno = ERROR_GRAPH_ABANDONED
 class InvalidReferenceError(VxError): errno = ERROR_INVALID_REFERENCE
 class InvalidParametersError(VxError): errno = ERROR_INVALID_PARAMETERS
 
-enum2ctype = {
-    TYPE_CHAR    : 'vx_char',
-    TYPE_INT8    : 'vx_int8',
-    TYPE_UINT8   : 'vx_uint8',
-    TYPE_INT16   : 'vx_int16',
-    TYPE_UINT16  : 'vx_uint16',
-    TYPE_INT32   : 'vx_int32',
-    TYPE_UINT32  : 'vx_uint32',
-    TYPE_INT64   : 'vx_int64',
-    TYPE_UINT64  : 'vx_uint64',
-    TYPE_FLOAT32 : 'vx_float32',
-    TYPE_FLOAT64 : 'vx_float64',
-    TYPE_ENUM    : 'vx_enum',
-    TYPE_SIZE    : 'vx_size',
-    TYPE_DF_IMAGE: 'vx_df_image',
-    TYPE_BOOL    : 'vx_bool',
-}
+TYPE_CHAR.ctype = 'vx_char'
+TYPE_INT8.ctype = 'vx_int8'
+TYPE_UINT8.ctype = 'vx_uint8'
+TYPE_INT16.ctype = 'vx_int16'
+TYPE_UINT16.ctype = 'vx_uint16'
+TYPE_INT32.ctype = 'vx_int32'
+TYPE_UINT32.ctype = 'vx_uint32'
+TYPE_INT64.ctype = 'vx_int64'
+TYPE_UINT64.ctype = 'vx_uint64'
+TYPE_FLOAT32.ctype = 'vx_float32'
+TYPE_FLOAT64.ctype = 'vx_float64'
+TYPE_ENUM.ctype = 'vx_enum'
+TYPE_SIZE.ctype = 'vx_size'
+TYPE_DF_IMAGE.ctype = 'vx_df_image'
+TYPE_BOOL.ctype = 'vx_bool'
+TYPE_RECTANGLE.ctype = 'vx_rectangle'
+TYPE_KEYPOINT.ctype = 'vx_keypoint'
+TYPE_COORDINATES2D.ctype = 'vx_coordinates2d'
+TYPE_COORDINATES3D.ctype = 'vx_coordinates3d'
+TYPE_USER_STRUCT_START.ctype = 'vx_user_struct_start'
+TYPE_REFERENCE.ctype = 'vx_reference'
+TYPE_CONTEXT.ctype = 'vx_context'
+TYPE_GRAPH.ctype = 'vx_graph'
+TYPE_NODE.ctype = 'vx_node'
+TYPE_KERNEL.ctype = 'vx_kernel'
+TYPE_PARAMETER.ctype = 'vx_parameter'
+TYPE_DELAY.ctype = 'vx_delay'
+TYPE_LUT.ctype = 'vx_lut'
+TYPE_DISTRIBUTION.ctype = 'vx_distribution'
+TYPE_PYRAMID.ctype = 'vx_pyramid'
+TYPE_THRESHOLD.ctype = 'vx_threshold'
+TYPE_MATRIX.ctype = 'vx_matrix'
+TYPE_CONVOLUTION.ctype = 'vx_convolution'
+TYPE_SCALAR.ctype = 'vx_scalar'
+TYPE_ARRAY.ctype = 'vx_array'
+TYPE_IMAGE.ctype = 'vx_image'
+TYPE_REMAP.ctype = 'vx_remap'
+TYPE_ERROR.ctype = 'vx_error'
+TYPE_META_FORMAT.ctype = 'vx_meta_format'
+
+TYPE_STRING.ctype = 'char *'

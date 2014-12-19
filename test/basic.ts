@@ -5,6 +5,16 @@
 #include <stdio.h>
 #include <VX/vx.h>
 
+#test version
+    vx_context context = vxCreateContext();
+    vx_uint32 version;
+    ck_assert(vxQueryContext(context, VX_CONTEXT_ATTRIBUTE_VERSION, 
+                             &version, sizeof(version)) == VX_SUCCESS);
+    ck_assert(version == VX_VERSION);
+    ck_assert(vxReleaseContext(&context) == VX_SUCCESS);
+    ck_assert(!context);
+
+
 
 #test params
     vx_context context = vxCreateContext();

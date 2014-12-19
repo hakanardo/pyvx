@@ -9,7 +9,7 @@ from pycparser.c_generator import CGenerator
 from cffi import FFI
 import tempfile
 import subprocess
-import os
+import os, re
 from shutil import rmtree, copy
 
 typedefs = ''.join("typedef int uint%d_t; typedef int int%d_t;" % (n, n)
@@ -173,6 +173,121 @@ def export(signature, add_ret_to_arg=None, retrive_args=True, store_result=True,
         f.exception_return = exception_return
         return staticmethod(f)
     return decorator
+
+class CApiBuilder(object):
+    def __init__(self, ffi):
+        self.ffi = ffi
+        self.cdef = []
+        self.stubs = []
+        self.callbacks = {}
+        self.wrapped_reference_types = set()
+        self.exception_return_values = {}
+        self.includes = set()
+
+    def add_wrapped_reference_type(self, ctype):
+        self.wrapped_reference_types.add(self.ffi.typeof(ctype))
+
+    def add_function(self, cdecl, method):
+        tp = self.ffi._typeof(cdecl, 
+                              consider_function_as_funcptr=True)
+        n = re.search(r'^[^\*\s]+\*?\s*([^\(\s]+)\s*\(', cdecl).group(1) # XXX: use parser
+        callback_var = self.ffi.getctype(tp, '_' + n)
+        callback_var = callback_var.replace('()', '(void)')
+        self.cdef.append("%s;" % callback_var)
+        args = ', '.join(self.ffi.getctype(t, 'a%d' % i)
+                         for i, t in enumerate(tp.args))
+        stub = self.ffi.getctype(tp.result, '%s(%s)' % (n, args))
+        args = ', '.join('a%d' % i for i in xrange(len(tp.args)))
+        if tp.result == 'void':
+            stub += '{_%s(%s);}' % (n, args)
+        else:
+            stub += '{return _%s(%s);}' % (n, args)
+        self.stubs.append(stub)
+        self.callbacks[n] = self.make_callback(tp, method)
+
+    def set_exception_return_value(self, ctype, value):
+        self.exception_return_values[self.ffi.typeof(ctype)] = value
+
+    def make_callback(self, tp, fn):
+        store_result = tp.result in self.wrapped_reference_types
+        retrive_refs = tuple([i for i, a in enumerate(tp.args)
+                              if a in self.wrapped_reference_types])
+        exception_return = self.exception_return_values.get(tp.result, 0)
+
+        def f(*args):
+            args = list(args)
+            try:
+                for i in retrive_refs:
+                    args[i] = self.ffi.from_handle(self.ffi.cast('void *', args[i]))
+                r = fn(*args)
+                if store_result:
+                    r = r.new_handle()
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return exception_return
+            return r
+        f.__name__ = fn.__name__
+        return self.ffi.callback(tp, f)
+
+    def build(self, name, version, soversion, out_path):
+        setup = '\n'.join('"%s\\n"' % l for l in self.setup.split('\n'))
+        tmp = tempfile.mkdtemp()
+        try:
+            src = os.path.join(tmp, "tmp.c")
+            with open(src, 'w') as fd:
+                fd.write("""
+                    #include <stdint.h>
+                    #include <Python.h>
+
+                    static void __initialize(void) __attribute__((constructor));
+                    void __initialize(void) {
+                      Py_Initialize();
+                      PyEval_InitThreads();                  
+                      PyRun_SimpleString(%s);
+                    }
+
+                    static void __deinitialize(void) __attribute__((destructor));
+                    void __deinitialize(void) {
+                      Py_Finalize();
+                    }
+                    """ % setup +
+                         '\n'.join(self.includes) + "\n\n" +
+                         '\n'.join(self.cdef) + "\n\n" + 
+                         '\n'.join(self.stubs))
+
+            from distutils.core import Extension
+            from cffi.ffiplatform import compile
+            mydir = os.path.dirname(os.path.abspath(__file__))
+            d = os.path.join(mydir, 'inc', 'headers')
+            fn = compile(tmp, Extension(name='lib' + name,
+                                        sources=[src],
+                                        extra_compile_args=["-I" + d],
+                                        extra_link_args=['-lpython2.7',
+                                                         '-Wl,-soname,lib%s.so.' % name + soversion]))
+            bfn = os.path.join(out_path, os.path.basename(fn))
+            full = bfn + '.' + version
+            so = bfn + '.' + soversion
+            for f in [full, so, bfn]:
+                try:
+                    os.unlink(f)
+                except OSError:
+                    pass
+            copy(fn, full)
+            os.symlink(os.path.basename(full), so)
+            os.symlink(os.path.basename(full), bfn)
+        finally:
+            rmtree(tmp)
+        self.library_names = [full, so, bfn]
+
+    def load(self):
+        ffi = FFI()
+        ffi.include(self.ffi)
+        ffi.cdef('\n'.join(self.cdef))
+        lib = ffi.dlopen(None)
+        for n, cb in self.callbacks.items():
+            setattr(lib, '_' + n, cb)
+        self.lib = lib
 
 
 class PythonApi(object):

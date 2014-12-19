@@ -129,6 +129,10 @@ enum vx_type_e {
     VX_TYPE_OBJECT_MAX,     
 };
 
+enum vx_additional_type_e {
+    VX_TYPE_STRING          = ...,
+};
+
 enum vx_status_e {
     VX_STATUS_MIN                       = -25,
     /* add new codes here */
@@ -620,5 +624,9 @@ enum vx_additional_df_image_e {
     VX_DF_IMAGE_F32  = VX_DF_IMAGE('F','0','3','2'),
     VX_DF_IMAGE_F64  = VX_DF_IMAGE('F','0','6','4'),
     VX_DF_IMAGE_F128 = VX_DF_IMAGE('F','1','2','8'),
+};
+
+enum vx_additional_type_e {
+    VX_TYPE_STRING          = 0x011,
 };
 '''

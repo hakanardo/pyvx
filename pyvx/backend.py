@@ -1,3 +1,4 @@
+import pyvx.model as model
 from pyvx.types import *
 from pyvx.codegen import Code, Enum
 from cffi import FFI
@@ -9,21 +10,17 @@ import re
 from tempfile import mkdtemp
 from shutil import rmtree
 
+class Context(model.Context):
+    def create_image(self, width, height, color):
+        return CoreImage(width, height, color, context=self, virtual=False)
+ 
+    def create_virtual_image(self, graph, width, height, color):
+        return CoreImage(width, height, color, graph=graph, virtual=True)
 
-class Context(object):
-    references = []
+    def create_graph(self, early_verify):
+        return CoreGraph(self, early_verify)
 
-    def __init__(self):
-        self.context = self
-
-    def add_reference(self, ref):
-        self.references.append(ref)
-
-    def clear_references(self):
-        self.references = []
-
-
-class CoreImage(object):
+class CoreImage(model.Image):
     count = 0
     optimized_out = False
     color_space = COLOR_SPACE_DEFAULT
@@ -218,7 +215,7 @@ class ConstantImage(CoreImage):
         self.cdeclaration = ''
 
 
-class CoreGraph(object):
+class CoreGraph(model.Graph):
     default_context = None
     local_state = threading.local()
     local_state.current_graph = None
@@ -289,6 +286,9 @@ class CoreGraph(object):
         if scheduler.blocked_nodes:
             raise InvalidGraphError("Loops not allowed in the graph.")
         return one_order
+
+    def optimize(self):
+        pass
 
     def compile(self):
         for d in self.images:
@@ -374,7 +374,7 @@ class Scheduler(object):
 
 def parse_signature(signature):
     sig = [re.split('\s+', v.strip()) for v in signature.split(',')]
-    return [(v[0].lower(), v[1].upper(), v[2]) for v in sig]
+    return [(v[0].lower(), eval('TYPE_' + v[1].upper()), v[2]) for v in sig]
 
 
 class Parameter(object):
@@ -407,10 +407,10 @@ class Kernel(object):
         self.node_class = node_class
         
 
-class NodeMeta(type):
+class NodeMeta(model.VxObjectMeta):
     kernels = {}
     def __new__(cls, name, bases, attrs):
-        cls = type.__new__(cls, name, bases, attrs)
+        cls = model.VxObjectMeta.__new__(cls, name, bases, attrs)
         if hasattr(cls, 'kernel_enum'):
             assert cls.kernel_enum not in NodeMeta.kernels
             NodeMeta.kernels[cls.kernel_enum] = cls
@@ -429,7 +429,7 @@ def get_kernel(context, kernel):
 
 class Missing(object): pass
 
-class Node(object):
+class Node(model.Node):
     __metaclass__ = NodeMeta
     border_mode = BORDER_MODE_UNDEFINED
     border_mode_value = 0
@@ -442,7 +442,6 @@ class Node(object):
         self.context = graph.context
         self.parameters = []
         for i, (direction, data_type, name) in enumerate(parse_signature(self.signature)):
-            data_type = eval('TYPE_' + data_type)
             state = PARAMETER_STATE_OPTIONAL if hasattr(
                 self, name) else PARAMETER_STATE_REQUIRED
             self.parameters.append(

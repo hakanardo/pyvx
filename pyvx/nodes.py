@@ -155,7 +155,7 @@ class MergedElementwiseNode(MergedNode):
 
 
 class BinaryOperationNode(ElementwiseNode):
-    signature = "in image in1, in reference op, in image in2, in enum convert_policy, out image out"
+    signature = "in image in1, in string op, in image in2, in enum convert_policy, out image out"
 
     @property
     def body(self):
@@ -208,7 +208,7 @@ class PowerNode(ElementwiseNode):
 
 
 class CompareNode(BinaryOperationNode):
-    signature = "in image in1, in reference op, in image in2, out image out"
+    signature = "in image in1, in string op, in image in2, out image out"
 
     def verify(self):
         self.out.suggest_color(DF_IMAGE_U8)
@@ -392,7 +392,7 @@ mydir = os.path.dirname(os.path.abspath(__file__))
 
 
 class PlayNode(Node):
-    signature = 'in reference path, out image output'
+    signature = 'in string path, out image output'
     player = None
 
     ffi = cffi.FFI()
@@ -451,7 +451,7 @@ class PlayNode(Node):
 
 
 class ShowNode(Node):
-    signature = "in image input, in reference name"
+    signature = "in image input, in string name"
     viewer = None
     name = "View"
 

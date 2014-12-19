@@ -45,7 +45,6 @@ for n in dir(lib):
             obj = Enum('vx.' + n[3:], obj)
         locals()[n[3:]] = obj
 
-
 def imagepatch_addressing(dim_x=0, dim_y=0, stride_x=0, stride_y=0,
                           scale_x=0, scale_y=0, step_x=0, step_y=0):
     return ffi.new('vx_imagepatch_addressing_t *',
