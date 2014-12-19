@@ -111,7 +111,6 @@ The main modules of PyVX are:
 .. automodule:: pyvx.codegen
    :members:
 
-
 Comments and bugs
 =================
 

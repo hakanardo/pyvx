@@ -1,3 +1,24 @@
+""" 
+:mod:`pyvx.capi` --- C API
+==========================================
+
+This module allows the use of this python implementation as an `OpenVX`_ backend 
+from a C program. A shared library is provided that embeds python and exports a C API
+following the `OpenVX`_ specification. That way the C program does not need to
+be aware of the fact that python is used. Also, any C program following the
+`OpenVX`_ specification should be compilable with this backend.
+
+.. code-block:: bash
+
+  sudo python -mpyvx.capi build /usr/local/
+
+This will install `libopenvx.so*` into `/usr/local/lib` and place the
+`OpenVX`_ headers in `/usr/local/include/VX`.
+
+.. _`OpenVX`: https://www.khronos.org/openvx
+
+"""
+
 from pyvx import model, nodes
 from pyvx.codegen import CApiBuilder
 from pyvx.inc import vx
