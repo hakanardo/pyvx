@@ -78,7 +78,7 @@ class Reference(VxObject):
 
     def new_handle(self):
         h = vx.ffi.new_handle(self)
-        self.context.keep_alive.add(h)
+        self.context.keep_alive.append(h)
         return h
 
     def del_handle(self, ptr):
@@ -237,7 +237,7 @@ class Context(Reference):
     # FIXME: ...
 
     def __init__(self):
-        self.keep_alive = set()
+        self.keep_alive = [] # FIXME: replace we reference counting dict
         self.context = self
 
     def create_image(self, width, height, color):
@@ -533,14 +533,6 @@ class Parameter(Reference):
     state = attribute(vx.PARAMETER_ATTRIBUTE_STATE, vx.TYPE_ENUM)
     ref = attribute(vx.PARAMETER_ATTRIBUTE_REF, vx.TYPE_REFERENCE)
 
-    def query(self, attribute): # FIXME: Kill this special case?
-        if attribute == vx.PARAMETER_ATTRIBUTE_REF:
-            val = getattr(self.node, self.name)
-            if isinstance(val, (int, float)):
-                val = self.context.create_scalar(self.data_type, val)
-            return val
-        return getattr(self, self._attributes[attribute].name)
-
 
 @api('GetParameterByIndex')
 @capi('vx_parameter vxGetParameterByIndex(vx_node node, vx_uint32 index)')
@@ -553,8 +545,6 @@ def get_parameter_by_index(node, index):
 @api('SetParameterByIndex')
 @capi('vx_status vxSetParameterByIndex(vx_node node, vx_uint32 index, vx_reference value)')
 def set_parameter_by_index(node, index, value):
-    if isinstance(value, Scalar):
-        value = value.value
     setattr(node, node.parameters[index].name, value)
     return vx.SUCCESS
 
@@ -562,8 +552,6 @@ def set_parameter_by_index(node, index, value):
 @api('SetParameterByReference')
 @capi('vx_status vxSetParameterByReference(vx_parameter parameter, vx_reference value)')
 def set_parameter_by_reference(parameter, value):
-    if isinstance(value, Scalar):
-        value = value.value
     setattr(parameter.node, parameter.name, value)
     return vx.SUCCESS
 

@@ -155,7 +155,12 @@ class MergedElementwiseNode(MergedNode):
 
 
 class BinaryOperationNode(ElementwiseNode):
-    signature = "in image in1, in string op, in image in2, in enum convert_policy, out image out"
+    signature = (param('in1', INPUT, TYPE_IMAGE),
+                 param('op',  INPUT, TYPE_STRING),
+                 param('in2', INPUT, TYPE_IMAGE),
+                 param('convert_policy', INPUT, TYPE_ENUM, CONVERT_POLICY_WRAP),
+                 param('out', OUTPUT, TYPE_IMAGE),
+                 )
 
     @property
     def body(self):
@@ -163,9 +168,12 @@ class BinaryOperationNode(ElementwiseNode):
 
 
 class MultiplyNode(ElementwiseNode):
-    signature = "in image in1, in image in2, in scalar scale, in enum convert_policy, in enum round_policy, out image out"
-    scale = 1
-    round_policy = ROUND_POLICY_TO_ZERO
+    signature = (param('in1', INPUT, TYPE_IMAGE),
+                 param('in2', INPUT, TYPE_IMAGE),
+                 param('scale', INPUT, TYPE_SCALAR, 1),
+                 param('convert_policy', INPUT, TYPE_ENUM, CONVERT_POLICY_WRAP),
+                 param('round_policy', INPUT, TYPE_ENUM, ROUND_POLICY_TO_ZERO),
+                 param('out', OUTPUT, TYPE_IMAGE))
     kernel_enum =  KERNEL_MULTIPLY
 
     @property
@@ -179,9 +187,12 @@ class MultiplyNode(ElementwiseNode):
 
 
 class DivideNode(ElementwiseNode):
-    signature = "in image in1, in image in2, in scalar scale, in enum convert_policy, in enum round_policy, out image out"
-    scale = 1
-    round_policy = ROUND_POLICY_TO_ZERO
+    signature = (param('in1', INPUT, TYPE_IMAGE),
+                 param('in2', INPUT, TYPE_IMAGE),
+                 param('scale', INPUT, TYPE_SCALAR, 1),
+                 param('convert_policy', INPUT, TYPE_ENUM, CONVERT_POLICY_WRAP),
+                 param('round_policy', INPUT, TYPE_ENUM, ROUND_POLICY_TO_ZERO),
+                 param('out', OUTPUT, TYPE_IMAGE))
 
     @property
     def body(self):
@@ -194,7 +205,10 @@ class DivideNode(ElementwiseNode):
 
 
 class TrueDivideNode(ElementwiseNode):
-    signature = "in image in1, in image in2, out image out"
+    signature = (param('in1', INPUT, TYPE_IMAGE),
+                 param('in2', INPUT, TYPE_IMAGE),
+                 param('out', OUTPUT, TYPE_IMAGE))
+
     body = "out = ((double) in1) / ((double) in2);"
 
     def verify(self):
@@ -203,12 +217,20 @@ class TrueDivideNode(ElementwiseNode):
 
 
 class PowerNode(ElementwiseNode):
-    signature = "in image in1, in image in2, in enum convert_policy, out image out"
+    signature = (param('in1', INPUT, TYPE_IMAGE),
+                 param('in2', INPUT, TYPE_IMAGE),
+                 param('convert_policy', INPUT, TYPE_ENUM, CONVERT_POLICY_WRAP),
+                 param('out', OUTPUT, TYPE_IMAGE))
+
     body = "out = pow(in1, in2);"
 
 
 class CompareNode(BinaryOperationNode):
-    signature = "in image in1, in string op, in image in2, out image out"
+    signature = (param('in1', INPUT, TYPE_IMAGE),
+                 param('op', INPUT, TYPE_STRING),
+                 param('in2', INPUT, TYPE_IMAGE),
+                 param('out', OUTPUT, TYPE_IMAGE))
+    convert_policy = CONVERT_POLICY_WRAP
 
     def verify(self):
         self.out.suggest_color(DF_IMAGE_U8)
@@ -216,7 +238,8 @@ class CompareNode(BinaryOperationNode):
 
 
 class ColorConvertNode(Node):
-    signature = 'in image input, out image output'
+    signature = (param('input', INPUT, TYPE_IMAGE),
+                 param('output', OUTPUT, TYPE_IMAGE))
     convert_policy = CONVERT_POLICY_SATURATE
     kernel_enum = KERNEL_COLOR_CONVERT 
 
@@ -251,7 +274,9 @@ class ColorConvertNode(Node):
 
 
 class ChannelExtractNode(Node):
-    signature = "in image input, in enum channel, out image output"
+    signature = (param('input', INPUT, TYPE_IMAGE),
+                 param('channel', INPUT, TYPE_ENUM),
+                 param('output', OUTPUT, TYPE_IMAGE))
     kernel_enum = KERNEL_CHANNEL_EXTRACT 
 
     def verify(self):
@@ -272,9 +297,11 @@ class ChannelExtractNode(Node):
 
 
 class ChannelCombineNode(Node):
-    signature = 'in image plane0, in image plane1, in image plane2, in image plane3, out image output'
-    plane2 = None
-    plane3 = None
+    signature = (param('plane0', INPUT, TYPE_IMAGE),
+                 param('plane1', INPUT, TYPE_IMAGE),
+                 param('plane2', INPUT, TYPE_IMAGE, None),
+                 param('plane3', INPUT, TYPE_IMAGE, None),
+                 param('output', OUTPUT, TYPE_IMAGE))
     kernel_enum = KERNEL_CHANNEL_COMBINE
 
     def verify(self):
@@ -299,7 +326,8 @@ class ChannelCombineNode(Node):
 
 
 class Gaussian3x3Node(Node):
-    signature = "in image input, out image output"
+    signature = (param('input', INPUT, TYPE_IMAGE),
+                 param('output', OUTPUT, TYPE_IMAGE))
     kernel_enum = KERNEL_GAUSSIAN_3x3
 
     def verify(self):
@@ -319,7 +347,9 @@ class Gaussian3x3Node(Node):
 
 
 class Sobel3x3Node(Node):
-    signature = 'in image input, out image output_x, out image output_y'
+    signature = (param('input', INPUT, TYPE_IMAGE),
+                 param('output_x', OUTPUT, TYPE_IMAGE),
+                 param('output_y', OUTPUT, TYPE_IMAGE))
     kernel_enum = KERNEL_SOBEL_3x3
 
     def verify(self):
@@ -348,7 +378,9 @@ class Sobel3x3Node(Node):
 
 
 class MagnitudeNode(ElementwiseNode):
-    signature = 'in image grad_x, in image grad_y, out image mag'
+    signature = (param('grad_x', INPUT, TYPE_IMAGE),
+                 param('grad_y', INPUT, TYPE_IMAGE),
+                 param('mag', OUTPUT, TYPE_IMAGE))
     convert_policy = CONVERT_POLICY_SATURATE
     kernel_enum = KERNEL_MAGNITUDE
 
@@ -368,7 +400,9 @@ class MagnitudeNode(ElementwiseNode):
 
 
 class PhaseNode(ElementwiseNode):
-    signature = 'in image grad_x, in image grad_y, out image orientation'
+    signature = (param('grad_x', INPUT, TYPE_IMAGE),
+                 param('grad_y', INPUT, TYPE_IMAGE),
+                 param('orientation', OUTPUT, TYPE_IMAGE))
     kernel_enum = KERNEL_PHASE
 
     def verify(self):
@@ -382,7 +416,8 @@ class PhaseNode(ElementwiseNode):
 
 
 class AccumulateImageNode(Node):
-    signature = 'in image input, inout image accum'
+    signature = (param('input', INPUT, TYPE_IMAGE),
+                 param('accum', BIDIRECTIONAL, TYPE_IMAGE))
     kernel_enum = KERNEL_ACCUMULATE
 
     def verify(self):
@@ -392,7 +427,8 @@ mydir = os.path.dirname(os.path.abspath(__file__))
 
 
 class PlayNode(Node):
-    signature = 'in string path, out image output'
+    signature = (param('path', INPUT, TYPE_STRING),
+                 param('output', OUTPUT, TYPE_IMAGE))
     player = None
 
     ffi = cffi.FFI()
@@ -430,7 +466,7 @@ class PlayNode(Node):
 
                 ''')
         if not self.player:
-            self.player = self.lib.avplay_new(self.path)
+            self.player = self.lib.avplay_new(str(self.path))
         if not self.player:
             raise InvalidValueError(
                 "Unable to decode '%s'." % self.path)
@@ -451,9 +487,9 @@ class PlayNode(Node):
 
 
 class ShowNode(Node):
-    signature = "in image input, in string name"
+    signature = (param('input', INPUT, TYPE_IMAGE),
+                 param('name', INPUT, TYPE_STRING, 'View'))
     viewer = None
-    name = "View"
 
     ffi = cffi.FFI()
     ffi.cdef("""
@@ -501,7 +537,7 @@ class ShowNode(Node):
                                              self.input.height,
                                              self.lib.GL_RGB,
                                              self.lib.GL_UNSIGNED_BYTE,
-                                             self.name)
+                                             str(self.name))
 
     def compile(self, code):
         adr = int(self.ffi.cast('long', self.viewer))
@@ -516,7 +552,8 @@ class ShowNode(Node):
 
 class Median3x3Node(Node):
     kernel_enum = KERNEL_MEDIAN_3x3
-    signature = 'in image input, out image output'
+    signature = (param('input', INPUT, TYPE_IMAGE),
+                 param('output', OUTPUT, TYPE_IMAGE))
 
     def verify(self):
         # FIXME
@@ -527,8 +564,14 @@ class Median3x3Node(Node):
 
 class HarrisCornersNode(Node):
     kernel_enum = KERNEL_HARRIS_CORNERS
-    signature = 'in image input, in scalar strength_thresh, in scalar min_distance, in scalar sensitivity, in int32 gradient_size, in int32 block_size, out array corners, out scalar num_corners'
-    num_corners = Scalar(None, None, None) # FIXME
+    signature = (param('input', INPUT, TYPE_IMAGE),
+                 param('strength_thresh', INPUT, TYPE_SCALAR),
+                 param('min_distance', INPUT, TYPE_SCALAR),
+                 param('sensitivity', INPUT, TYPE_SCALAR),
+                 param('gradient_size', INPUT, TYPE_INT32),
+                 param('block_size', INPUT, TYPE_INT32),
+                 param('corners', OUTPUT, TYPE_ARRAY),
+                 param('num_corners', OUTPUT, TYPE_SCALAR, None))
 
     def verify(self):
         pass # FIXME

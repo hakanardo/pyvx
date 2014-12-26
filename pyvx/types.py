@@ -2,13 +2,21 @@ from cffi import FFI
 import numpy
 from pyvx.inc.vx import *
 
-class CHANNEL_R: pass
-class CHANNEL_G: pass
-class CHANNEL_B: pass
-class CHANNEL_A: pass
-class CHANNEL_Y: pass
-class CHANNEL_U: pass
-class CHANNEL_V: pass
+class ExtraChannel(object):
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return 'vx.' + self.name
+    __str__ = __repr__
+
+CHANNEL_R = ExtraChannel('CHANNEL_R')
+CHANNEL_G = ExtraChannel('CHANNEL_G')
+CHANNEL_B = ExtraChannel('CHANNEL_B')
+CHANNEL_A = ExtraChannel('CHANNEL_A')
+CHANNEL_Y = ExtraChannel('CHANNEL_Y')
+CHANNEL_U = ExtraChannel('CHANNEL_U')
+CHANNEL_V = ExtraChannel('CHANNEL_V')
 
 channel_char = {
     CHANNEL_0: '0',

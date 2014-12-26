@@ -29,6 +29,7 @@ class Context(model.Context):
         except KeyError:
             raise InvalidValueError('Cant find kernel %r' % kernel)
         
+class Missing(object): pass
 
 class CoreImage(model.Image):
     count = 0
@@ -210,6 +211,8 @@ class ConstantImage(CoreImage):
     def __init__(self, width, height, value):
         self.width = width
         self.height = height
+        if isinstance(value, Scalar):
+            value = value.value
         self.value = value
         self.color = value_color_type(value)
         self.virtual = False
@@ -264,10 +267,10 @@ class CoreGraph(model.Graph):
     def verify(self):
         self.images = set()
         for node in self.nodes:
-            node.reload_parameter_values()
-            for d in node.inputs + node.outputs + node.inouts:
+            for p in node.parameters:
+                d = p.value
                 if d is Missing:
-                    raise InvalidParametersError('Required parameter missing')
+                    raise InvalidParametersError('Required parameter "%s" missing on %r.' % (p.name, node))
                 if isinstance(d, CoreImage):
                     self.images.add(d)
         self.nodes = self.schedule()
@@ -382,25 +385,6 @@ class Scheduler(object):
                 self.loaded_nodes.add(n)
 
 
-def parse_signature(signature):
-    sig = [re.split('\s+', v.strip()) for v in signature.split(',')]
-    return [(v[0].lower(), eval('TYPE_' + v[1].upper()), v[2]) for v in sig]
-
-
-class Parameter(model.Parameter):
-    vxtype = TYPE_PARAMETER
-
-    def __init__(self, node, name, index, direction, data_type, state):
-        self.context = node.graph.context
-        self.node = node
-        self.name = name
-        self._index = index
-        self._direction = {
-            'in': INPUT, 'out': OUTPUT, 'inout': BIDIRECTIONAL}[direction]
-        self._data_type = data_type
-        self._state = state
-
-
 class Scalar(model.Scalar):
 
     def __init__(self, context, data_type, value):
@@ -409,18 +393,164 @@ class Scalar(model.Scalar):
         self.value = value
         self.producer = None
 
+    def __add__(self, other):
+        return self.value + other
+
+    def __sub__(self, other):
+        return self.value - other
+
+    def __mul__(self, other):
+        return self.value * other
+
+    def __div__(self, other):
+        return self.value / other
+
+    def __floordiv__(self, other):
+        return self.value // other
+
+    def __radd__(self, other):
+        return other + self.value
+
+    def __rsub__(self, other):
+        return other - self.value
+
+    def __rmul__(self, other):
+        return other * self.value
+
+    def __rdiv__(self, other):
+        return other / self.value
+
+    def __rfloordiv__(self, other):
+        return other // self.value
+
+    __floordiv__ = __div__
+    __rfloordiv__ = __rdiv__
+
+    def __pow__(self, other):
+        return self.value ** other
+
+    def __rpow__(self, other):
+        return other ** self.value
+
+    def __mod__(self, other):
+        return self.value % other
+
+    def __rmod__(self, other):
+        return other % self.value
+
+    __truediv__ = __div__
+    __rtruediv__ = __rdiv__
+
+    def __lshift__(self, other):
+        return self.value << other
+
+    def __rlshift__(self, other):
+        return other << self.value
+
+    def __rshift__(self, other):
+        return self.value >> other
+
+    def __rrshift__(self, other):
+        return other >> self.value
+
+    def __and__(self, other):
+        return self.value & other
+
+    def __rand__(self, other):
+        return other & self.value
+
+    def __or__(self, other):
+        return self.value | other
+
+    def __ror__(self, other):
+        return other | self.value
+
+    def __xor__(self, other):
+        return self.value ^ other
+
+    def __rxor__(self, other):
+        return other ^ self.value
+
+    def __cmp__(self, other):
+        return cmp(self.value, other)
+
+    def __nonzero__(self):
+        raise self.value
+
+    def __hash__(self):
+        return hash(self.value)
+
+    def __repr__(self):
+        return repr(self.value)
+
+    def __str__(self):
+        return str(self.value)
+
 class Kernel(model.Kernel):
     def __init__(self, context, node_class):
         self.context = context
         self.name = node_class.kernel_name
         self.enumeration = node_class.kernel_enum
         self.node_class = node_class
-        
+
+
+class Parameter(model.Parameter):
+    vxtype = TYPE_PARAMETER
+
+    def __init__(self, node, name, index, direction, data_type, state, value):
+        self.context = node.graph.context
+        self.node = node
+        self.name = name
+        self._index = index
+        self._direction = direction
+        self._data_type = data_type
+        self._state = state
+        self.value = value
+
+    @property
+    def value(self):
+        return self.ref
+
+    @value.setter
+    def value(self, value):
+        if value is Missing or value is None:
+            self.ref = value
+            return
+        if repr(value).startswith('<cdata \'char *\''): # XXX: Hack!
+            value = ffi.string(value)
+        if not isinstance(value, model.VxObject):
+            value = Scalar(self.context, self.data_type, value)
+        if self.data_type < TYPE_SCALAR_MAX or self.data_type == TYPE_STRING:
+            assert value.type == TYPE_SCALAR
+        else:
+            assert value.type == self.data_type
+        self.ref = value
+
+class param(object):
+    def __init__(self, name, direction, data_type, default=Missing):
+        self.name = name
+        self.direction = direction
+        self.data_type = data_type
+        self.default = default
+        self.state = PARAMETER_STATE_REQUIRED if default is Missing \
+                     else PARAMETER_STATE_OPTIONAL
+
+    def __get__(self, instance, owner):
+        assert instance.parameters[self.index].name == self.name
+        return instance.parameters[self.index].ref
+
+    def __set__(self, instance, value):
+        assert instance.parameters[self.index].name == self.name        
+        instance.parameters[self.index].ref = value
+    
 
 class NodeMeta(model.VxObjectMeta):
     kernels = {}
     def __new__(cls, name, bases, attrs):
         cls = model.VxObjectMeta.__new__(cls, name, bases, attrs)
+        for i, p in enumerate(cls.signature):
+            p.index = i
+            setattr(cls, p.name, p)
         if hasattr(cls, 'kernel_enum'):
             assert cls.kernel_enum not in NodeMeta.kernels
             NodeMeta.kernels[cls.kernel_enum] = cls
@@ -431,8 +561,6 @@ class NodeMeta(model.VxObjectMeta):
         NodeMeta.kernels[cls.kernel_name] = cls
         return cls
 
-class Missing(object): pass
-
 class Node(model.Node):
     __metaclass__ = NodeMeta
     border_mode = BORDER_MODE_UNDEFINED
@@ -440,46 +568,40 @@ class Node(model.Node):
     convert_policy = CONVERT_POLICY_WRAP
     round_policy = ROUND_POLICY_TO_NEAREST_EVEN
     optimized_out = False
+    signature = ()
 
     def __init__(self, graph, *args, **kwargs):
         self.graph = graph
         self.context = graph.context
-        self.parameters = []
-        for i, (direction, data_type, name) in enumerate(parse_signature(self.signature)):
-            state = PARAMETER_STATE_OPTIONAL if hasattr(
-                self, name) else PARAMETER_STATE_REQUIRED
-            self.parameters.append(
-                Parameter(self, name, i, direction, data_type, state))
-            if i < len(args):
-                val = args[i]
-                if name in kwargs:
+        self.parameters = [Parameter(self, p.name, p.index, p.direction, 
+                                     p.data_type, p.state, p.default)
+                           for p in self.signature]
+        for param in self.parameters:
+            if param.index < len(args):
+                param.value = args[param.index]
+                if param.name in kwargs:
                     raise TypeError(
                         "Got multiple values for keyword argument '%s'" % name)
-            elif name in kwargs:
-                val = kwargs[name]
-            elif hasattr(self, name):
-                val = getattr(self, name)
-            else:
+            elif param.name in kwargs:
+                param.value = kwargs[name]
+            elif param.value is Missing:
                 if kwargs.get('_ignore_missin_parameters', False): 
-                    val = Missing
+                    param.value = Missing
                 else:
                     raise TypeError("Required argument missing")
-            setattr(self, name, val)
-        self.reload_parameter_values()
         self.setup()
-    
-    def reload_parameter_values(self):
-        self.inputs, self.outputs, self.inouts = [], [], []
-        for p in self.parameters:
-            val = getattr(self, p.name)
-            #print '%s: %r' % (p.name, val)
-            if p.direction == INPUT:
-                self.inputs.append(val)
-            elif p.direction == OUTPUT:
-                self.outputs.append(val)
-            elif p.direction == BIDIRECTIONAL:
-                self.inouts.append(val)
 
+    @property
+    def inputs(self):
+        return [p.value for p in self.parameters if p.direction == INPUT]
+
+    @property
+    def outputs(self):
+        return [p.value for p in self.parameters if p.direction == OUTPUT]
+
+    @property
+    def inouts(self):
+        return [p.value for p in self.parameters if p.direction == BIDIRECTIONAL]
 
     @property
     def input_images(self):
@@ -496,7 +618,7 @@ class Node(model.Node):
     def setup(self):
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
-            if d is not Missing and d.producer is None:
+            if d is not Missing and d is not None and d.producer is None:
                 d.producer = self
         if self.graph.early_verify:
             self.do_verify()
@@ -509,6 +631,8 @@ class Node(model.Node):
 
         # Signle writer
         for d in self.outputs + self.inouts:
+            if d is None:
+                continue
             if d.producer is None:
                 d.producer = self
             if d.producer is not self:
@@ -534,21 +658,32 @@ class MergedNode(Node):
     def __init__(self, graph, nodes):
         self.original_nodes = nodes
         self.graph = graph
-        self.inputs, self.outputs, self.inouts = set(), set(), set()
+        inputs, outputs, inouts = set(), set(), set()
         for n in nodes:
-            self.inputs |= set(n.inputs)
-            self.outputs |= set(n.outputs)
-            self.inouts |= set(n.inouts)
-        self.inputs -= self.outputs
-        self.inputs -= self.inouts
+            inputs |= set(n.inputs)
+            outputs |= set(n.outputs)
+            inouts |= set(n.inouts)
+        inputs -= outputs
+        inputs -= inouts
 
-        self.inputs = list(self.inputs)
-        self.outputs = list(self.outputs)
-        self.inouts = list(self.inouts)
+        inputs = list(inputs)
+        outputs = list(outputs)
+        inouts = list(inouts)
         self.graph._add_node(self)
-        for d in self.outputs + self.inouts:
+        for d in outputs + inouts:
             assert d.producer in nodes
             d.producer = self
 
-    def reload_parameter_values(self):
-        pass # XXX!!
+        self.parameters = [Parameter(self, None, None, INPUT, ref.type, 
+                                     PARAMETER_STATE_REQUIRED, ref)
+                           for ref in inputs] + \
+                          [Parameter(self, None, None, OUTPUT, ref.type, 
+                                     PARAMETER_STATE_REQUIRED, ref)
+                           for ref in outputs] + \
+                          [Parameter(self, None, None, BIDIRECTIONAL, ref.type, 
+                                     PARAMETER_STATE_REQUIRED, ref)
+                           for ref in inouts]
+
+        assert self.inputs == inputs
+        assert self.outputs == outputs
+        assert self.inouts == inouts

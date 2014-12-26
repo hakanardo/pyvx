@@ -52,12 +52,12 @@ for n in dir(model):
 for n in dir(nodes):
     obj = getattr(nodes, n)
     if isinstance(obj, type) and issubclass(obj, model.Node):
-        if hasattr(obj, 'signature'):
-            args = ', '.join([a[1].ctype for a in nodes.parse_signature(obj.signature)])
+        if obj.signature:
+            args = ', '.join([p.data_type.ctype for p in obj.signature])
             cdecl = 'vx_node vx%s(vx_graph, %s)' % (obj.__name__, args)
             builder.add_function(cdecl, obj)
 
-
+# FIXME: Cach exeptions convert to e.errno or 0 depending on return type and log the error.
 
 def build(prefix='/usr/local'):
     from pyvx.inc.vx import ffi

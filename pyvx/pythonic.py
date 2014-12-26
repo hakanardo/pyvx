@@ -226,7 +226,7 @@ class Image(CoreImage):
     def __xor__(self, other):
         return BinaryOperation(self, "^", self.make_similar_image(other))
 
-    def __xror__(self, other):
+    def __rxor__(self, other):
         return XBinaryOperationor(self.make_similar_image(other), "^", self)
 
     def __lt__(self, other):
@@ -259,25 +259,23 @@ class Image(CoreImage):
             raise TypeError("Images are not hasable when used within 'with Graph():' blocks.")
 
 
-def _get_default_repr(cls, name):
-    item = getattr(cls, name)
+def _get_default_repr(item):
     if hasattr(item, '__name__'):
         return item.__name__
     return repr(item)
 
 def _make_pythonic_node(pname, cls):
-    sig = parse_signature(cls.signature)
-    outputs = [n for d, t, n in sig if d in ('out', 'inout')]
-    inputs = [n for d, t, n in sig  if d=='in']
-    allputs = [n for d, t, n in sig]
-    args = [n + '=' + _get_default_repr(cls, n) if hasattr(cls, n) else n 
-            for n in inputs]
+    outputs = [p for p in cls.signature if p.direction in (OUTPUT, BIDIRECTIONAL)]
+    inputs = [p for p in cls.signature if p.direction == INPUT]
+    args = [p.name if p.default is Missing else p.name + '=' + _get_default_repr(p.default) 
+            for p in inputs]
+    allputs = [p.name for p in cls.signature]
 
     func = ['def ' + pname + '(' + ', '.join(args) + '):']
-    for n in outputs:
-        func.append('    %s = Image()' % n)
+    for p in outputs:
+        func.append('    %s = Image()' % p.name) # FIXME: Use typeinfo to create right kind of obj
     func.append('    nodes.' + pname + 'Node' + '(nodes.CoreGraph.get_current_graph(), ' + ', '.join(allputs) + ')')
-    func.append('    return ' + ', '.join(outputs))
+    func.append('    return ' + ', '.join(p.name for p in outputs))
     return '\n'.join(func)
 
 for n in dir(nodes):
