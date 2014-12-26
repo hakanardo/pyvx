@@ -218,7 +218,7 @@ def release(ref):
 @capi('vx_status vxReleaseArray(vx_array *arr)')
 def c_release(ref):
     obj = vx.ffi.from_handle(vx.ffi.cast('void *', ref[0]))
-    obj.context.del_handle(ref[0])
+    obj.del_handle(ref[0])
     ref[0] = vx.ffi.NULL
     return vx.SUCCESS
 
@@ -236,9 +236,20 @@ class Context(Reference):
         vx.CONTEXT_ATTRIBUTE_UNIQUE_KERNELS, vx.TYPE_UINT32)
     # FIXME: ...
 
+    keep_alive_contexts = [] # FIXME: use dict with reference counts
+
     def __init__(self):
         self.keep_alive = [] # FIXME: replace we reference counting dict
         self.context = self
+
+    def new_handle(self): 
+        h = vx.ffi.new_handle(self)
+        self.keep_alive_contexts.append(h)
+        return h
+
+    def del_handle(self, ptr):
+        self.keep_alive_contexts.remove(ptr)
+
 
     def create_image(self, width, height, color):
         raise NotImplementedError
