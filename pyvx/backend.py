@@ -1,6 +1,6 @@
 import pyvx.model as model
 from pyvx.types import *
-from pyvx.codegen import Code, Enum
+from pyvx.codegen import Code
 from cffi import FFI
 from collections import defaultdict
 from itertools import chain
