@@ -29,7 +29,11 @@ class Context(model.Context):
         except KeyError:
             raise InvalidValueError('Cant find kernel %r' % kernel)
         
+# Placeholder for the value of required arguments not yet assigned.
 class Missing(object): pass
+
+# Placeholder for optional arguments not used.
+class Unassigned(object): pass
 
 class CoreImage(model.Image):
     count = 0
@@ -513,7 +517,7 @@ class Parameter(model.Parameter):
 
     @value.setter
     def value(self, value):
-        if value is Missing or value is None:
+        if value is Missing or value is Unassigned:
             self.ref = value
             return
         if repr(value).startswith('<cdata \'char *\''): # XXX: Hack!
@@ -593,15 +597,18 @@ class Node(model.Node):
 
     @property
     def inputs(self):
-        return [p.value for p in self.parameters if p.direction == INPUT]
+        return [p.value for p in self.parameters 
+                if p.direction == INPUT and p.value is not Unassigned]
 
     @property
     def outputs(self):
-        return [p.value for p in self.parameters if p.direction == OUTPUT]
+        return [p.value for p in self.parameters 
+                if p.direction == OUTPUT and p.value is not Unassigned]
 
     @property
     def inouts(self):
-        return [p.value for p in self.parameters if p.direction == BIDIRECTIONAL]
+        return [p.value for p in self.parameters 
+                if p.direction == BIDIRECTIONAL and p.value is not Unassigned]
 
     @property
     def input_images(self):
@@ -618,7 +625,7 @@ class Node(model.Node):
     def setup(self):
         self.graph._add_node(self)
         for d in self.outputs + self.inouts:
-            if d is not Missing and d is not None and d.producer is None:
+            if d is not Missing and d.producer is None:
                 d.producer = self
         if self.graph.early_verify:
             self.do_verify()

@@ -299,8 +299,8 @@ class ChannelExtractNode(Node):
 class ChannelCombineNode(Node):
     signature = (param('plane0', INPUT, TYPE_IMAGE),
                  param('plane1', INPUT, TYPE_IMAGE),
-                 param('plane2', INPUT, TYPE_IMAGE, None),
-                 param('plane3', INPUT, TYPE_IMAGE, None),
+                 param('plane2', INPUT, TYPE_IMAGE, Unassigned),
+                 param('plane3', INPUT, TYPE_IMAGE, Unassigned),
                  param('output', OUTPUT, TYPE_IMAGE))
     kernel_enum = KERNEL_CHANNEL_COMBINE
 
@@ -308,7 +308,7 @@ class ChannelCombineNode(Node):
         self.output.suggest_color(DF_IMAGE_RGB)
         if self.output.color != DF_IMAGE_RGB:
             raise NotImplementedError
-        if self.plane2 is None or self.plane3 is not None:
+        if self.plane2 is Unassigned or self.plane3 is not Unassigned:
             raise InvalidNodeError('RGB image requires 3 planes.')
         self.output.ensure_shape(self.plane0)
         self.plane1.ensure_shape(self.plane0)
@@ -571,7 +571,7 @@ class HarrisCornersNode(Node):
                  param('gradient_size', INPUT, TYPE_INT32),
                  param('block_size', INPUT, TYPE_INT32),
                  param('corners', OUTPUT, TYPE_ARRAY),
-                 param('num_corners', OUTPUT, TYPE_SCALAR, None))
+                 param('num_corners', OUTPUT, TYPE_SCALAR, Unassigned))
 
     def verify(self):
         pass # FIXME
