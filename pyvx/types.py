@@ -206,6 +206,7 @@ class VxError(Exception):
         Exception.__init__(self, '%s: %s' % (ref, msg))
         if ref is not None:
             ref.add_log_entry(self.errno, msg)
+            # xxx log file and code line of where the ref was allocated
 
 
 class MultipleWritersError(VxError): errno = ERROR_MULTIPLE_WRITERS
