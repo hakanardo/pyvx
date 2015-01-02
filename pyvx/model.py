@@ -1,6 +1,8 @@
 from pyvx.inc import vx
 from pyvx.types import VxError
+from pyvx import types
 
+# xxx: move some of the implementations to the backend?
 
 class attribute(object):
 
@@ -44,7 +46,7 @@ class VxObject(object):
 def exception2errno(e):
     if hasattr(e, 'errno'):
         return e.errno
-    return FAILURE
+    return vx.FAILURE
 
 
 class return_errno(object):
@@ -64,6 +66,10 @@ class return_errno_and_none(object):
     def hanlde(e):
         return exception2errno(e), None
 
+class reraise(object):
+    @staticmethod
+    def hanlde(e):
+        raise e
 
 class api(object):
 
@@ -98,8 +104,12 @@ class Reference(VxObject):
     count = attribute(vx.REF_ATTRIBUTE_COUNT, vx.TYPE_UINT32, 1)
     type = attribute(vx.REF_ATTRIBUTE_TYPE, vx.TYPE_ENUM, vx.TYPE_REFERENCE)
 
-    def query(self, attribute):
-        return getattr(self, self._attributes[attribute].name)
+    def query(self, attribute): # xxx: move implementation to backend
+        try:
+            return getattr(self, self._attributes[attribute].name)
+        except KeyError:
+            msg = 'Attribute %s does not exist' % attribute
+            raise types.InvalidParametersError(msg, self)
 
     def new_handle(self):
         h = vx.ffi.new_handle(self)
@@ -118,26 +128,27 @@ class Reference(VxObject):
 
 
 
-@api('QueryContext')
-@api('QueryImage')
-@api('QueryKernel')
-@api('QueryGraph')
-@api('QueryNode')
-@api('QueryParameter')
-@api('QueryScalar')
-@api('QueryReference')
-@api('QueryDelay')
-@api('QueryLUT')
-@api('QueryDistribution')
-@api('QueryThreshold')
-@api('QueryMatrix')
-@api('QueryConvolution')
-@api('QueryPyramid')
-@api('QueryRemap')
-@api('QueryArray')
+@api('QueryContext', on_exception=return_errno_and_none)
+@api('QueryImage', on_exception=return_errno_and_none)
+@api('QueryKernel', on_exception=return_errno_and_none)
+@api('QueryGraph', on_exception=return_errno_and_none)
+@api('QueryNode', on_exception=return_errno_and_none)
+@api('QueryParameter', on_exception=return_errno_and_none)
+@api('QueryScalar', on_exception=return_errno_and_none)
+@api('QueryReference', on_exception=return_errno_and_none)
+@api('QueryDelay', on_exception=return_errno_and_none)
+@api('QueryLUT', on_exception=return_errno_and_none)
+@api('QueryDistribution', on_exception=return_errno_and_none)
+@api('QueryThreshold', on_exception=return_errno_and_none)
+@api('QueryMatrix', on_exception=return_errno_and_none)
+@api('QueryConvolution', on_exception=return_errno_and_none)
+@api('QueryPyramid', on_exception=return_errno_and_none)
+@api('QueryRemap', on_exception=return_errno_and_none)
+@api('QueryArray', on_exception=return_errno_and_none)
 def query(ref, attribute):
     return vx.SUCCESS, ref.query(attribute)
 
+# xxx: set proper on_exception and test below
 
 @capi('vx_status vxQueryContext(vx_context context, vx_enum attribute, void *ptr, vx_size size)')
 @capi('vx_status vxQueryImage(vx_image image, vx_enum attribute, void *ptr, vx_size size)')

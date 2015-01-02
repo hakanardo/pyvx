@@ -6,4 +6,6 @@ class TestVx(object):
         status, version = QueryContext(c, CONTEXT_ATTRIBUTE_VERSION)
         assert(status == SUCCESS)
         assert(version == VERSION)
+        status, name = QueryContext(c, KERNEL_ATTRIBUTE_NAME)
+        assert(status != SUCCESS)
         ReleaseContext(c)
