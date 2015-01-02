@@ -48,12 +48,21 @@ and multiple return values are used instead.
 from pyvx.inc.vx import *
 from pyvx import model
 from pyvx.nodes import *
+from functools import wraps
+
+def _make_api_function(api, func):
+    @wraps(func)
+    def f(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            return api.on_exception.hanlde(e)
+    f.__name__ = api.name
+    return f
+
 
 for n in dir(model):
     func = getattr(model, n)
     if hasattr(func, 'apis'):
         for api in func.apis:
-            name = api.name
-            locals()[name] = func
-
-
+            locals()[api.name] = _make_api_function(api, func)

@@ -41,9 +41,28 @@ class VxObject(object):
     __metaclass__ = VxObjectMeta
 
 
-class return_errno: pass
-class return_none: pass
-class return_errno_and_none: pass
+def exception2errno(e):
+    if hasattr(e, 'errno'):
+        return e.errno
+    return FAILURE
+
+
+class return_errno(object):
+    @staticmethod
+    def hanlde(e):
+        return exception2errno(e)
+
+
+class return_none(object):
+    @staticmethod
+    def hanlde(e):
+        return None
+
+
+class return_errno_and_none(object):
+    @staticmethod
+    def hanlde(e):
+        return exception2errno(e), None
 
 
 class api(object):
@@ -455,15 +474,6 @@ def create_graph(context, early_verify=False):
 def verify_graph(graph):
     graph.verify()
     return vx.SUCCESS
-    
-    try:
-        graph.verify()
-    except VxError as e:
-        import traceback
-        graph.add_log_entry(e.errno, '\n' + traceback.format_exc())
-        return e.errno
-    return vx.SUCCESS
-
 
 @api('ProcessGraph')
 @capi('vx_status vxProcessGraph(vx_graph graph)')
@@ -486,10 +496,7 @@ def wait_graph(graph):
 @api('AddParameterToGraph')
 @capi('vx_status vxAddParameterToGraph(vx_graph graph, vx_parameter parameter)')
 def add_parameter_to_graph(graph, parameter):
-    try:
-        graph.add_parameter(parameter)
-    except VxError as e:
-        return e.errno # FIXME: Make generic exception handling
+    graph.add_parameter(parameter)
     return vx.SUCCESS
 
 

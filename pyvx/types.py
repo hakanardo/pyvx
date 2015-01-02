@@ -199,7 +199,14 @@ def signed_format(col):
 def image_format(color):
     return ImageFormat.color2image_format[color]
 
-class VxError(Exception): pass
+class VxError(Exception):
+    errno = FAILURE
+
+    def __init__(self, msg='', ref=None):
+        Exception.__init__(self, '%s: %s' % (ref, msg))
+        if ref is not None:
+            ref.add_log_entry(self.errno, msg)
+
 
 class MultipleWritersError(VxError): errno = ERROR_MULTIPLE_WRITERS
 class InvalidGraphError(VxError):    errno = ERROR_INVALID_GRAPH
