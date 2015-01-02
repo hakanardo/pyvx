@@ -447,6 +447,9 @@ def create_graph(context, early_verify=False):
 @api('VerifyGraph')
 @capi('vx_status vxVerifyGraph(vx_graph graph)')
 def verify_graph(graph):
+    graph.verify()
+    return vx.SUCCESS
+    
     try:
         graph.verify()
     except VxError as e:

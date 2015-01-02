@@ -12,6 +12,7 @@ class TestVerify(object):
             Gaussian3x3Node(g, img, out)
         with py.test.raises(MultipleWritersError):
             g.verify()
+        assert vx.VerifyGraph(g) == vx.ERROR_MULTIPLE_WRITERS
 
     def test_single_writer_inout(self):
         g = Graph()
