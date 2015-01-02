@@ -41,10 +41,16 @@ class VxObject(object):
     __metaclass__ = VxObjectMeta
 
 
+class return_errno: pass
+class return_none: pass
+class return_errno_and_none: pass
+
+
 class api(object):
 
-    def __init__(self, name):
+    def __init__(self, name, on_exception=return_errno):
         self.name = name
+        self.on_exception = on_exception
 
     def __call__(self, fn):
         if not hasattr(fn, 'apis'):
