@@ -28,7 +28,6 @@ major, minor, _ = __version_info__
 soversion = '%d.%d' % (major, minor)
 
 builder = CApiBuilder(vx.ffi)
-builder.set_exception_return_value('vx_status', vx.FAILURE)
 builder.setup = """
 import sys
 sys.path = ['.'] + sys.path
@@ -40,6 +39,15 @@ from pyvx.capi import builder
 builder.load()
 """ % __version__
 builder.includes.add('#include <VX/vx.h>')
+
+def exception_handler(e, return_type):
+    import traceback
+    traceback.print_exc() # xxx send to log and only for none VxError exceptions
+    if return_type == vx.ffi.typeof('vx_status'):
+        return model.exception2errno(e)
+    return vx.ffi.NULL
+builder.exception_handler = exception_handler
+
 
 for n in dir(model):
     obj = getattr(model, n)

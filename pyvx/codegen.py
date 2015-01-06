@@ -205,9 +205,6 @@ class CApiBuilder(object):
         self.stubs.append(stub)
         self.callbacks[n] = self.make_callback(tp, method)
 
-    def set_exception_return_value(self, ctype, value):
-        self.exception_return_values[self.ffi.typeof(ctype)] = value
-
     def make_callback(self, tp, fn):
         store_result = tp.result in self.wrapped_reference_types
         retrive_refs = tuple([i for i, a in enumerate(tp.args)
@@ -222,10 +219,8 @@ class CApiBuilder(object):
                 r = fn(*args)
                 if store_result:
                     r = r.new_handle()
-            except Exception:
-                import traceback
-                traceback.print_exc()
-                return exception_return
+            except Exception as e:
+                return self.exception_handler(e, tp.result)
             return r
         f.__name__ = fn.__name__
         return self.ffi.callback(tp, f)

@@ -148,7 +148,6 @@ class Reference(VxObject):
 def query(ref, attribute):
     return vx.SUCCESS, ref.query(attribute)
 
-# xxx: set proper on_exception and test below
 
 @capi('vx_status vxQueryContext(vx_context context, vx_enum attribute, void *ptr, vx_size size)')
 @capi('vx_status vxQueryImage(vx_image image, vx_enum attribute, void *ptr, vx_size size)')
@@ -168,14 +167,11 @@ def query(ref, attribute):
 @capi('vx_status vxQueryRemap(vx_remap r, vx_enum attribute, void *ptr, vx_size size)')
 @capi('vx_status vxQueryArray(vx_array arr, vx_enum attribute, void *ptr, vx_size size)')
 def c_query(ref, attribute, ptr, size):
-    a = ref._attributes.get(attribute)
-    if a is None:
-        return vx.FAILURE
-    if size != vx.ffi.sizeof(a.vxtype.ctype):
-        ref.add_log_entry(vx.FAILURE, "Bad size %d in query, expected %d\n" % (
-            size, vx.ffi.sizeof(a.vxtype.ctype)))
-        return vx.FAILURE
     value = ref.query(attribute)
+    a = ref._attributes.get(attribute)
+    if size != vx.ffi.sizeof(a.vxtype.ctype):
+        raise VxError("Bad size %d in query, expected %d\n" % (
+                      size, vx.ffi.sizeof(a.vxtype.ctype)), ref)
     ptr = vx.ffi.cast(a.vxtype.ctype + "*", ptr)
     if isinstance(value, VxObject):
         ptr[0] = value.new_handle()
@@ -183,6 +179,7 @@ def c_query(ref, attribute, ptr, size):
         ptr[0] = value
     return vx.SUCCESS
 
+# xxx: set proper on_exception and test below
 
 @api('SetContextAttribute')
 @api('SetImageAttribute')

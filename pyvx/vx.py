@@ -56,6 +56,8 @@ def _make_api_function(api, func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
+            import traceback
+            traceback.print_exc() # xxx send to log and only for none VxError exceptions
             return api.on_exception.hanlde(e)
     f.__name__ = api.name
     return f
