@@ -254,7 +254,6 @@ def c_release(ref):
     return vx.SUCCESS
 
 ##############################################################################
-# xxx: set proper on_exception and test below
 
 class Context(Reference):
     _type = vx.TYPE_CONTEXT
@@ -295,14 +294,14 @@ class Context(Reference):
         raise NotImplementedError
 
 
-@api('CreateContext')
+@api('CreateContext', on_exception=return_none)
 @capi('vx_context vxCreateContext()')
 def create_context():
     from pyvx.optimized_backend import Context
     return Context()
 
 
-@api('GetContext')
+@api('GetContext', on_exception=return_none)
 @capi('vx_context vxGetContext(vx_reference reference)')
 def get_context(reference):
     raise NotImplementedError
@@ -326,6 +325,7 @@ def get_status(reference):
     raise NotImplementedError
 
 
+# xxx: on_exception=?? This cannot fail? 
 @api('RegisterUserStruct')
 @capi('vx_enum vxRegisterUserStruct(vx_context context, vx_size size)')
 def register_user_struct(context, size):
@@ -333,12 +333,13 @@ def register_user_struct(context, size):
 
 
 ##############################################################################
+# xxx: set proper on_exception and test below
 
 class Image(Reference):
     _type = vx.TYPE_IMAGE
 
 
-@api('CreateImage')
+@api('CreateImage', on_exception=return_none)
 @capi('vx_image vxCreateImage(vx_context context, vx_uint32 width, vx_uint32 height, vx_df_image color)')
 def create_image(context, width, height, color):
     return context.create_image(width, height, color)

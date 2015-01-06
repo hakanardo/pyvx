@@ -9,3 +9,10 @@ class TestVx(object):
         status, name = QueryContext(c, KERNEL_ATTRIBUTE_NAME)
         assert(status != SUCCESS)
         ReleaseContext(c)
+
+    def test_create_image(self):
+        c = CreateContext()
+        img = CreateImage(c, 640, 480, DF_IMAGE_UYVY)
+        assert img is not None
+        img = CreateImage(c, -100, -100, DF_IMAGE_UYVY)
+        assert img is None

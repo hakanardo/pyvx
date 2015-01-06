@@ -43,6 +43,8 @@ class CoreImage(model.Image):
 
     def __init__(self, width=0, height=0, color=DF_IMAGE_VIRT,
                  data=None, context=None, virtual=None, graph=None):
+        if width < 0 or height < 0:
+            raise InvalidParametersError("Image with and height cant be negative.", self)
         if graph is None:
             graph = CoreGraph.get_current_graph(none_check=False)
         if context is None:

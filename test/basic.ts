@@ -15,6 +15,13 @@
     ck_assert(!context);
 
 
+#test create_image
+    vx_context context = vxCreateContext();
+    vx_image img1 = vxCreateImage(context, 640, 480, VX_DF_IMAGE_UYVY);
+    ck_assert(img1 != NULL);
+    vx_image img2 = vxCreateImage(NULL, 640, 480, VX_DF_IMAGE_UYVY);
+    ck_assert(img2 == NULL);
+
 
 #test params
     vx_context context = vxCreateContext();
