@@ -123,7 +123,7 @@ class Reference(VxObject):
         if status != vx.SUCCESS:
             print 'LOG:', status, self, message
 
-    def set_attribute(ref, attribute):
+    def set_attribute(ref, attribute, value):
         raise NotImplementedError
 
 
@@ -179,8 +179,6 @@ def c_query(ref, attribute, ptr, size):
         ptr[0] = value
     return vx.SUCCESS
 
-# xxx: set proper on_exception and test below
-
 @api('SetContextAttribute')
 @api('SetImageAttribute')
 @api('SetKernelAttribute')
@@ -189,8 +187,8 @@ def c_query(ref, attribute, ptr, size):
 @api('SetThresholdAttribute')
 @api('SetConvolutionAttribute')
 @api('SetMetaFormatAttribute')
-def set_attribute(ref, attribute):
-    return ref.set_attribute(attribute)
+def set_attribute(ref, attribute, value):
+    return ref.set_attribute(attribute, value)
 
 
 @capi('vx_status vxSetContextAttribute(vx_context context, vx_enum attribute, void *ptr, vx_size size)')
@@ -204,13 +202,13 @@ def set_attribute(ref, attribute):
 def c_set_attribute(ref, attribute, ptr, size):
     a = ref._attributes.get(attribute)
     if a is None:
-        return vx.FAILURE
+        msg = 'Attribute %s does not exist' % attribute
+        raise types.InvalidParametersError(msg, ref)
     if size != vx.ffi.sizeof(a.vxtype.ctype):
-        ref.add_log_entry(vx.FAILURE, "Bad size %d in set attribute, expected %d\n" % (
-            size, vx.ffi.sizeof(a.vxtype.ctype)))
-        return vx.FAILURE
+        raise VxError("Bad size %d in set attribute, expected %d\n" % (
+                      size, vx.ffi.sizeof(a.vxtype.ctype)), ref)
     ptr = vx.ffi.cast(a.vxtype.ctype + "*", ptr)
-    return ref.set_attribute(ptr[0])
+    return ref.set_attribute(attribute, ptr[0])
 
 
 @api('ReleaseContext')
@@ -256,7 +254,7 @@ def c_release(ref):
     return vx.SUCCESS
 
 ##############################################################################
-
+# xxx: set proper on_exception and test below
 
 class Context(Reference):
     _type = vx.TYPE_CONTEXT
