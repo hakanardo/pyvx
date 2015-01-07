@@ -333,7 +333,6 @@ def register_user_struct(context, size):
 
 
 ##############################################################################
-# xxx: set proper on_exception and test below
 
 class Image(Reference):
     _type = vx.TYPE_IMAGE
@@ -345,25 +344,25 @@ def create_image(context, width, height, color):
     return context.create_image(width, height, color)
 
 
-@api('CreateImageFromROI')
+@api('CreateImageFromROI', on_exception=return_none)
 @capi('vx_image vxCreateImageFromROI(vx_image img, vx_rectangle_t *rect)')
 def create_image_from_roi(img, rect):
     raise NotImplementedError
 
 
-@api('CreateUniformImage')
+@api('CreateUniformImage', on_exception=return_none)
 @capi('vx_image vxCreateUniformImage(vx_context context, vx_uint32 width, vx_uint32 height, vx_df_image color, void *value)')
 def create_uniform_image(context, width, height, color, value):
     raise NotImplementedError
 
 
-@api('CreateVirtualImage')
+@api('CreateVirtualImage', on_exception=return_none)
 @capi('vx_image vxCreateVirtualImage(vx_graph graph, vx_uint32 width, vx_uint32 height, vx_df_image color)')
 def create_virtual_image(graph, width, height, color):
     return graph.context.create_virtual_image(graph, width, height, color)
 
 
-@api('CreateImageFromHandle')
+@api('CreateImageFromHandle', on_exception=return_none)
 @capi('vx_image vxCreateImageFromHandle(vx_context context, vx_df_image color, vx_imagepatch_addressing_t addrs[], void *ptrs[], vx_enum import_type)')
 def create_image_from_handle(context, color, addrs, ptrs, import_type):
     raise NotImplementedError
@@ -387,13 +386,13 @@ def commit_image_patch(image, rect, plane_index, addr, ptr):
     raise NotImplementedError
 
 
-@api('FormatImagePatchAddress1d')
+@api('FormatImagePatchAddress1d', on_exception=return_none)
 @capi('void *vxFormatImagePatchAddress1d(void *ptr, vx_uint32 index, vx_imagepatch_addressing_t *addr)')
 def format_image_patch_address1d(ptr, index, addr):
     raise NotImplementedError
 
 
-@api('FormatImagePatchAddress2d')
+@api('FormatImagePatchAddress2d', on_exception=return_none)
 @capi('void *vxFormatImagePatchAddress2d(void *ptr, vx_uint32 x, vx_uint32 y, vx_imagepatch_addressing_t *addr)')
 def format_image_patch_address2d(ptr, x, y, addr):
     raise NotImplementedError
@@ -405,7 +404,6 @@ def get_valid_region_image(image, rect):
     raise NotImplementedError
 
 ##############################################################################
-
 
 class Kernel(Reference):
     _type = vx.TYPE_KERNEL
@@ -421,14 +419,14 @@ def load_kernels(context, module):
     raise NotImplementedError
 
 
-@api('GetKernelByName')
+@api('GetKernelByName', on_exception=return_none)
 @capi('vx_kernel vxGetKernelByName(vx_context context, vx_char *name)')
-@api('GetKernelByEnum')
+@api('GetKernelByEnum', on_exception=return_none)
 @capi('vx_kernel vxGetKernelByEnum(vx_context context, vx_enum kernel)')
 def get_kernel_by_name(context, name):
     return context.get_kernel(name)
 
-@api('AddKernel')
+@api('AddKernel', on_exception=return_none)
 @capi('vx_kernel vxAddKernel(vx_context context, vx_char *name, vx_enum enumeration, vx_kernel_f func_ptr, vx_uint32 numParams, vx_kernel_input_validate_f input, vx_kernel_output_validate_f output, vx_kernel_initialize_f init, vx_kernel_deinitialize_f deinit)')
 def add_kernel(context, name, enumeration, func_ptr, numParams, input, output, init, deinit):
     raise NotImplementedError
@@ -452,7 +450,7 @@ def remove_kernel(kernel):
     raise NotImplementedError
 
 
-@api('GetKernelParameterByIndex')
+@api('GetKernelParameterByIndex', on_exception=return_none)
 @capi('vx_parameter vxGetKernelParameterByIndex(vx_kernel kernel, vx_uint32 index)')
 def get_kernel_parameter_by_index(kernel, index):
     raise NotImplementedError
@@ -470,7 +468,7 @@ class Graph(Reference):
         raise NotImplementedError
 
 
-@api('CreateGraph')
+@api('CreateGraph', on_exception=return_none)
 @capi('vx_graph vxCreateGraph(vx_context context)')
 def create_graph(context, early_verify=False):
     return context.create_graph(early_verify)
@@ -514,14 +512,14 @@ def set_graph_parameter_by_index(graph, index, value):
     return set_parameter_by_reference(param, value)
 
 
-@api('GetGraphParameterByIndex')
+@api('GetGraphParameterByIndex', on_exception=return_none)
 @capi('vx_parameter vxGetGraphParameterByIndex(vx_graph graph, vx_uint32 index)')
 def get_graph_parameter_by_index(graph, index):
     if index >= len(graph.parameters):
         return 0
     return graph.parameters[index]
 
-@api('IsGraphVerified')
+@api('IsGraphVerified', on_exception=reraise)
 @capi('vx_bool vxIsGraphVerified(vx_graph graph)')
 def is_graph_verified(graph):
     raise NotImplementedError
@@ -533,7 +531,7 @@ class Node(Reference):
     _type = vx.TYPE_NODE
 
 
-@api('CreateGenericNode')
+@api('CreateGenericNode', on_exception=return_none)
 @capi('vx_node vxCreateGenericNode(vx_graph graph, vx_kernel kernel)')
 def create_generic_node(graph, kernel):
     return kernel.node_class(graph, _ignore_missin_parameters=True)
@@ -551,7 +549,7 @@ def assign_node_callback(node, callback):
     raise NotImplementedError
 
 
-@api('RetrieveNodeCallback')
+@api('RetrieveNodeCallback', on_exception=return_none)
 @capi('vx_nodecomplete_f vxRetrieveNodeCallback(vx_node node)')
 def retrieve_node_callback(node):
     raise NotImplementedError
@@ -568,7 +566,7 @@ class Parameter(Reference):
     ref = attribute(vx.PARAMETER_ATTRIBUTE_REF, vx.TYPE_REFERENCE)
 
 
-@api('GetParameterByIndex')
+@api('GetParameterByIndex', on_exception=return_none)
 @capi('vx_parameter vxGetParameterByIndex(vx_node node, vx_uint32 index)')
 def get_parameter_by_index(node, index):
     if index >= len(node.parameters):
@@ -597,7 +595,7 @@ class Scalar(Reference):
     data_type = attribute(vx.SCALAR_ATTRIBUTE_TYPE, vx.TYPE_ENUM)
 
 
-@api('CreateScalar')
+@api('CreateScalar', on_exception=return_none)
 def create_scalar(context, data_type, initial_value):
     return context.create_scalar(data_type, initial_value)
 
@@ -607,7 +605,7 @@ def c_create_scalar(context, data_type, ptr):
     ptr = vx.ffi.cast(data_type.ctype + '*', ptr)
     return context.create_scalar(data_type, ptr[0])
 
-@api('AccessScalarValue')
+@api('AccessScalarValue', on_exception=return_errno_and_none)
 def access_scalar_value(ref):
     return vx.SUCCESS, ref.value
     
@@ -636,13 +634,13 @@ class Delay(Reference):
     _type = vx.TYPE_DELAY
 
 
-@api('CreateDelay')
+@api('CreateDelay', on_exception=return_none)
 @capi('vx_delay vxCreateDelay(vx_context context, vx_reference exemplar, vx_size count)')
 def create_delay(context, exemplar, count):
     raise NotImplementedError
 
 
-@api('GetReferenceFromDelay')
+@api('GetReferenceFromDelay', on_exception=return_none)
 @capi('vx_reference vxGetReferenceFromDelay(vx_delay delay, vx_int32 index)')
 def get_reference_from_delay(delay, index):
     raise NotImplementedError
@@ -656,7 +654,7 @@ def age_delay(delay):
 
 ##############################################################################
 
-@api('AddLogEntry')
+@api('AddLogEntry', on_exception=reraise)
 def add_log_entry(ref, status, message):
     ref.add_log_entry(status, message)
 
@@ -666,7 +664,7 @@ def add_log_entry(ref, status, message):
 #     raise NotImplementedError
 
 
-@api('RegisterLogCallback')
+@api('RegisterLogCallback', on_exception=reraise)
 @capi('void vxRegisterLogCallback(vx_context context, vx_log_callback_f callback, vx_bool reentrant)')
 def register_log_callback(context, callback, reentrant):
     raise NotImplementedError
@@ -678,7 +676,7 @@ class Lut(Reference):
     _type = vx.TYPE_LUT
 
 
-@api('CreateLUT')
+@api('CreateLUT', on_exception=return_none)
 @capi('vx_lut vxCreateLUT(vx_context context, vx_enum data_type, vx_size count)')
 def create_lut(context, data_type, count):
     raise NotImplementedError
@@ -702,7 +700,7 @@ class Distribution(Reference):
     _type = vx.TYPE_DISTRIBUTION
 
 
-@api('CreateDistribution')
+@api('CreateDistribution', on_exception=return_none)
 @capi('vx_distribution vxCreateDistribution(vx_context context, vx_size numBins, vx_size offset, vx_size range)')
 def create_distribution(context, numBins, offset, range):
     raise NotImplementedError
@@ -726,7 +724,7 @@ class Threshold(Reference):
     _type = vx.TYPE_THRESHOLD
 
 
-@api('CreateThreshold')
+@api('CreateThreshold', on_exception=return_none)
 @capi('vx_threshold vxCreateThreshold(vx_context c, vx_enum thresh_type, vx_enum data_type)')
 def create_threshold(c, thresh_type, data_type):
     raise NotImplementedError
@@ -738,7 +736,7 @@ class Matrix(Reference):
     _type = vx.TYPE_MATRIX
 
 
-@api('CreateMatrix')
+@api('CreateMatrix', on_exception=return_none)
 @capi('vx_matrix vxCreateMatrix(vx_context c, vx_enum data_type, vx_size columns, vx_size rows)')
 def create_matrix(c, data_type, columns, rows):
     raise NotImplementedError
@@ -762,7 +760,7 @@ class Convolution(Reference):
     _type = vx.TYPE_CONVOLUTION
 
 
-@api('CreateConvolution')
+@api('CreateConvolution', on_exception=return_none)
 @capi('vx_convolution vxCreateConvolution(vx_context context, vx_size columns, vx_size rows)')
 def create_convolution(context, columns, rows):
     raise NotImplementedError
@@ -786,19 +784,19 @@ class Pyramid(Reference):
     _type = vx.TYPE_PYRAMID
 
 
-@api('CreatePyramid')
+@api('CreatePyramid', on_exception=return_none)
 @capi('vx_pyramid vxCreatePyramid(vx_context context, vx_size levels, vx_float32 scale, vx_uint32 width, vx_uint32 height, vx_df_image format)')
 def create_pyramid(context, levels, scale, width, height, format):
     raise NotImplementedError
 
 
-@api('CreateVirtualPyramid')
+@api('CreateVirtualPyramid', on_exception=return_none)
 @capi('vx_pyramid vxCreateVirtualPyramid(vx_graph graph, vx_size levels, vx_float32 scale, vx_uint32 width, vx_uint32 height, vx_df_image format)')
 def create_virtual_pyramid(graph, levels, scale, width, height, format):
     raise NotImplementedError
 
 
-@api('GetPyramidLevel')
+@api('GetPyramidLevel', on_exception=return_none)
 @capi('vx_image vxGetPyramidLevel(vx_pyramid pyr, vx_uint32 index)')
 def get_pyramid_level(pyr, index):
     raise NotImplementedError
@@ -810,7 +808,7 @@ class Remap(Reference):
     _type = vx.TYPE_REMAP
 
 
-@api('CreateRemap')
+@api('CreateRemap', on_exception=return_none)
 @capi('vx_remap vxCreateRemap(vx_context context, vx_uint32 src_width, vx_uint32 src_height, vx_uint32 dst_width, vx_uint32 dst_height)')
 def create_remap(context, src_width, src_height, dst_width, dst_height):
     raise NotImplementedError
@@ -834,13 +832,13 @@ class Array(Reference):
     _type = vx.TYPE_ARRAY
 
 
-@api('CreateArray')
+@api('CreateArray', on_exception=return_none)
 @capi('vx_array vxCreateArray(vx_context context, vx_enum item_type, vx_size capacity)')
 def create_array(context, item_type, capacity):
     raise NotImplementedError
 
 
-@api('CreateVirtualArray')
+@api('CreateVirtualArray', on_exception=return_none)
 @capi('vx_array vxCreateVirtualArray(vx_graph graph, vx_enum item_type, vx_size capacity)')
 def create_virtual_array(graph, item_type, capacity):
     raise NotImplementedError
