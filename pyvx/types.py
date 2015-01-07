@@ -1,5 +1,5 @@
 from cffi import FFI
-import numpy
+import numpy, traceback
 from pyvx.inc.vx import *
 
 class ExtraChannel(object):
@@ -203,11 +203,8 @@ class VxError(Exception):
     errno = FAILURE
 
     def __init__(self, msg='', ref=None):
+        self.ref = ref
         Exception.__init__(self, '%s: %s' % (ref, msg))
-        if ref is not None:
-            ref.add_log_entry(self.errno, msg)
-            # xxx log file and code line of where the ref was allocated
-            # xxx log full traceback
 
 
 class MultipleWritersError(VxError): errno = ERROR_MULTIPLE_WRITERS

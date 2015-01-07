@@ -41,8 +41,7 @@ builder.load()
 builder.includes.add('#include <VX/vx.h>')
 
 def exception_handler(e, return_type):
-    import traceback
-    traceback.print_exc() # xxx send to log and only for none VxError exceptions
+    model._log_exception(e)
     if return_type == vx.ffi.typeof('vx_status'):
         return model.exception2errno(e)
     return vx.ffi.NULL

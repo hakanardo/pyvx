@@ -49,21 +49,32 @@ def exception2errno(e):
     return vx.FAILURE
 
 
+def _log_exception(e):
+    import traceback
+    log = '\n' + traceback.format_exc()
+    if hasattr(e, 'ref'):
+        e.ref.add_log_entry(e.errno, log)
+    else:
+        print log
+
 class return_errno(object):
     @staticmethod
     def hanlde(e):
+        _log_exception(e)
         return exception2errno(e)
 
 
 class return_none(object):
     @staticmethod
     def hanlde(e):
+        _log_exception(e)
         return None
 
 
 class return_errno_and_none(object):
     @staticmethod
     def hanlde(e):
+        _log_exception(e)
         return exception2errno(e), None
 
 class reraise(object):
