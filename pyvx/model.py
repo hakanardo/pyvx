@@ -52,10 +52,11 @@ def exception2errno(e):
 def _log_exception(e):
     import traceback
     log = '\n' + traceback.format_exc()
-    if hasattr(e, 'ref'):
+    if hasattr(e, 'ref') and e.ref is not None:
         e.ref.add_log_entry(e.errno, log)
     else:
         print log
+
 
 class return_errno(object):
     @staticmethod
