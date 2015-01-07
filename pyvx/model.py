@@ -85,9 +85,10 @@ class reraise(object):
 
 class api(object):
 
-    def __init__(self, name, on_exception=return_errno):
+    def __init__(self, name, on_exception=return_errno, returns='status'):
         self.name = name
         self.on_exception = on_exception
+        self.returns = returns
 
     def __call__(self, fn):
         if not hasattr(fn, 'apis'):
@@ -140,24 +141,25 @@ class Reference(VxObject):
 
 
 
-@api('QueryContext', on_exception=return_errno_and_none)
-@api('QueryImage', on_exception=return_errno_and_none)
-@api('QueryKernel', on_exception=return_errno_and_none)
-@api('QueryGraph', on_exception=return_errno_and_none)
-@api('QueryNode', on_exception=return_errno_and_none)
-@api('QueryParameter', on_exception=return_errno_and_none)
-@api('QueryScalar', on_exception=return_errno_and_none)
-@api('QueryReference', on_exception=return_errno_and_none)
-@api('QueryDelay', on_exception=return_errno_and_none)
-@api('QueryLUT', on_exception=return_errno_and_none)
-@api('QueryDistribution', on_exception=return_errno_and_none)
-@api('QueryThreshold', on_exception=return_errno_and_none)
-@api('QueryMatrix', on_exception=return_errno_and_none)
-@api('QueryConvolution', on_exception=return_errno_and_none)
-@api('QueryPyramid', on_exception=return_errno_and_none)
-@api('QueryRemap', on_exception=return_errno_and_none)
-@api('QueryArray', on_exception=return_errno_and_none)
+@api('QueryContext', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryImage', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryKernel', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryGraph', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryNode', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryParameter', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryScalar', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryReference', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryDelay', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryLUT', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryDistribution', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryThreshold', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryMatrix', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryConvolution', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryPyramid', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryRemap', on_exception=return_errno_and_none, returns='status, value')
+@api('QueryArray', on_exception=return_errno_and_none, returns='status, value')
 def query(ref, attribute):
+    """ Returns status """
     return vx.SUCCESS, ref.query(attribute)
 
 
@@ -240,7 +242,7 @@ def c_set_attribute(ref, attribute, ptr, size):
 @api('ReleaseRemap')
 @api('ReleaseArray')
 def release(ref):
-    pass
+    return vx.SUCCESS
 
 
 @capi('vx_status vxReleaseContext(vx_context *context)')
@@ -306,14 +308,14 @@ class Context(Reference):
         raise NotImplementedError
 
 
-@api('CreateContext', on_exception=return_none)
+@api('CreateContext', on_exception=return_none, returns='context')
 @capi('vx_context vxCreateContext()')
 def create_context():
     from pyvx.optimized_backend import Context
     return Context()
 
 
-@api('GetContext', on_exception=return_none)
+@api('GetContext', on_exception=return_none, returns='context')
 @capi('vx_context vxGetContext(vx_reference reference)')
 def get_context(reference):
     raise NotImplementedError
@@ -337,8 +339,7 @@ def get_status(reference):
     raise NotImplementedError
 
 
-# xxx: on_exception=?? This cannot fail? 
-@api('RegisterUserStruct')
+@api('RegisterUserStruct', on_exception=reraise, returns='data_type')
 @capi('vx_enum vxRegisterUserStruct(vx_context context, vx_size size)')
 def register_user_struct(context, size):
     raise NotImplementedError
@@ -350,37 +351,37 @@ class Image(Reference):
     _type = vx.TYPE_IMAGE
 
 
-@api('CreateImage', on_exception=return_none)
+@api('CreateImage', on_exception=return_none, returns='image')
 @capi('vx_image vxCreateImage(vx_context context, vx_uint32 width, vx_uint32 height, vx_df_image color)')
 def create_image(context, width, height, color):
     return context.create_image(width, height, color)
 
 
-@api('CreateImageFromROI', on_exception=return_none)
+@api('CreateImageFromROI', on_exception=return_none, returns='image')
 @capi('vx_image vxCreateImageFromROI(vx_image img, vx_rectangle_t *rect)')
 def create_image_from_roi(img, rect):
     raise NotImplementedError
 
 
-@api('CreateUniformImage', on_exception=return_none)
+@api('CreateUniformImage', on_exception=return_none, returns='image')
 @capi('vx_image vxCreateUniformImage(vx_context context, vx_uint32 width, vx_uint32 height, vx_df_image color, void *value)')
 def create_uniform_image(context, width, height, color, value):
     raise NotImplementedError
 
 
-@api('CreateVirtualImage', on_exception=return_none)
+@api('CreateVirtualImage', on_exception=return_none, returns='image')
 @capi('vx_image vxCreateVirtualImage(vx_graph graph, vx_uint32 width, vx_uint32 height, vx_df_image color)')
 def create_virtual_image(graph, width, height, color):
     return graph.context.create_virtual_image(graph, width, height, color)
 
 
-@api('CreateImageFromHandle', on_exception=return_none)
+@api('CreateImageFromHandle', on_exception=return_none, returns='image')
 @capi('vx_image vxCreateImageFromHandle(vx_context context, vx_df_image color, vx_imagepatch_addressing_t addrs[], void *ptrs[], vx_enum import_type)')
 def create_image_from_handle(context, color, addrs, ptrs, import_type):
     raise NotImplementedError
 
 
-@api('ComputeImagePatchSize')
+@api('ComputeImagePatchSize', on_exception=reraise, returns='size')
 @capi('vx_size vxComputeImagePatchSize(vx_image image, vx_rectangle_t *rect, vx_uint32 plane_index)')
 def compute_image_patch_size(image, rect, plane_index):
     raise NotImplementedError
@@ -398,13 +399,13 @@ def commit_image_patch(image, rect, plane_index, addr, ptr):
     raise NotImplementedError
 
 
-@api('FormatImagePatchAddress1d', on_exception=return_none)
+@api('FormatImagePatchAddress1d', on_exception=return_none, returns='xxx')
 @capi('void *vxFormatImagePatchAddress1d(void *ptr, vx_uint32 index, vx_imagepatch_addressing_t *addr)')
 def format_image_patch_address1d(ptr, index, addr):
     raise NotImplementedError
 
 
-@api('FormatImagePatchAddress2d', on_exception=return_none)
+@api('FormatImagePatchAddress2d', on_exception=return_none, returns='xxx')
 @capi('void *vxFormatImagePatchAddress2d(void *ptr, vx_uint32 x, vx_uint32 y, vx_imagepatch_addressing_t *addr)')
 def format_image_patch_address2d(ptr, x, y, addr):
     raise NotImplementedError
@@ -431,14 +432,14 @@ def load_kernels(context, module):
     raise NotImplementedError
 
 
-@api('GetKernelByName', on_exception=return_none)
+@api('GetKernelByName', on_exception=return_none, returns='kernel')
 @capi('vx_kernel vxGetKernelByName(vx_context context, vx_char *name)')
-@api('GetKernelByEnum', on_exception=return_none)
+@api('GetKernelByEnum', on_exception=return_none, returns='kernel')
 @capi('vx_kernel vxGetKernelByEnum(vx_context context, vx_enum kernel)')
 def get_kernel_by_name(context, name):
     return context.get_kernel(name)
 
-@api('AddKernel', on_exception=return_none)
+@api('AddKernel', on_exception=return_none, returns='kernel')
 @capi('vx_kernel vxAddKernel(vx_context context, vx_char *name, vx_enum enumeration, vx_kernel_f func_ptr, vx_uint32 numParams, vx_kernel_input_validate_f input, vx_kernel_output_validate_f output, vx_kernel_initialize_f init, vx_kernel_deinitialize_f deinit)')
 def add_kernel(context, name, enumeration, func_ptr, numParams, input, output, init, deinit):
     raise NotImplementedError
@@ -462,7 +463,7 @@ def remove_kernel(kernel):
     raise NotImplementedError
 
 
-@api('GetKernelParameterByIndex', on_exception=return_none)
+@api('GetKernelParameterByIndex', on_exception=return_none, returns='parameter')
 @capi('vx_parameter vxGetKernelParameterByIndex(vx_kernel kernel, vx_uint32 index)')
 def get_kernel_parameter_by_index(kernel, index):
     raise NotImplementedError
@@ -480,7 +481,7 @@ class Graph(Reference):
         raise NotImplementedError
 
 
-@api('CreateGraph', on_exception=return_none)
+@api('CreateGraph', on_exception=return_none, returns='graph')
 @capi('vx_graph vxCreateGraph(vx_context context)')
 def create_graph(context, early_verify=False):
     return context.create_graph(early_verify)
@@ -524,14 +525,14 @@ def set_graph_parameter_by_index(graph, index, value):
     return set_parameter_by_reference(param, value)
 
 
-@api('GetGraphParameterByIndex', on_exception=return_none)
+@api('GetGraphParameterByIndex', on_exception=return_none, returns='parameter')
 @capi('vx_parameter vxGetGraphParameterByIndex(vx_graph graph, vx_uint32 index)')
 def get_graph_parameter_by_index(graph, index):
     if index >= len(graph.parameters):
         return 0
     return graph.parameters[index]
 
-@api('IsGraphVerified', on_exception=reraise)
+@api('IsGraphVerified', on_exception=reraise, returns='verified')
 @capi('vx_bool vxIsGraphVerified(vx_graph graph)')
 def is_graph_verified(graph):
     raise NotImplementedError
@@ -543,7 +544,7 @@ class Node(Reference):
     _type = vx.TYPE_NODE
 
 
-@api('CreateGenericNode', on_exception=return_none)
+@api('CreateGenericNode', on_exception=return_none, returns='node')
 @capi('vx_node vxCreateGenericNode(vx_graph graph, vx_kernel kernel)')
 def create_generic_node(graph, kernel):
     return kernel.node_class(graph, _ignore_missin_parameters=True)
@@ -561,7 +562,7 @@ def assign_node_callback(node, callback):
     raise NotImplementedError
 
 
-@api('RetrieveNodeCallback', on_exception=return_none)
+@api('RetrieveNodeCallback', on_exception=return_none, returns='xxx')
 @capi('vx_nodecomplete_f vxRetrieveNodeCallback(vx_node node)')
 def retrieve_node_callback(node):
     raise NotImplementedError
@@ -578,7 +579,7 @@ class Parameter(Reference):
     ref = attribute(vx.PARAMETER_ATTRIBUTE_REF, vx.TYPE_REFERENCE)
 
 
-@api('GetParameterByIndex', on_exception=return_none)
+@api('GetParameterByIndex', on_exception=return_none, returns='parameter')
 @capi('vx_parameter vxGetParameterByIndex(vx_node node, vx_uint32 index)')
 def get_parameter_by_index(node, index):
     if index >= len(node.parameters):
@@ -607,7 +608,7 @@ class Scalar(Reference):
     data_type = attribute(vx.SCALAR_ATTRIBUTE_TYPE, vx.TYPE_ENUM)
 
 
-@api('CreateScalar', on_exception=return_none)
+@api('CreateScalar', on_exception=return_none, returns='scalar')
 def create_scalar(context, data_type, initial_value):
     return context.create_scalar(data_type, initial_value)
 
@@ -617,7 +618,7 @@ def c_create_scalar(context, data_type, ptr):
     ptr = vx.ffi.cast(data_type.ctype + '*', ptr)
     return context.create_scalar(data_type, ptr[0])
 
-@api('AccessScalarValue', on_exception=return_errno_and_none)
+@api('AccessScalarValue', on_exception=return_errno_and_none, returns='status, value')
 def access_scalar_value(ref):
     return vx.SUCCESS, ref.value
     
@@ -646,13 +647,13 @@ class Delay(Reference):
     _type = vx.TYPE_DELAY
 
 
-@api('CreateDelay', on_exception=return_none)
+@api('CreateDelay', on_exception=return_none, returns='delay')
 @capi('vx_delay vxCreateDelay(vx_context context, vx_reference exemplar, vx_size count)')
 def create_delay(context, exemplar, count):
     raise NotImplementedError
 
 
-@api('GetReferenceFromDelay', on_exception=return_none)
+@api('GetReferenceFromDelay', on_exception=return_none, returns='reference')
 @capi('vx_reference vxGetReferenceFromDelay(vx_delay delay, vx_int32 index)')
 def get_reference_from_delay(delay, index):
     raise NotImplementedError
@@ -666,7 +667,7 @@ def age_delay(delay):
 
 ##############################################################################
 
-@api('AddLogEntry', on_exception=reraise)
+@api('AddLogEntry', on_exception=reraise, returns='')
 def add_log_entry(ref, status, message):
     ref.add_log_entry(status, message)
 
@@ -676,7 +677,7 @@ def add_log_entry(ref, status, message):
 #     raise NotImplementedError
 
 
-@api('RegisterLogCallback', on_exception=reraise)
+@api('RegisterLogCallback', on_exception=reraise, returns='')
 @capi('void vxRegisterLogCallback(vx_context context, vx_log_callback_f callback, vx_bool reentrant)')
 def register_log_callback(context, callback, reentrant):
     raise NotImplementedError
@@ -688,7 +689,7 @@ class Lut(Reference):
     _type = vx.TYPE_LUT
 
 
-@api('CreateLUT', on_exception=return_none)
+@api('CreateLUT', on_exception=return_none, returns='lut')
 @capi('vx_lut vxCreateLUT(vx_context context, vx_enum data_type, vx_size count)')
 def create_lut(context, data_type, count):
     raise NotImplementedError
@@ -712,7 +713,7 @@ class Distribution(Reference):
     _type = vx.TYPE_DISTRIBUTION
 
 
-@api('CreateDistribution', on_exception=return_none)
+@api('CreateDistribution', on_exception=return_none, returns='distribution')
 @capi('vx_distribution vxCreateDistribution(vx_context context, vx_size numBins, vx_size offset, vx_size range)')
 def create_distribution(context, numBins, offset, range):
     raise NotImplementedError
@@ -736,7 +737,7 @@ class Threshold(Reference):
     _type = vx.TYPE_THRESHOLD
 
 
-@api('CreateThreshold', on_exception=return_none)
+@api('CreateThreshold', on_exception=return_none, returns='threshold')
 @capi('vx_threshold vxCreateThreshold(vx_context c, vx_enum thresh_type, vx_enum data_type)')
 def create_threshold(c, thresh_type, data_type):
     raise NotImplementedError
@@ -748,7 +749,7 @@ class Matrix(Reference):
     _type = vx.TYPE_MATRIX
 
 
-@api('CreateMatrix', on_exception=return_none)
+@api('CreateMatrix', on_exception=return_none, returns='matrix')
 @capi('vx_matrix vxCreateMatrix(vx_context c, vx_enum data_type, vx_size columns, vx_size rows)')
 def create_matrix(c, data_type, columns, rows):
     raise NotImplementedError
@@ -772,7 +773,7 @@ class Convolution(Reference):
     _type = vx.TYPE_CONVOLUTION
 
 
-@api('CreateConvolution', on_exception=return_none)
+@api('CreateConvolution', on_exception=return_none, returns='convolution')
 @capi('vx_convolution vxCreateConvolution(vx_context context, vx_size columns, vx_size rows)')
 def create_convolution(context, columns, rows):
     raise NotImplementedError
@@ -796,19 +797,19 @@ class Pyramid(Reference):
     _type = vx.TYPE_PYRAMID
 
 
-@api('CreatePyramid', on_exception=return_none)
+@api('CreatePyramid', on_exception=return_none, returns='pyramid')
 @capi('vx_pyramid vxCreatePyramid(vx_context context, vx_size levels, vx_float32 scale, vx_uint32 width, vx_uint32 height, vx_df_image format)')
 def create_pyramid(context, levels, scale, width, height, format):
     raise NotImplementedError
 
 
-@api('CreateVirtualPyramid', on_exception=return_none)
+@api('CreateVirtualPyramid', on_exception=return_none, returns='pyramid')
 @capi('vx_pyramid vxCreateVirtualPyramid(vx_graph graph, vx_size levels, vx_float32 scale, vx_uint32 width, vx_uint32 height, vx_df_image format)')
 def create_virtual_pyramid(graph, levels, scale, width, height, format):
     raise NotImplementedError
 
 
-@api('GetPyramidLevel', on_exception=return_none)
+@api('GetPyramidLevel', on_exception=return_none, returns='image')
 @capi('vx_image vxGetPyramidLevel(vx_pyramid pyr, vx_uint32 index)')
 def get_pyramid_level(pyr, index):
     raise NotImplementedError
@@ -820,7 +821,7 @@ class Remap(Reference):
     _type = vx.TYPE_REMAP
 
 
-@api('CreateRemap', on_exception=return_none)
+@api('CreateRemap', on_exception=return_none, returns='remap')
 @capi('vx_remap vxCreateRemap(vx_context context, vx_uint32 src_width, vx_uint32 src_height, vx_uint32 dst_width, vx_uint32 dst_height)')
 def create_remap(context, src_width, src_height, dst_width, dst_height):
     raise NotImplementedError
@@ -844,13 +845,13 @@ class Array(Reference):
     _type = vx.TYPE_ARRAY
 
 
-@api('CreateArray', on_exception=return_none)
+@api('CreateArray', on_exception=return_none, returns='array')
 @capi('vx_array vxCreateArray(vx_context context, vx_enum item_type, vx_size capacity)')
 def create_array(context, item_type, capacity):
     raise NotImplementedError
 
 
-@api('CreateVirtualArray', on_exception=return_none)
+@api('CreateVirtualArray', on_exception=return_none, returns='array')
 @capi('vx_array vxCreateVirtualArray(vx_graph graph, vx_enum item_type, vx_size capacity)')
 def create_virtual_array(graph, item_type, capacity):
     raise NotImplementedError

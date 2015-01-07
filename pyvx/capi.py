@@ -64,7 +64,6 @@ for n in dir(nodes):
             cdecl = 'vx_node vx%s(vx_graph, %s)' % (obj.__name__, args)
             builder.add_function(cdecl, obj)
 
-# FIXME: Cach exeptions convert to e.errno or 0 depending on return type and log the error.
 
 def build(prefix='/usr/local'):
     from pyvx.inc.vx import ffi

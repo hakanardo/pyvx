@@ -40,9 +40,12 @@ example on page 12 of the specification would in python look like this:
 .. _`OpenVX`: https://www.khronos.org/openvx
 .. _`OpenVX speficication`: https://www.khronos.org/registry/vx/specs/OpenVX_1.0_Provisional_Specifications.zip
 
-In cases listed below, the C-API uses pointers to pass data in and out
+In some cases, the C-API uses pointers to pass data in and out
 of functions. As there are no similar concept in python, direct values 
-and multiple return values are used instead.
+and multiple return values are used instead. The python signature are:
+
+.. code-block:: python 
+
 """
 
 from pyvx.inc.vx import *
@@ -60,9 +63,14 @@ def _make_api_function(api, func):
     f.__name__ = api.name
     return f
 
-
-for n in dir(model):
+for n in sorted(dir(model)):
     func = getattr(model, n)
     if hasattr(func, 'apis'):
         for api in func.apis:
             locals()[api.name] = _make_api_function(api, func)
+            args = func.func_code.co_varnames[:func.func_code.co_argcount]
+            args = ', '.join(str(a) for a in args)
+            r = api.returns
+            if r:
+                r += ' = '
+            __doc__ += '    %s%s(%s)\n' % (r, api.name, args)
