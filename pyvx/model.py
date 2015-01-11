@@ -6,9 +6,11 @@ from pyvx import types
 
 class attribute(object):
 
-    def __init__(self, enum, vxtype, default=None):
+    def __init__(self, enum, ctype, default=None):
         self.enum = enum
-        self.vxtype = vxtype
+        if hasattr(ctype, 'ctype'):
+            ctype = ctype.ctype
+        self.ctype = ctype
         self.default = default
 
     def __get__(self, instance, owner):
@@ -183,10 +185,10 @@ def query(ref, attribute):
 def c_query(ref, attribute, ptr, size):
     value = ref.query(attribute)
     a = ref._attributes.get(attribute)
-    if size != vx.ffi.sizeof(a.vxtype.ctype):
+    if size != vx.ffi.sizeof(a.ctype):
         raise VxError("Bad size %d in query, expected %d\n" % (
-                      size, vx.ffi.sizeof(a.vxtype.ctype)), ref)
-    ptr = vx.ffi.cast(a.vxtype.ctype + "*", ptr)
+                      size, vx.ffi.sizeof(a.ctype)), ref)
+    ptr = vx.ffi.cast(a.ctype + "*", ptr)
     if isinstance(value, VxObject):
         ptr[0] = value.new_handle()
     else:
@@ -218,10 +220,10 @@ def c_set_attribute(ref, attribute, ptr, size):
     if a is None:
         msg = 'Attribute %s does not exist' % attribute
         raise types.InvalidParametersError(msg, ref)
-    if size != vx.ffi.sizeof(a.vxtype.ctype):
+    if size != vx.ffi.sizeof(a.ctype):
         raise VxError("Bad size %d in set attribute, expected %d\n" % (
-                      size, vx.ffi.sizeof(a.vxtype.ctype)), ref)
-    ptr = vx.ffi.cast(a.vxtype.ctype + "*", ptr)
+                      size, vx.ffi.sizeof(a.ctype)), ref)
+    ptr = vx.ffi.cast(a.ctype + "*", ptr)
     return ref.set_attribute(attribute, ptr[0])
 
 
@@ -421,7 +423,7 @@ def get_valid_region_image(image, rect):
 class Kernel(Reference):
     _type = vx.TYPE_KERNEL
     parameters = attribute(vx.KERNEL_ATTRIBUTE_PARAMETERS, vx.TYPE_UINT32)
-    name = attribute(vx.KERNEL_ATTRIBUTE_NAME, "vx_char[VX_MAX_KERNEL_NAME]") # FIXME: use ctypes instead?
+    name = attribute(vx.KERNEL_ATTRIBUTE_NAME, "vx_char[VX_MAX_KERNEL_NAME]")
     enum = attribute(vx.KERNEL_ATTRIBUTE_ENUM, vx.TYPE_ENUM)    
     local_data_size = attribute(vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, vx.TYPE_SIZE)
     local_data_ptr = attribute(vx.KERNEL_ATTRIBUTE_LOCAL_DATA_PTR , "void *")
