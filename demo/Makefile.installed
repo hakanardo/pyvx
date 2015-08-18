@@ -1,0 +1,5 @@
+all: simple view
+
+%: %.c
+	-rm pyvx
+	gcc -o $@ $^ -g -lopenvx

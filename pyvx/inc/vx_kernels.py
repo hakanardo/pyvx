@@ -1,0 +1,97 @@
+cdef = '''
+
+enum vx_library_e {
+    VX_LIBRARY_KHR_BASE = 0x0,
+};
+
+enum vx_kernel_e {
+
+    VX_KERNEL_INVALID = ...,
+
+    VX_KERNEL_COLOR_CONVERT = ...,
+
+    VX_KERNEL_CHANNEL_EXTRACT = ...,
+
+    VX_KERNEL_CHANNEL_COMBINE = ...,
+
+    VX_KERNEL_SOBEL_3x3 = ...,
+
+    VX_KERNEL_MAGNITUDE = ...,
+
+    VX_KERNEL_PHASE = ...,
+
+    VX_KERNEL_SCALE_IMAGE = ...,
+
+    VX_KERNEL_TABLE_LOOKUP = ...,
+
+    VX_KERNEL_HISTOGRAM = ...,
+
+    VX_KERNEL_EQUALIZE_HISTOGRAM = ...,
+
+    VX_KERNEL_ABSDIFF = ...,
+
+    VX_KERNEL_MEAN_STDDEV = ...,
+
+    VX_KERNEL_THRESHOLD = ...,
+
+    VX_KERNEL_INTEGRAL_IMAGE = ...,
+
+    VX_KERNEL_DILATE_3x3 = ...,
+
+    VX_KERNEL_ERODE_3x3 = ...,
+
+    VX_KERNEL_MEDIAN_3x3 = ...,
+
+    VX_KERNEL_BOX_3x3 = ...,
+
+    VX_KERNEL_GAUSSIAN_3x3 = ...,
+
+    VX_KERNEL_CUSTOM_CONVOLUTION = ...,
+
+    VX_KERNEL_GAUSSIAN_PYRAMID = ...,
+
+    VX_KERNEL_ACCUMULATE = ...,
+
+    VX_KERNEL_ACCUMULATE_WEIGHTED = ...,
+
+    VX_KERNEL_ACCUMULATE_SQUARE = ...,
+
+    VX_KERNEL_MINMAXLOC = ...,
+
+    VX_KERNEL_CONVERTDEPTH = ...,
+
+    VX_KERNEL_CANNY_EDGE_DETECTOR = ...,
+
+    VX_KERNEL_AND = ...,
+
+    VX_KERNEL_OR = ...,
+
+    VX_KERNEL_XOR = ...,
+
+    VX_KERNEL_NOT = ...,
+
+    VX_KERNEL_MULTIPLY = ...,
+
+    VX_KERNEL_ADD = ...,
+
+    VX_KERNEL_SUBTRACT = ...,
+
+    VX_KERNEL_WARP_AFFINE = ...,
+
+    VX_KERNEL_WARP_PERSPECTIVE = ...,
+
+    VX_KERNEL_HARRIS_CORNERS = ...,
+
+    VX_KERNEL_FAST_CORNERS = ...,
+
+    VX_KERNEL_OPTICAL_FLOW_PYR_LK = ...,
+
+    VX_KERNEL_REMAP = ...,
+
+
+    VX_KERNEL_HALFSCALE_GAUSSIAN = ...,
+
+    /* insert new kernels here */
+    VX_KERNEL_MAX_1_0, 
+};
+'''
