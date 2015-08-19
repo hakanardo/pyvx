@@ -6,6 +6,7 @@ openvx_install = '/usr/local/src/openvx_sample/install/Linux/x64/Release/'
 
 ffi = FFI()
 ffi.cdef(open("cdefs/vx_vendors.h").read())
+ffi.cdef(open("cdefs/vx_types.h").read())
 
 ffi.set_source("pyvx.cbackend", "#include <VX/vx.h>",
                include_dirs=[os.path.join(openvx_install,'include')],
