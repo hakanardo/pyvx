@@ -322,12 +322,12 @@ enum vx_type_e {
     VX_TYPE_COORDINATES3D   = 0x023,/*!< \brief A <tt>\ref vx_coordinates3d_t</tt>. */
     VX_TYPE_USER_STRUCT_START = 0x100, 
                                     /*!< \brief A floating value for user-defined struct base index.*/
-    VX_TYPE_STRUCT_MAX      = ...,
+    VX_TYPE_STRUCT_MAX      = VX_TYPE_USER_STRUCT_START - 1,     
                                     /*!< \brief A floating value for comparison between OpenVX 
                                           structs and user structs. */
     VX_TYPE_VENDOR_STRUCT_START = 0x400, 
                                     /*!< \brief A floating value for vendor-defined struct base index.*/
-    VX_TYPE_USER_STRUCT_END = ...,
+    VX_TYPE_USER_STRUCT_END = VX_TYPE_VENDOR_STRUCT_START - 1, 
                                     /*!< \brief A floating value for comparison between user structs and 
                                           vendor structs. */
     VX_TYPE_VENDOR_STRUCT_END = 0x7FF,   
@@ -356,7 +356,7 @@ enum vx_type_e {
     /* \todo add new object types here */
 
     VX_TYPE_VENDOR_OBJECT_START  = 0xC00,/*!< \brief A floating value for vendor defined object base index. */
-    VX_TYPE_OBJECT_MAX      = ...,/*!< \brief A value used for bound checking the OpenVX object types. */
+    VX_TYPE_OBJECT_MAX      = VX_TYPE_VENDOR_OBJECT_START - 1,/*!< \brief A value used for bound checking the OpenVX object types. */
     VX_TYPE_VENDOR_OBJECT_END   = 0xFFF,/*!< \brief A value used for bound checking of vendor objects */
 };
 
@@ -419,40 +419,40 @@ typedef vx_action (VX_CALLBACK *vx_nodecomplete_f)(vx_node node);
  * the 4 bytes of an enumeration.
  * \ingroup group_basic_features
  */
-#define VX_VENDOR_MASK                      0xFFF00000
+#define VX_VENDOR_MASK                      (0xFFF00000)
 
 /*! \brief A type mask removes the scalar/object type from the attribute.
  * It is 3 nibbles in size and is contained between the third and second byte.
  * \see vx_type_e
  * \ingroup group_basic_features
  */
-#define VX_TYPE_MASK                        0x000FFF00
+#define VX_TYPE_MASK                        (0x000FFF00)
 
 /*! \brief A library is a set of vision kernels with its own ID supplied by a vendor.
  * The vendor defines the library ID. The range is \f$ [0,2^{8}-1] \f$ inclusive.
  * \ingroup group_basic_features
  */
-#define VX_LIBRARY_MASK                     0x000FF000
+#define VX_LIBRARY_MASK                     (0x000FF000)
 
 /*! \brief An individual kernel in a library has its own unique ID within \f$ [0,2^{12}-1] \f$ (inclusive).
  * \ingroup group_basic_features
  */
-#define VX_KERNEL_MASK                      0x00000FFF
+#define VX_KERNEL_MASK                      (0x00000FFF)
 
 /*! \brief An object's attribute ID is within the range of \f$ [0,2^{8}-1] \f$ (inclusive).
  * \ingroup group_basic_features
  */
-#define VX_ATTRIBUTE_ID_MASK                0x000000FF
+#define VX_ATTRIBUTE_ID_MASK                (0x000000FF)
 
 /*! \brief A type of enumeration. The valid range is between \f$ [0,2^{8}-1] \f$ (inclusive).
  * \ingroup group_basic_features
  */
-#define VX_ENUM_TYPE_MASK                   0x000FF000
+#define VX_ENUM_TYPE_MASK                   (0x000FF000)
 
 /*! \brief A generic enumeration list can have values between \f$ [0,2^{12}-1] \f$ (inclusive).
  * \ingroup group_basic_features
  */
-#define VX_ENUM_MASK                        0x00000FFF
+#define VX_ENUM_MASK                        (0x00000FFF)
 
 ////*! \brief A macro to extract the vendor ID from the enumerated value.
 /// * \ingroup group_basic_features
@@ -1284,7 +1284,7 @@ typedef vx_status (VX_CALLBACK *vx_kernel_output_validate_f)(vx_node node, vx_ui
 /*! Use to indicate the 1:1 ratio in Q22.10 format.
  * \ingroup group_basic_features
  */
-#define VX_SCALE_UNITY 1024
+#define VX_SCALE_UNITY (1024u)
 
 /*!
  * \brief The addressing image patch structure is used by the Host only

@@ -1,4 +1,4 @@
-import os
+import os, re
 from cffi import FFI
 
 openvx_install = '/usr/local/src/openvx_sample/install/Linux/x64/Release/'
@@ -10,9 +10,17 @@ if os.name == 'nt':
 
 ffi = FFI()
 ffi.cdef(open("cdefs/vx_vendors.h").read())
+
 types = open("cdefs/vx_types.h").read()
+
 for k,v in defs.items():
     types = types.replace(k, v)
+
+types = re.subn(r'(#define\s+[^\s]+)\s.*', r'\1 ...', types)[0] # Remove specifics from #defines
+types = re.subn(r'(\/\*.*?\*\/)', r'', types)[0] # Remove some one line comments
+types = re.subn(r'=.*,', r'= ...,', types)[0] # Remove specifics from enums
+types = re.subn(r'\[\s*[^\s]+?.*?\]', r'[...]', types)[0] # Remove specific array sizes
+print types
 ffi.cdef(types)
 
 ffi.set_source("pyvx.cbackend", "#include <VX/vx.h>",
@@ -26,3 +34,4 @@ from pyvx.cbackend import ffi, lib
 print dir(lib)
 
 print lib.VX_ID_QUALCOMM.__class__
+print ffi.new("vx_perf_t *")
