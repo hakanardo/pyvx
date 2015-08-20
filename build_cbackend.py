@@ -9,6 +9,10 @@ if os.name == 'nt':
     defs['VX_CALLBACK'] = '__stdcall'
 
 ffi = FFI()
+vx = open("cdefs/vx.h").read()
+vx = re.subn(r'(#define\s+[^\s]+)\s.*', r'\1 ...', vx)[0] # Remove specifics from #defines
+ffi.cdef(vx)
+
 ffi.cdef(open("cdefs/vx_vendors.h").read())
 
 types = open("cdefs/vx_types.h").read()
@@ -20,7 +24,7 @@ types = re.subn(r'(#define\s+[^\s]+)\s.*', r'\1 ...', types)[0] # Remove specifi
 types = re.subn(r'(\/\*.*?\*\/)', r'', types)[0] # Remove some one line comments
 types = re.subn(r'=.*,', r'= ...,', types)[0] # Remove specifics from enums
 types = re.subn(r'\[\s*[^\s]+?.*?\]', r'[...]', types)[0] # Remove specific array sizes
-print types
+
 ffi.cdef(types)
 
 ffi.set_source("pyvx.cbackend", "#include <VX/vx.h>",
@@ -31,7 +35,12 @@ ffi.set_source("pyvx.cbackend", "#include <VX/vx.h>",
 ffi.compile()
 
 from pyvx.cbackend import ffi, lib
-print dir(lib)
+
+fd = open(os.path.join('pyvx', 'vx', '_types_auto.py'), 'w')
+fd.write("from pyvx.cbackend import ffi, lib\n\n")
+for n in dir(lib):
+    assert n[:3].upper() == 'VX_'
+    fd.write("%s = lib.%s\n" % (n[3:], n))
 
 print lib.VX_ID_QUALCOMM.__class__
 print ffi.new("vx_perf_t *")
