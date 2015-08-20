@@ -21,6 +21,9 @@
  * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
  */
 
+///#ifndef _OPENVX_VENDORS_H_
+///#define _OPENVX_VENDORS_H_
+
 /*!
  * \file
  * \brief The Vendor ID list for OpenVX.
@@ -62,4 +65,6 @@ enum vx_vendor_id_e {
     /*! \brief For use by all Kernel authors until they can obtain an assigned ID. */
     VX_ID_DEFAULT = VX_ID_MAX,
 };
+
+///#endif
 
