@@ -7,12 +7,16 @@ if os.name == 'nt':
     defs['VX_CALLBACK'] = '__stdcall'
 
 ffi = FFI()
+
+# vx.h
 vx = open("cdefs/vx.h").read()
 vx = re.subn(r'(#define\s+[^\s]+)\s.*', r'\1 ...', vx)[0] # Remove specifics from #defines
 ffi.cdef(vx)
 
+# vx_vendors.h
 ffi.cdef(open("cdefs/vx_vendors.h").read())
 
+# vx_types.h
 types = open("cdefs/vx_types.h").read()
 
 for k,v in defs.items():
@@ -28,6 +32,12 @@ ffi.cdef('''
     char *_get_FMT_REF(void);
     char *_get_FMT_SIZE(void);
 ''')
+
+# vx_kernels.h
+kernels = open("cdefs/vx_kernels.h").read()
+kernels = re.subn(r'=.*,', r'= ...,', kernels)[0] # Remove specifics from enums
+ffi.cdef(kernels)
+
 
 ffi.set_source("pyvx.cbackend", """
     #include <VX/vx.h>
