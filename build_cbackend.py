@@ -1,12 +1,8 @@
-import os, re
+import os, re, sys
 from cffi import FFI
 
-name = 'sample'
-openvx_install = '/usr/local/src/openvx_sample/install/Linux/x64/Release/'
-#-               include_dirs=[os.path.join(openvx_install,'include')],
-#-               library_dirs=[os.path.join(openvx_install,'bin')],
-#-               extra_link_args=['-Wl,-rpath='+os.path.join(openvx_install,'bin')],
-
+name = sys.argv[1]
+openvx_install = sys.argv[2]
 
 defs= dict(VX_API_ENTRY='', VX_API_CALL='', VX_CALLBACK='', VX_MAX_KERNEL_NAME='256')
 if os.name == 'nt':
