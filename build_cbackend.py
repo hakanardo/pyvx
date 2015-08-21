@@ -34,8 +34,7 @@ ffi.set_source("pyvx.cbackend", """
     char *_get_FMT_REF(void) {return VX_FMT_REF;}
     char *_get_FMT_SIZE(void) {return VX_FMT_SIZE;}
                """,
-               include_dirs=['include'],
-               libraries=['openvx'])
+               include_dirs=['include'])
 ffi.compile()
 
 from pyvx.cbackend import ffi, lib
