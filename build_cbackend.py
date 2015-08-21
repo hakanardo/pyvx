@@ -1,7 +1,14 @@
 import os, re
 from cffi import FFI
 
-defs= dict(VX_API_ENTRY='', VX_API_CALL='', VX_CALLBACK='')
+name = 'sample'
+openvx_install = '/usr/local/src/openvx_sample/install/Linux/x64/Release/'
+#-               include_dirs=[os.path.join(openvx_install,'include')],
+#-               library_dirs=[os.path.join(openvx_install,'bin')],
+#-               extra_link_args=['-Wl,-rpath='+os.path.join(openvx_install,'bin')],
+
+
+defs= dict(VX_API_ENTRY='', VX_API_CALL='', VX_CALLBACK='', VX_MAX_KERNEL_NAME='256')
 if os.name == 'nt':
     defs['VX_API_CALL'] = '__stdcall'
     defs['VX_CALLBACK'] = '__stdcall'
@@ -38,19 +45,30 @@ kernels = open("cdefs/vx_kernels.h").read()
 kernels = re.subn(r'=.*,', r'= ...,', kernels)[0] # Remove specifics from enums
 ffi.cdef(kernels)
 
+# vx_api.h
+api = open("cdefs/vx_api.h").read()
+for k, v in defs.items():
+    api = api.replace(k, v)
+ffi.cdef(api)
 
-ffi.set_source("pyvx.cbackend", """
+ffi.set_source("pyvx.backend.%s" % name, """
     #include <VX/vx.h>
     char *_get_FMT_REF(void) {return VX_FMT_REF;}
     char *_get_FMT_SIZE(void) {return VX_FMT_SIZE;}
                """,
-               include_dirs=['include'])
+               include_dirs=[os.path.join(openvx_install, 'include')],
+               library_dirs=[os.path.join(openvx_install, 'bin')],
+               extra_link_args=['-Wl,-rpath='+os.path.join(openvx_install, 'bin')],
+               libraries=['openvx'])
 ffi.compile()
 
-from pyvx.cbackend import ffi, lib
+from pyvx._cbackend_types import ffi, lib
+assert defs["VX_MAX_KERNEL_NAME"] == str(lib.VX_MAX_KERNEL_NAME)
 
-fd = open(os.path.join('pyvx', 'vx', '_types_auto.py'), 'w')
-fd.write("from pyvx.cbackend import ffi, lib\n\n")
+fd = open(os.path.join('pyvx', '_auto.py'), 'w')
+fd.write("class _VXAuto(object):\n")
+fd.write("    def __init__(self, ffi, lib):\n")
 for n in dir(lib):
     if n[:3].upper() == 'VX_':
-        fd.write("%s = lib.%s\n" % (n[3:], n))
+        fd.write("        self.%s = lib.%s\n" % (n[3:], n))
+

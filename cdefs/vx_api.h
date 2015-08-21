@@ -21,17 +21,17 @@
  * MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
  */
 
-#ifndef _OPENVX_API_H_
-#define _OPENVX_API_H_
+///#ifndef _OPENVX_API_H_
+///#define _OPENVX_API_H_
 
 /*!
  * \file
  * \brief The API definition for OpenVX.
  */
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
+///#ifdef  __cplusplus
+///extern "C" {
+///#endif
 
 /*==============================================================================
  CONTEXT
@@ -1843,8 +1843,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxCommitArrayRange(vx_array arr, vx_size star
  * \param [in] stride The 'number of bytes' between the beginning of two consecutive elements. 
  * \ingroup group_array
  */
-#define vxFormatArrayPointer(ptr, index, stride) \
-    (&(((vx_uint8*)(ptr))[(index) * (stride)]))
+///#define vxFormatArrayPointer(ptr, index, stride) \
+///    (&(((vx_uint8*)(ptr))[(index) * (stride)]))
 
 /*!
  * \brief Allows access to an array item as a typecast pointer deference.
@@ -1854,8 +1854,8 @@ VX_API_ENTRY vx_status VX_API_CALL vxCommitArrayRange(vx_array arr, vx_size star
  * \param [in] stride The 'number of bytes' between the beginning of two consecutive elements. 
  * \ingroup group_array
  */
-#define vxArrayItem(type, ptr, index, stride) \
-    (*(type *)(vxFormatArrayPointer((ptr), (index), (stride))))
+///#define vxArrayItem(type, ptr, index, stride) \
+///    (*(type *)(vxFormatArrayPointer((ptr), (index), (stride))))
 
 /*==============================================================================
  META FORMAT
@@ -1894,9 +1894,9 @@ VX_API_ENTRY vx_status VX_API_CALL vxCommitArrayRange(vx_array arr, vx_size star
 VX_API_ENTRY vx_status VX_API_CALL vxSetMetaFormatAttribute(vx_meta_format meta, vx_enum attribute, const void *ptr, vx_size size);
 
 
-#ifdef  __cplusplus
-}
-#endif
-
-#endif
+///#ifdef  __cplusplus
+///}
+///#endif
+///
+///#endif
 
