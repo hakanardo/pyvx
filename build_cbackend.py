@@ -26,8 +26,16 @@ types = re.subn(r'=.*,', r'= ...,', types)[0] # Remove specifics from enums
 types = re.subn(r'\[\s*[^\s]+?.*?\]', r'[...]', types)[0] # Remove specific array sizes
 
 ffi.cdef(types)
+ffi.cdef('''
+    char *_get_FMT_REF(void);
+    char *_get_FMT_SIZE(void);
+''')
 
-ffi.set_source("pyvx.cbackend", "#include <VX/vx.h>",
+ffi.set_source("pyvx.cbackend", """
+    #include <VX/vx.h>
+    char *_get_FMT_REF(void) {return VX_FMT_REF;}
+    char *_get_FMT_SIZE(void) {return VX_FMT_SIZE;}
+               """,
                include_dirs=[os.path.join(openvx_install,'include')],
                library_dirs=[os.path.join(openvx_install,'bin')],
                extra_link_args=['-Wl,-rpath='+os.path.join(openvx_install,'bin')],
@@ -39,8 +47,8 @@ from pyvx.cbackend import ffi, lib
 fd = open(os.path.join('pyvx', 'vx', '_types_auto.py'), 'w')
 fd.write("from pyvx.cbackend import ffi, lib\n\n")
 for n in dir(lib):
-    assert n[:3].upper() == 'VX_'
-    fd.write("%s = lib.%s\n" % (n[3:], n))
+    if n[:3].upper() == 'VX_':
+        fd.write("%s = lib.%s\n" % (n[3:], n))
 
 print lib.VX_ID_QUALCOMM.__class__
 print ffi.new("vx_perf_t *")

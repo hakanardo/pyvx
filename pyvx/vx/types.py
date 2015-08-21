@@ -1,9 +1,11 @@
 from _types_auto import *
 
-print lib.VX_MAX_KERNEL_NAME
-
 SCALE_PYRAMID_HALF = 0.5
 SCALE_PYRAMID_ORB = 0.8408964
+
+FMT_REF = ffi.string(lib._get_FMT_REF())
+FMT_SIZE = ffi.string(lib._get_FMT_SIZE())
+
 
 def imagepatch_addressing_t(dim_x=0, dim_y=0, stride_x=0, stride_y=0, scale_x=0, scale_y=0, step_x=0, step_y=0):
     return ffi.new("vx_imagepatch_addressing_t *", (dim_x, dim_y, stride_x, stride_y, scale_x, scale_y, step_x, step_y))

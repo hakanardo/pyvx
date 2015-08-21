@@ -1,3 +1,4 @@
+import os
 from pyvx.vx.types import *
 
 class TestVxTypes(object):
@@ -61,3 +62,9 @@ class TestVxTypes(object):
         assert c.x == 1
         assert c.y == 2
         assert c.z == 3
+
+    def test_fmt_ref_size(self):
+        if os.name != 'nt':
+            assert FMT_REF == "%p"
+            assert FMT_SIZE == "%zu"
+
