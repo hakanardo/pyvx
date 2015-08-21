@@ -1,8 +1,12 @@
 import os, re, sys
 from cffi import FFI
 
-name = sys.argv[1]
-openvx_install = sys.argv[2]
+if len(sys.argv) > 1:
+    name = sys.argv[1]
+    openvx_install = sys.argv[2]
+else:
+    name = "sample"
+    openvx_install = "/usr/local/src/openvx_sample/install/Linux/x64/Release/"
 
 defs= dict(VX_API_ENTRY='', VX_API_CALL='', VX_CALLBACK='', VX_MAX_KERNEL_NAME='256')
 if os.name == 'nt':
@@ -46,6 +50,12 @@ api = open("cdefs/vx_api.h").read()
 for k, v in defs.items():
     api = api.replace(k, v)
 ffi.cdef(api)
+
+# vx_nodes.h
+nodes = open("cdefs/vx_nodes.h").read()
+for k, v in defs.items():
+    nodes = nodes.replace(k, v)
+ffi.cdef(nodes)
 
 ffi.set_source("pyvx.backend.%s" % name, """
     #include <VX/vx.h>
