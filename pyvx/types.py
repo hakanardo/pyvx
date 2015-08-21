@@ -1,4 +1,4 @@
-from pyvx.vx._auto import _VXAuto
+from pyvx._auto import _VXAuto
 
 class VXTypes(_VXAuto):
     def __init__(self, backend):

@@ -62,13 +62,4 @@ ffi.set_source("pyvx.backend.%s" % name, """
                libraries=['openvx'])
 ffi.compile()
 
-from pyvx._cbackend_types import ffi, lib
-assert defs["VX_MAX_KERNEL_NAME"] == str(lib.VX_MAX_KERNEL_NAME)
-
-fd = open(os.path.join('pyvx', '_auto.py'), 'w')
-fd.write("class _VXAuto(object):\n")
-fd.write("    def __init__(self, ffi, lib):\n")
-for n in dir(lib):
-    if n[:3].upper() == 'VX_':
-        fd.write("        self.%s = lib.%s\n" % (n[3:], n))
 
