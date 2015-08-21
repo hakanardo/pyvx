@@ -1,8 +1,6 @@
 import os, re
 from cffi import FFI
 
-openvx_install = '/usr/local/src/openvx_sample/install/Linux/x64/Release/'
-
 defs= dict(VX_API_ENTRY='', VX_API_CALL='', VX_CALLBACK='')
 if os.name == 'nt':
     defs['VX_API_CALL'] = '__stdcall'
@@ -36,9 +34,7 @@ ffi.set_source("pyvx.cbackend", """
     char *_get_FMT_REF(void) {return VX_FMT_REF;}
     char *_get_FMT_SIZE(void) {return VX_FMT_SIZE;}
                """,
-               include_dirs=[os.path.join(openvx_install,'include')],
-               library_dirs=[os.path.join(openvx_install,'bin')],
-               extra_link_args=['-Wl,-rpath='+os.path.join(openvx_install,'bin')],
+               include_dirs=['include'],
                libraries=['openvx'])
 ffi.compile()
 
@@ -49,6 +45,3 @@ fd.write("from pyvx.cbackend import ffi, lib\n\n")
 for n in dir(lib):
     if n[:3].upper() == 'VX_':
         fd.write("%s = lib.%s\n" % (n[3:], n))
-
-print lib.VX_ID_QUALCOMM.__class__
-print ffi.new("vx_perf_t *")

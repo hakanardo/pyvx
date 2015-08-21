@@ -46,3 +46,4 @@ def coordinates2d_t(x, y):
 
 def coordinates3d_t(x, y, z):
     return ffi.new("vx_coordinates3d_t *", (x, y, z))
+
