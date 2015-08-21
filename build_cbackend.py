@@ -54,7 +54,7 @@ ffi.set_source("pyvx.backend.%s" % name, """
                """,
                include_dirs=[os.path.join(openvx_install, 'include')],
                library_dirs=[os.path.join(openvx_install, 'bin')],
-               extra_link_args=['-Wl,-rpath='+os.path.join(openvx_install, 'bin')],
+               extra_link_args=['-Wl,-rpath=' + os.path.abspath(os.path.join(openvx_install, 'bin'))],
                libraries=['openvx'])
 ffi.compile()
 
