@@ -3,8 +3,6 @@ from pyvx._auto import _VXAuto
 class VXTypes(_VXAuto):
     def __init__(self, backend):
         _VXAuto.__init__(self, backend.ffi, backend.lib)
-        self._ffi = backend.ffi
-        self._lib = backend.lib
         self.SCALE_PYRAMID_HALF = 0.5
         self.SCALE_PYRAMID_ORB = 0.8408964
         self.FMT_REF = self._ffi.string(self._lib._get_FMT_REF())
