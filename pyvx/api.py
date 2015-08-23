@@ -5,6 +5,9 @@ class VX(VXTypes):
         c = self._ffi.new('vx_context *', context)
         return self._lib.vxReleaseContext(c)
 
+    def GetContext(self, reference):
+        return self._lib.vxGetContext(self._ffi.cast('vx_reference', reference))
+
     def QueryContext(self, context, attribute, c_type, python_type=None):
         if self._ffi.typeof(c_type).kind != 'array':
             val = self._ffi.new(c_type + '*')
@@ -27,3 +30,12 @@ class VX(VXTypes):
             value = self._ffi.new(c_type + '*', value)
         s = self._ffi.sizeof(self._ffi.typeof(value).item)
         return self._lib.vxSetContextAttribute(context, attribute, value, s)
+
+    def Hint(self, reference, hint):
+        return self._lib.vxHint(self._ffi.cast('vx_reference', reference), hint)
+
+    def Directive(self, reference, directive):
+        return self._lib.vxDirective(self._ffi.cast('vx_reference', reference), directive)
+
+    def GetStatus(self, reference):
+        return self._lib.vxGetStatus(self._ffi.cast('vx_reference', reference))
