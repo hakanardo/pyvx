@@ -1,3 +1,4 @@
+from array import array
 from pyvx.default import vx
 
 class TestVX(object):
@@ -26,3 +27,27 @@ class TestVX(object):
 
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
+    def test_image(self):
+        c = vx.CreateContext()
+        img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_RGB)
+        assert vx.GetStatus(c) == vx.SUCCESS
+
+        roi = vx.CreateImageFromROI(img, vx.rectangle_t(10, 10, 100, 100))
+        assert vx.GetStatus(c) == vx.SUCCESS
+
+        const = vx.CreateUniformImage(c, 640, 480, vx.DF_IMAGE_S16, 7, 'vx_int16')
+        assert vx.GetStatus(c) == vx.SUCCESS
+
+        const = vx.CreateUniformImage(c, 640, 480, vx.DF_IMAGE_RGB, (7, 8, 9), 'vx_uint8[]')
+        assert vx.GetStatus(c) == vx.SUCCESS
+
+        addr = vx.imagepatch_addressing_t(640, 480, 1, 640, 1, 1, 1, 640)
+        data = array('B', [0]) * (640 * 480)
+        hand = vx.CreateImageFromHandle(c, vx.DF_IMAGE_U8, (addr,), (data,), vx.IMPORT_TYPE_HOST)
+        assert vx.GetStatus(c) == vx.SUCCESS
+        hand = vx.CreateImageFromHandle(c, vx.DF_IMAGE_U8, addr, data, vx.IMPORT_TYPE_HOST)
+        assert vx.GetStatus(c) == vx.SUCCESS
+        hand = vx.CreateImageFromHandle(c, vx.DF_IMAGE_RGB, (addr, addr, addr), (data, data, data), vx.IMPORT_TYPE_HOST)
+        assert vx.GetStatus(c) == vx.SUCCESS
+
+        assert vx.ReleaseContext(c) == vx.SUCCESS

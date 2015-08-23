@@ -1,6 +1,8 @@
 from pyvx.types import VXTypes
 
 class VX(VXTypes):
+
+    # CONTEXT
     def ReleaseContext(self, context):
         c = self._ffi.new('vx_context *', context)
         return self._lib.vxReleaseContext(c)
@@ -39,3 +41,22 @@ class VX(VXTypes):
 
     def GetStatus(self, reference):
         return self._lib.vxGetStatus(self._ffi.cast('vx_reference', reference))
+
+    # IMAGE
+
+    def CreateUniformImage(self, context, width, height, color, value, c_type):
+        if self._ffi.typeof(c_type).kind != 'array':
+            c_type += '*'
+        value = self._ffi.new(c_type, value)
+        self._lib.vxCreateUniformImage(context, width, height, color, value)
+
+    def CreateImageFromHandle(self, context, color, addrs, ptrs, import_type):
+        if not isinstance(addrs, (tuple, list)):
+            addrs = (addrs,)
+        if not isinstance(ptrs, (tuple, list)):
+            ptrs = (ptrs,)
+
+        addrs = self._ffi.new('vx_imagepatch_addressing_t[]', [a[0] for a in addrs])
+        ptrs = self._ffi.new('void *[]', [self._ffi.from_buffer(p) for p in ptrs])
+        return self._lib.vxCreateImageFromHandle(context, color, addrs, ptrs, import_type)
+

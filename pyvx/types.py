@@ -8,7 +8,6 @@ class VXTypes(_VXAuto):
         self.FMT_REF = self._ffi.string(self._lib._get_FMT_REF())
         self.FMT_SIZE = self._ffi.string(self._lib._get_FMT_SIZE())
 
-
     def imagepatch_addressing_t(self, dim_x=0, dim_y=0, stride_x=0, stride_y=0, scale_x=0, scale_y=0, step_x=0, step_y=0):
         return self._ffi.new("vx_imagepatch_addressing_t *", (dim_x, dim_y, stride_x, stride_y, scale_x, scale_y, step_x, step_y))
 
