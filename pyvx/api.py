@@ -20,3 +20,10 @@ class VX(VXTypes):
             val = python_type(val)
 
         return status, val
+
+    def SetContextAttribute(self, context, attribute, value, c_type=None):
+        if c_type is not None:
+            assert self._ffi.typeof(c_type).kind == 'primitive'
+            value = self._ffi.new(c_type + '*', value)
+        s = self._ffi.sizeof(self._ffi.typeof(value).item)
+        return self._lib.vxSetContextAttribute(context, attribute, value, s)

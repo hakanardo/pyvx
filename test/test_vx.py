@@ -9,7 +9,12 @@ class TestVX(object):
         s, v = vx.QueryContext(c, vx.CONTEXT_ATTRIBUTE_IMPLEMENTATION, 'vx_char[VX_MAX_IMPLEMENTATION_NAME]', str)
         assert s == vx.SUCCESS
         assert isinstance(v, str)
+        s = vx.SetContextAttribute(c, vx.CONTEXT_ATTRIBUTE_IMMEDIATE_BORDER_MODE,
+                                      vx.border_mode_t(vx.BORDER_MODE_CONSTANT, 42))
+        assert s == vx.SUCCESS
         s, v = vx.QueryContext(c, vx.CONTEXT_ATTRIBUTE_IMMEDIATE_BORDER_MODE, 'vx_border_mode_t')
         assert s == vx.SUCCESS
+        assert v.mode == vx.BORDER_MODE_CONSTANT
+        assert v.constant_value == 42
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
