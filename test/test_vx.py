@@ -134,6 +134,20 @@ class TestVX(object):
         assert vx.VerifyGraph(g) == vx.SUCCESS
         assert vx.IsGraphVerified(g) == vx.true_e
 
+        class flags:
+            callback_called = False
+        def callback(node):
+            flags.callback_called = True
+            return vx.SUCCESS
+
+        assert vx.AssignNodeCallback(node, callback) == vx.SUCCESS
+        assert vx.ProcessGraph(g) == vx.SUCCESS
+        assert flags.callback_called
+
+        assert vx.AssignNodeCallback(node, callback) != vx.SUCCESS
+        assert vx.AssignNodeCallback(node, None) == vx.SUCCESS
+        assert vx.AssignNodeCallback(node, callback) == vx.SUCCESS
+
         img = vx.CreateVirtualImage(g, 640, 480, vx.DF_IMAGE_RGB)
         assert vx.GetStatus(c) == vx.SUCCESS
 

@@ -1,4 +1,7 @@
+from weakref import WeakKeyDictionary
 from pyvx.types import VXTypes
+
+keep_alive = WeakKeyDictionary()
 
 class VX(VXTypes):
 
@@ -152,5 +155,13 @@ class VX(VXTypes):
     def RemoveNode(self, node):
         ref = self._ffi.new('vx_node *', node)
         return self._lib.vxReleaseNode(ref)
+
+    def AssignNodeCallback(self, node, callback):
+        if callback is not None:
+            callback = self._ffi.callback("vx_nodecomplete_f")(callback)
+            keep_alive.setdefault(node, []).append(callback)
+        else:
+            callback = self._ffi.NULL
+        return self._lib.vxAssignNodeCallback(node, callback)
 
 # FIXME: typecheck casts to vx_reference
