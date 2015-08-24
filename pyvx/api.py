@@ -75,3 +75,17 @@ class VX(VXTypes):
     def ReleaseImage(self, image):
         ref = self._ffi.new('vx_image *', image)
         return self._lib.vxReleaseImage(ref)
+
+    def AccessImagePatch(self, image, rect, plane_index, addr, ptr, usage):
+        if addr is None:
+            addr = self._ffi.new('vx_imagepatch_addressing_t *')
+        if ptr is not None:
+            ptr = self._ffi.from_buffer(ptr)
+        ptr_p = self._ffi.new('void **', ptr)
+        size = self.ComputeImagePatchSize(image, rect, plane_index)
+        status = self._lib.vxAccessImagePatch(image, rect, plane_index, addr, ptr_p, usage)
+        return status, addr, self._ffi.buffer(ptr_p[0], size)
+
+    def CommitImagePatch(self, image, rect, plane_index, addr, ptr):
+        ptr = self._ffi.from_buffer(ptr)
+        return self._lib.vxCommitImagePatch(image, rect, plane_index, addr, ptr)
