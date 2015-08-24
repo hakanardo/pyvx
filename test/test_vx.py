@@ -169,6 +169,8 @@ class TestVX(object):
         assert v.constant_value == 42
 
         assert vx.ReleaseNode(node) == vx.SUCCESS
+
+        node = vx.CreateGenericNode(g, k)
         assert vx.RemoveNode(node) == vx.SUCCESS
 
         assert vx.ReleaseGraph(g) == vx.SUCCESS
