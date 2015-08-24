@@ -109,12 +109,42 @@ class VX(VXTypes):
 
     # KERNEL
 
+    def ReleaseKernel(self, kernel):
+        ref = self._ffi.new('vx_kernel *', kernel)
+        return self._lib.vxReleaseKernel(ref)
+
     def QueryKernel(self, kernel, attribute, c_type, python_type=None):
         return self._get_attribute(self._lib.vxQueryKernel, kernel, attribute, c_type, python_type)
 
     def SetKernelAttribute(self, kernel, attribute, value, c_type=None):
         return self._set_attribute(self._lib.vxSetKernelAttribute, kernel, attribute, value, c_type)
 
-    def ReleaseKernel(self, kernel):
-        ref = self._ffi.new('vx_kernel *', kernel)
-        return self._lib.vxReleaseKernel(ref)
+
+    # GRAPH
+
+    def ReleaseGraph(self, graph):
+        ref = self._ffi.new('vx_graph *', graph)
+        return self._lib.vxReleaseGraph(ref)
+
+    def QueryGraph(self, graph, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryGraph, graph, attribute, c_type, python_type)
+
+    def SetGraphAttribute(self, graph, attribute, value, c_type=None):
+        return self._set_attribute(self._lib.vxSetGraphAttribute, graph, attribute, value, c_type)
+
+
+    # NODE
+
+    def ReleaseNode(self, node):
+        ref = self._ffi.new('vx_node *', node)
+        return self._lib.vxReleaseNode(ref)
+
+    def QueryNode(self, node, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryNode, node, attribute, c_type, python_type)
+
+    def SetNodeAttribute(self, node, attribute, value, c_type=None):
+        return self._set_attribute(self._lib.vxSetNodeAttribute, node, attribute, value, c_type)
+
+    def SetGraphParameterByIndex(self, graph, index, value):
+        value = self._ffi.cast('vx_reference', value)
+        return self._lib.vxSetGraphParameterByIndex(graph, index, value)

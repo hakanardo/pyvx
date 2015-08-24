@@ -108,5 +108,29 @@ class TestVX(object):
         # FIXME:  vxAddKernel, vxAddParameterToKernel, vxFinalizeKernel, vxRemoveKernel
         # FIXME: assert vx.SetKernelAttribute(kernel, vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, 7, 'vx_size') == vx.SUCCESS
 
+        assert vx.ReleaseContext(c) == vx.SUCCESS
 
+    def test_graph(self):
+        c = vx.CreateContext()
+        g = vx.CreateGraph(c)
+        assert vx.QueryGraph(g, vx.GRAPH_ATTRIBUTE_NUMNODES, 'vx_uint32') == (vx.SUCCESS, 0)
+
+        img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_U8)
+        dx = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_S16)
+        dy = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_S16)
+        node = vx.Sobel3x3Node(g, img, dx, dy)
+        assert vx.VerifyGraph(g) == vx.SUCCESS
+        assert vx.ProcessGraph(g) == vx.SUCCESS
+        assert vx.ScheduleGraph(g) == vx.SUCCESS
+        assert vx.WaitGraph(g) == vx.SUCCESS
+
+        p = vx.GetParameterByIndex(node, 0)
+        assert vx.AddParameterToGraph(g, p) == vx.SUCCESS
+        p2 = vx.GetGraphParameterByIndex(g, 0)
+        assert vx.SetGraphParameterByIndex(g, 0, dx) == vx.SUCCESS
+        assert vx.VerifyGraph(g) != vx.SUCCESS
+        assert vx.SetGraphParameterByIndex(g, 0, img) == vx.SUCCESS
+        assert vx.VerifyGraph(g) == vx.SUCCESS
+
+        assert vx.ReleaseGraph(g) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
