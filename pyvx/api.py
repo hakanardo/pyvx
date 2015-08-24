@@ -164,4 +164,23 @@ class VX(VXTypes):
             callback = self._ffi.NULL
         return self._lib.vxAssignNodeCallback(node, callback)
 
+
+    # PARAMETER
+
+    def ReleaseParameter(self, parameter):
+        ref = self._ffi.new('vx_parameter *', parameter)
+        return self._lib.vxReleaseParameter(ref)
+
+    def QueryParameter(self, parameter, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryParameter, parameter, attribute, c_type, python_type)
+
+    def SetParameterByIndex(self, node, index, value):
+        value = self._ffi.cast('vx_reference', value)
+        return self._lib.vxSetParameterByIndex(node, index, value)
+
+    def SetParameterByReference(self, parameter, value):
+        value = self._ffi.cast('vx_reference', value)
+        return self._lib.vxSetParameterByReference(parameter, value)
+
+
 # FIXME: typecheck casts to vx_reference

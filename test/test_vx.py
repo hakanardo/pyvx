@@ -176,3 +176,29 @@ class TestVX(object):
         assert vx.ReleaseGraph(g) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
+    def test_parameter(self):
+        c = vx.CreateContext()
+        g = vx.CreateGraph(c)
+        img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_U8)
+        dx = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_S16)
+        dy = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_S16)
+        node = vx.Sobel3x3Node(g, img, dx, dy)
+
+        param = vx.GetParameterByIndex(node, 0)
+        assert vx.GetStatus(c) == vx.SUCCESS
+        s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
+        assert s == vx.SUCCESS
+        assert v == img
+
+        assert vx.SetParameterByIndex(node, 0, dx) == vx.SUCCESS
+        s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
+        assert s == vx.SUCCESS
+        assert v == dx
+
+        assert vx.SetParameterByReference(param, dy) == vx.SUCCESS
+        s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
+        assert s == vx.SUCCESS
+        assert v == dy
+
+        assert vx.ReleaseParameter(param) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS
