@@ -134,5 +134,29 @@ class TestVX(object):
         assert vx.VerifyGraph(g) == vx.SUCCESS
         assert vx.IsGraphVerified(g) == vx.true_e
 
+        img = vx.CreateVirtualImage(g, 640, 480, vx.DF_IMAGE_RGB)
+        assert vx.GetStatus(c) == vx.SUCCESS
+
         assert vx.ReleaseGraph(g) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_node(self):
+        c = vx.CreateContext()
+        g = vx.CreateGraph(c)
+
+        k = vx.GetKernelByEnum(c, vx.KERNEL_SOBEL_3x3)
+        assert vx.GetStatus(c) == vx.SUCCESS
+        node = vx.CreateGenericNode(g, k)
+        s = vx.SetNodeAttribute(node, vx.NODE_ATTRIBUTE_BORDER_MODE,
+                                vx.border_mode_t(vx.BORDER_MODE_CONSTANT, 42))
+        assert s == vx.SUCCESS
+        s, v = vx.QueryNode(node, vx.NODE_ATTRIBUTE_BORDER_MODE, 'vx_border_mode_t')
+        assert v.mode == vx.BORDER_MODE_CONSTANT
+        assert v.constant_value == 42
+
+        assert vx.ReleaseNode(node) == vx.SUCCESS
+        assert vx.RemoveNode(node) == vx.SUCCESS
+
+        assert vx.ReleaseGraph(g) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS
+

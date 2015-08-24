@@ -148,3 +148,9 @@ class VX(VXTypes):
     def SetGraphParameterByIndex(self, graph, index, value):
         value = self._ffi.cast('vx_reference', value)
         return self._lib.vxSetGraphParameterByIndex(graph, index, value)
+
+    def RemoveNode(self, node):
+        ref = self._ffi.new('vx_node *', node)
+        return self._lib.vxReleaseNode(ref)
+
+# FIXME: typecheck casts to vx_reference
