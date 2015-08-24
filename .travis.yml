@@ -3,8 +3,8 @@ python:
 - '2.7'
 install:
 - sudo apt-get update -qq
-
-
+- pip install -r requirements.txt
+- python build_cbackend.py sample test/openvx_sample/
 script:
 - make -C test
 deploy:
