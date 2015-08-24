@@ -54,7 +54,7 @@ class VX(VXTypes):
         if self._ffi.typeof(c_type).kind != 'array':
             c_type += '*'
         value = self._ffi.new(c_type, value)
-        self._lib.vxCreateUniformImage(context, width, height, color, value)
+        return self._lib.vxCreateUniformImage(context, width, height, color, value)
 
     def CreateImageFromHandle(self, context, color, addrs, ptrs, import_type):
         if not isinstance(addrs, (tuple, list)):
@@ -89,3 +89,19 @@ class VX(VXTypes):
     def CommitImagePatch(self, image, rect, plane_index, addr, ptr):
         ptr = self._ffi.from_buffer(ptr)
         return self._lib.vxCommitImagePatch(image, rect, plane_index, addr, ptr)
+
+    def FormatImagePatchAddress1d(self, ptr, index, addr):
+        ptr = self._ffi.from_buffer(ptr)
+        p = self._lib.vxFormatImagePatchAddress1d(ptr, index, addr)
+        return self._ffi.buffer(p, addr.stride_x)
+
+    def FormatImagePatchAddress2d(self, ptr, x, y, addr):
+        ptr = self._ffi.from_buffer(ptr)
+        p = self._lib.vxFormatImagePatchAddress2d(ptr, x, y, addr)
+        return self._ffi.buffer(p, addr.stride_x)
+
+    def GetValidRegionImage(self, image):
+        rect = self.rectangle_t(0,0,0,0)
+        status = self._lib.vxGetValidRegionImage(image, rect)
+        return status, rect
+

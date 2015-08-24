@@ -68,6 +68,8 @@ class TestVX(object):
         status, addr, ptr = vx.AccessImagePatch(img, r, 0, None, None, vx.READ_AND_WRITE)
         assert status == vx.SUCCESS
         assert ptr[0] == 'H'
+        pixel = vx.FormatImagePatchAddress1d(ptr, 0, addr)
+        assert pixel[0] == 'H'
         assert vx.CommitImagePatch(img, r, 0, addr, ptr) == vx.SUCCESS
 
         assert 7 not in data
@@ -76,7 +78,16 @@ class TestVX(object):
         status, addr, ptr = vx.AccessImagePatch(hand, r, 0, addr, rdata, vx.READ_AND_WRITE)
         assert rdata[1] == 42
         rdata[1] = 7
+        pixel = vx.FormatImagePatchAddress1d(ptr, 1, addr)
+        assert pixel[0] == chr(7)
+        pixel = vx.FormatImagePatchAddress2d(ptr, 0, 0, addr)
+        assert pixel[0] == chr(42)
         assert vx.CommitImagePatch(hand, r, 0, addr, ptr) == vx.SUCCESS
         assert data[11 + 20*640] == 7
+
+        status, r = vx.GetValidRegionImage(const)
+        assert status == vx.SUCCESS
+        assert r.end_x == 640
+        assert r.end_y == 480
 
         assert vx.ReleaseContext(c) == vx.SUCCESS
