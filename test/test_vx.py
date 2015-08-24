@@ -105,8 +105,8 @@ class TestVX(object):
         param = vx.GetKernelParameterByIndex(kernel, 0)
         assert vx.GetStatus(c) == vx.SUCCESS
 
-        # vxAddKernel, vxAddParameterToKernel, vxFinalizeKernel, vxRemoveKernel
-        #assert vx.SetKernelAttribute(kernel, vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, 7, 'vx_size') == vx.SUCCESS
+        # FIXME:  vxAddKernel, vxAddParameterToKernel, vxFinalizeKernel, vxRemoveKernel
+        # FIXME: assert vx.SetKernelAttribute(kernel, vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, 7, 'vx_size') == vx.SUCCESS
 
 
         assert vx.ReleaseContext(c) == vx.SUCCESS
