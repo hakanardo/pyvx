@@ -113,6 +113,7 @@ class TestVX(object):
     def test_graph(self):
         c = vx.CreateContext()
         g = vx.CreateGraph(c)
+        assert vx.IsGraphVerified(g) == vx.false_e
         assert vx.QueryGraph(g, vx.GRAPH_ATTRIBUTE_NUMNODES, 'vx_uint32') == (vx.SUCCESS, 0)
 
         img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_U8)
@@ -131,6 +132,7 @@ class TestVX(object):
         assert vx.VerifyGraph(g) != vx.SUCCESS
         assert vx.SetGraphParameterByIndex(g, 0, img) == vx.SUCCESS
         assert vx.VerifyGraph(g) == vx.SUCCESS
+        assert vx.IsGraphVerified(g) == vx.true_e
 
         assert vx.ReleaseGraph(g) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
