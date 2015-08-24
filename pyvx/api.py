@@ -51,6 +51,16 @@ class VX(VXTypes):
 
     # IMAGE
 
+    def ReleaseImage(self, image):
+        ref = self._ffi.new('vx_image *', image)
+        return self._lib.vxReleaseImage(ref)
+
+    def QueryImage(self, image, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryImage, image, attribute, c_type, python_type)
+
+    def SetImageAttribute(self, image, attribute, value, c_type=None):
+        return self._set_attribute(self._lib.vxSetImageAttribute, image, attribute, value, c_type)
+
     def CreateUniformImage(self, context, width, height, color, value, c_type):
         if self._ffi.typeof(c_type).kind != 'array':
             c_type += '*'
@@ -66,16 +76,6 @@ class VX(VXTypes):
         addrs = self._ffi.new('vx_imagepatch_addressing_t[]', [a[0] for a in addrs])
         ptrs = self._ffi.new('void *[]', [self._ffi.from_buffer(p) for p in ptrs])
         return self._lib.vxCreateImageFromHandle(context, color, addrs, ptrs, import_type)
-
-    def QueryImage(self, image, attribute, c_type, python_type=None):
-        return self._get_attribute(self._lib.vxQueryImage, image, attribute, c_type, python_type)
-
-    def SetImageAttribute(self, image, attribute, value, c_type=None):
-        return self._set_attribute(self._lib.vxSetImageAttribute, image, attribute, value, c_type)
-
-    def ReleaseImage(self, image):
-        ref = self._ffi.new('vx_image *', image)
-        return self._lib.vxReleaseImage(ref)
 
     def AccessImagePatch(self, image, rect, plane_index, addr, ptr, usage):
         if addr is None:
