@@ -34,6 +34,8 @@ class TestVX(object):
 
         roi = vx.CreateImageFromROI(img, vx.rectangle_t(10, 10, 100, 100))
         assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.ReleaseImage(roi) == vx.SUCCESS
+        roi = None
 
         const = vx.CreateUniformImage(c, 640, 480, vx.DF_IMAGE_S16, 7, 'vx_int16')
         assert vx.GetStatus(c) == vx.SUCCESS
@@ -55,5 +57,7 @@ class TestVX(object):
         assert vx.QueryImage(img, vx.IMAGE_ATTRIBUTE_SPACE, 'vx_enum') == (vx.SUCCESS, vx.COLOR_SPACE_BT601_525)
 
         assert vx.GetContext(img) == c
+
+        s = vx.ComputeImagePatchSize(img, vx.rectangle_t(10, 20, 30, 40), 0)
 
         assert vx.ReleaseContext(c) == vx.SUCCESS

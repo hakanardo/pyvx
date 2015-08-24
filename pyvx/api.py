@@ -71,3 +71,7 @@ class VX(VXTypes):
 
     def SetImageAttribute(self, image, attribute, value, c_type=None):
         return self._set_attribute(self._lib.vxSetImageAttribute, image, attribute, value, c_type)
+
+    def ReleaseImage(self, image):
+        ref = self._ffi.new('vx_image *', image)
+        return self._lib.vxReleaseImage(ref)
