@@ -48,6 +48,7 @@ class VX(VXTypes):
     def GetStatus(self, reference):
         return self._lib.vxGetStatus(self._ffi.cast('vx_reference', reference))
 
+
     # IMAGE
 
     def CreateUniformImage(self, context, width, height, color, value, c_type):
@@ -105,3 +106,15 @@ class VX(VXTypes):
         status = self._lib.vxGetValidRegionImage(image, rect)
         return status, rect
 
+
+    # KERNEL
+
+    def QueryKernel(self, kernel, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryKernel, kernel, attribute, c_type, python_type)
+
+    def SetKernelAttribute(self, kernel, attribute, value, c_type=None):
+        return self._set_attribute(self._lib.vxSetKernelAttribute, kernel, attribute, value, c_type)
+
+    def ReleaseKernel(self, kernel):
+        ref = self._ffi.new('vx_kernel *', kernel)
+        return self._lib.vxReleaseKernel(ref)

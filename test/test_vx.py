@@ -91,3 +91,22 @@ class TestVX(object):
         assert r.end_y == 480
 
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_kernel(self):
+        c = vx.CreateContext()
+        assert vx.LoadKernels(c, "openvx-extras") == vx.SUCCESS
+        kernel = vx.GetKernelByName(c, "org.khronos.openvx.sobel_3x3")
+        assert vx.GetStatus(c) == vx.SUCCESS
+        k = vx.GetKernelByEnum(c, vx.KERNEL_SOBEL_3x3)
+        assert kernel == k
+        s, i = vx.QueryKernel(kernel, vx.KERNEL_ATTRIBUTE_ENUM, 'vx_enum')
+        assert i == vx.KERNEL_SOBEL_3x3
+        vx.ReleaseKernel(k)
+        param = vx.GetKernelParameterByIndex(kernel, 0)
+        assert vx.GetStatus(c) == vx.SUCCESS
+
+        # vxAddKernel, vxAddParameterToKernel, vxFinalizeKernel, vxRemoveKernel
+        #assert vx.SetKernelAttribute(kernel, vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, 7, 'vx_size') == vx.SUCCESS
+
+
+        assert vx.ReleaseContext(c) == vx.SUCCESS
