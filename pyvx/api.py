@@ -183,4 +183,33 @@ class VX(VXTypes):
         return self._lib.vxSetParameterByReference(parameter, value)
 
 
+    # SCALAR
+
+    def _new_scalar_value_ptr(self, data_type, value=None):
+        data_type_name = self._ffi.string(self._ffi.cast("enum vx_type_e", data_type))
+        assert data_type_name.startswith('VX_TYPE_')
+        return self._ffi.new('vx_%s *' % data_type_name[8:].lower(), value)
+
+    def CreateScalar(self, context, data_type, value):
+        ptr = self._new_scalar_value_ptr(data_type, value)
+        return self._lib.vxCreateScalar(context, data_type, ptr)
+
+    def ReleaseScalar(self, scalar):
+        ref = self._ffi.new('vx_scalar *', scalar)
+        return self._lib.vxReleaseScalar(ref)
+
+    def QueryScalar(self, scalar, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryScalar, scalar, attribute, c_type, python_type)
+
+    def ReadScalarValue(self, scalar):
+        s, data_type = self.QueryScalar(scalar, self.SCALAR_ATTRIBUTE_TYPE, "vx_enum")
+        ptr = self._new_scalar_value_ptr(data_type)
+        s = self._lib.vxReadScalarValue(scalar, ptr)
+        return s, ptr[0]
+
+    def WriteScalarValue(self, scalar, value):
+        s, data_type = self.QueryScalar(scalar, self.SCALAR_ATTRIBUTE_TYPE, "vx_enum")
+        ptr = self._new_scalar_value_ptr(data_type, value)
+        return self._lib.vxWriteScalarValue(scalar, ptr)
+
 # FIXME: typecheck casts to vx_reference

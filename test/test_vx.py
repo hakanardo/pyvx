@@ -206,4 +206,9 @@ class TestVX(object):
     def test_scalar(self):
         c = vx.CreateContext()
         scalar = vx.CreateScalar(c, vx.TYPE_INT16, 7)
+        assert vx.QueryScalar(scalar, vx.SCALAR_ATTRIBUTE_TYPE, "vx_enum") == (vx.SUCCESS, vx.TYPE_INT16)
+        assert vx.ReadScalarValue(scalar) == (vx.SUCCESS, 7)
+        assert vx.WriteScalarValue(scalar, 42) == vx.SUCCESS
+        assert vx.ReadScalarValue(scalar) == (vx.SUCCESS, 42)
+        assert vx.ReleaseScalar(scalar) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
