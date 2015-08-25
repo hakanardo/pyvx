@@ -1,10 +1,12 @@
 from array import array
 from pyvx.default import vx
+from py.test import raises
 
 class TestVX(object):
     def test_context(self):
         c = vx.CreateContext()
         assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.QueryReference(c, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_CONTEXT)
         s, v = vx.QueryContext(c, vx.CONTEXT_ATTRIBUTE_VENDOR_ID, 'vx_uint16')
         assert s == vx.SUCCESS
         assert isinstance(v, int)
@@ -31,6 +33,7 @@ class TestVX(object):
         c = vx.CreateContext()
         img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_RGB)
         assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.QueryReference(img, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_IMAGE)
 
         roi = vx.CreateImageFromROI(img, vx.rectangle_t(10, 10, 100, 100))
         assert vx.GetStatus(c) == vx.SUCCESS
@@ -97,6 +100,7 @@ class TestVX(object):
         assert vx.LoadKernels(c, "openvx-extras") == vx.SUCCESS
         kernel = vx.GetKernelByName(c, "org.khronos.openvx.sobel_3x3")
         assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.QueryReference(kernel, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_KERNEL)
         k = vx.GetKernelByEnum(c, vx.KERNEL_SOBEL_3x3)
         assert kernel == k
         s, i = vx.QueryKernel(kernel, vx.KERNEL_ATTRIBUTE_ENUM, 'vx_enum')
@@ -113,6 +117,8 @@ class TestVX(object):
     def test_graph(self):
         c = vx.CreateContext()
         g = vx.CreateGraph(c)
+        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.QueryReference(g, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_GRAPH)
         assert vx.IsGraphVerified(g) == vx.false_e
         assert vx.QueryGraph(g, vx.GRAPH_ATTRIBUTE_NUMNODES, 'vx_uint32') == (vx.SUCCESS, 0)
 
@@ -161,6 +167,8 @@ class TestVX(object):
         k = vx.GetKernelByEnum(c, vx.KERNEL_SOBEL_3x3)
         assert vx.GetStatus(c) == vx.SUCCESS
         node = vx.CreateGenericNode(g, k)
+        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.QueryReference(node, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_NODE)
         s = vx.SetNodeAttribute(node, vx.NODE_ATTRIBUTE_BORDER_MODE,
                                 vx.border_mode_t(vx.BORDER_MODE_CONSTANT, 42))
         assert s == vx.SUCCESS
@@ -186,6 +194,7 @@ class TestVX(object):
 
         param = vx.GetParameterByIndex(node, 0)
         assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.QueryReference(param, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_PARAMETER)
         s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
         assert s == vx.SUCCESS
         assert v == img
@@ -206,9 +215,16 @@ class TestVX(object):
     def test_scalar(self):
         c = vx.CreateContext()
         scalar = vx.CreateScalar(c, vx.TYPE_INT16, 7)
+        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.QueryReference(scalar, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_SCALAR)
         assert vx.QueryScalar(scalar, vx.SCALAR_ATTRIBUTE_TYPE, "vx_enum") == (vx.SUCCESS, vx.TYPE_INT16)
         assert vx.ReadScalarValue(scalar) == (vx.SUCCESS, 7)
         assert vx.WriteScalarValue(scalar, 42) == vx.SUCCESS
         assert vx.ReadScalarValue(scalar) == (vx.SUCCESS, 42)
         assert vx.ReleaseScalar(scalar) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_reference(self):
+        with raises(TypeError):
+            vx.QueryReference(vx.imagepatch_addressing_t(), vx.REF_ATTRIBUTE_TYPE, 'vx_enum')
+

@@ -5,6 +5,14 @@ keep_alive = WeakKeyDictionary()
 
 class VX(VXTypes):
 
+    def __init__(self, backend):
+        VXTypes.__init__(self, backend)
+        self._reference_types = {self._ffi.typeof(s)
+                                 for s in ['vx_context', 'vx_image', 'vx_graph', 'vx_node', 'vx_scalar',
+                                           'vx_delay', 'vx_lut', 'vx_distribution', 'vx_threshold', 'vx_kernel',
+                                           'vx_matrix', 'vx_convolution', 'vx_pyramid', 'vx_remap', 'vx_array',
+                                           'vx_parameter']}
+
     def _get_attribute(self, func, ref, attribute, c_type, python_type):
         if self._ffi.typeof(c_type).kind != 'array':
             val = self._ffi.new(c_type + '*')
@@ -34,7 +42,7 @@ class VX(VXTypes):
         return self._lib.vxReleaseContext(c)
 
     def GetContext(self, reference):
-        return self._lib.vxGetContext(self._ffi.cast('vx_reference', reference))
+        return self._lib.vxGetContext(self._reference(reference))
 
     def QueryContext(self, context, attribute, c_type, python_type=None):
         return self._get_attribute(self._lib.vxQueryContext, context, attribute, c_type, python_type)
@@ -43,13 +51,13 @@ class VX(VXTypes):
         return self._set_attribute(self._lib.vxSetContextAttribute, context, attribute, value, c_type)
 
     def Hint(self, reference, hint):
-        return self._lib.vxHint(self._ffi.cast('vx_reference', reference), hint)
+        return self._lib.vxHint(self._reference(reference), hint)
 
     def Directive(self, reference, directive):
-        return self._lib.vxDirective(self._ffi.cast('vx_reference', reference), directive)
+        return self._lib.vxDirective(self._reference(reference), directive)
 
     def GetStatus(self, reference):
-        return self._lib.vxGetStatus(self._ffi.cast('vx_reference', reference))
+        return self._lib.vxGetStatus(self._reference(reference))
 
 
     # IMAGE
@@ -149,7 +157,7 @@ class VX(VXTypes):
         return self._set_attribute(self._lib.vxSetNodeAttribute, node, attribute, value, c_type)
 
     def SetGraphParameterByIndex(self, graph, index, value):
-        value = self._ffi.cast('vx_reference', value)
+        value = self._reference(value)
         return self._lib.vxSetGraphParameterByIndex(graph, index, value)
 
     def RemoveNode(self, node):
@@ -175,11 +183,11 @@ class VX(VXTypes):
         return self._get_attribute(self._lib.vxQueryParameter, parameter, attribute, c_type, python_type)
 
     def SetParameterByIndex(self, node, index, value):
-        value = self._ffi.cast('vx_reference', value)
+        value = self._reference(value)
         return self._lib.vxSetParameterByIndex(node, index, value)
 
     def SetParameterByReference(self, parameter, value):
-        value = self._ffi.cast('vx_reference', value)
+        value = self._reference(value)
         return self._lib.vxSetParameterByReference(parameter, value)
 
 
@@ -211,5 +219,18 @@ class VX(VXTypes):
         s, data_type = self.QueryScalar(scalar, self.SCALAR_ATTRIBUTE_TYPE, "vx_enum")
         ptr = self._new_scalar_value_ptr(data_type, value)
         return self._lib.vxWriteScalarValue(scalar, ptr)
+
+
+    # REFERENCE
+
+    def _reference(self, reference):
+        if self._ffi.typeof(reference) not in self._reference_types:
+            raise TypeError("Can't cast %r to vx_reference" % reference)
+        return self._ffi.cast('vx_reference', reference)
+
+    def QueryReference(self, reference, attribute, c_type, python_type=None):
+        reference = self._reference(reference)
+        return self._get_attribute(self._lib.vxQueryReference, reference, attribute, c_type, python_type)
+
 
 # FIXME: typecheck casts to vx_reference
