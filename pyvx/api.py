@@ -226,7 +226,7 @@ class VX(VXTypes):
         return self._get_attribute(self._lib.vxQueryDelay, delay, attribute, c_type, python_type)
 
 
-    # LOG
+    # LOGGING
 
     def RegisterLogCallback(self, context, callback, reentrant):
         def wrapper(context, ref, status, string):
