@@ -202,3 +202,8 @@ class TestVX(object):
 
         assert vx.ReleaseParameter(param) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_scalar(self):
+        c = vx.CreateContext()
+        scalar = vx.CreateScalar(c, vx.TYPE_INT16, 7)
+        assert vx.ReleaseContext(c) == vx.SUCCESS
