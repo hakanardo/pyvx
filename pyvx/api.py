@@ -46,23 +46,11 @@ class VX(VXTypes):
         c = self._ffi.new('vx_context *', context)
         return self._lib.vxReleaseContext(c)
 
-    def GetContext(self, reference):
-        return self._lib.vxGetContext(self._reference(reference))
-
     def QueryContext(self, context, attribute, c_type, python_type=None):
         return self._get_attribute(self._lib.vxQueryContext, context, attribute, c_type, python_type)
 
     def SetContextAttribute(self, context, attribute, value, c_type=None):
         return self._set_attribute(self._lib.vxSetContextAttribute, context, attribute, value, c_type)
-
-    def Hint(self, reference, hint):
-        return self._lib.vxHint(self._reference(reference), hint)
-
-    def Directive(self, reference, directive):
-        return self._lib.vxDirective(self._reference(reference), directive)
-
-    def GetStatus(self, reference):
-        return self._lib.vxGetStatus(self._reference(reference))
 
 
     # IMAGE
@@ -161,10 +149,6 @@ class VX(VXTypes):
     def SetNodeAttribute(self, node, attribute, value, c_type=None):
         return self._set_attribute(self._lib.vxSetNodeAttribute, node, attribute, value, c_type)
 
-    def SetGraphParameterByIndex(self, graph, index, value):
-        value = self._reference(value)
-        return self._lib.vxSetGraphParameterByIndex(graph, index, value)
-
     def RemoveNode(self, node):
         ref = self._ffi.new('vx_node *', node)
         return self._lib.vxReleaseNode(ref)
@@ -186,14 +170,6 @@ class VX(VXTypes):
 
     def QueryParameter(self, parameter, attribute, c_type, python_type=None):
         return self._get_attribute(self._lib.vxQueryParameter, parameter, attribute, c_type, python_type)
-
-    def SetParameterByIndex(self, node, index, value):
-        value = self._reference(value)
-        return self._lib.vxSetParameterByIndex(node, index, value)
-
-    def SetParameterByReference(self, parameter, value):
-        value = self._reference(value)
-        return self._lib.vxSetParameterByReference(parameter, value)
 
 
     # SCALAR
@@ -223,25 +199,19 @@ class VX(VXTypes):
 
     # REFERENCE
 
-    def _reference(self, reference):
+    def reference(self, reference):
         if self._ffi.typeof(reference) not in self._reference_types:
             raise TypeError("Can't cast %r to vx_reference" % reference)
         return self._ffi.cast('vx_reference', reference)
 
-    def QueryReference(self, reference, attribute, c_type, python_type=None):
-        reference = self._reference(reference)
-        return self._get_attribute(self._lib.vxQueryReference, reference, attribute, c_type, python_type)
-
-    def specialize(self, ref):
+    def from_reference(self, ref):
         s, data_type = self.QueryReference(ref, self.REF_ATTRIBUTE_TYPE, 'vx_enum')
         return self._ffi.cast(self._enum2ctype(data_type), ref)
 
+    def QueryReference(self, reference, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryReference, reference, attribute, c_type, python_type)
 
     # DELAY
-
-    def CreateDelay(self, context, exemplar, slots):
-        exemplar = self._reference(exemplar)
-        return self._lib.vxCreateDelay(context, exemplar, slots)
 
     def ReleaseDelay(self, delay):
         ref = self._ffi.new('vx_delay *', delay)

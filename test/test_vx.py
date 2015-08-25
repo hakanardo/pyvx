@@ -5,8 +5,8 @@ from py.test import raises
 class TestVX(object):
     def test_context(self):
         c = vx.CreateContext()
-        assert vx.GetStatus(c) == vx.SUCCESS
-        assert vx.QueryReference(c, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_CONTEXT)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(c), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_CONTEXT)
         s, v = vx.QueryContext(c, vx.CONTEXT_ATTRIBUTE_VENDOR_ID, 'vx_uint16')
         assert s == vx.SUCCESS
         assert isinstance(v, int)
@@ -22,9 +22,9 @@ class TestVX(object):
         assert v.mode == vx.BORDER_MODE_CONSTANT
         assert v.constant_value == 42
 
-        vx.Hint(c, vx.HINT_SERIALIZE)
-        vx.Directive(c, vx.DIRECTIVE_DISABLE_LOGGING)
-        assert vx.GetContext(c) == c
+        vx.Hint(vx.reference(c), vx.HINT_SERIALIZE)
+        vx.Directive(vx.reference(c), vx.DIRECTIVE_DISABLE_LOGGING)
+        assert vx.GetContext(vx.reference(c)) == c
         vx.RegisterUserStruct(c, 42)
 
         assert vx.ReleaseContext(c) == vx.SUCCESS
@@ -32,34 +32,34 @@ class TestVX(object):
     def test_image(self):
         c = vx.CreateContext()
         img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_RGB)
-        assert vx.GetStatus(c) == vx.SUCCESS
-        assert vx.QueryReference(img, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_IMAGE)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(img), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_IMAGE)
 
         roi = vx.CreateImageFromROI(img, vx.rectangle_t(10, 10, 100, 100))
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
         assert vx.ReleaseImage(roi) == vx.SUCCESS
         roi = None
 
         const = vx.CreateUniformImage(c, 640, 480, vx.DF_IMAGE_S16, 7, 'vx_int16')
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
 
         const = vx.CreateUniformImage(c, 640, 480, vx.DF_IMAGE_RGB, (7, 8, 9), 'vx_uint8[]')
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
 
         addr = vx.imagepatch_addressing_t(640, 480, 1, 640, vx.SCALE_UNITY, vx.SCALE_UNITY, 1, 1)
         data = array('B', [42]) * (640 * 480)
         hand = vx.CreateImageFromHandle(c, vx.DF_IMAGE_U8, (addr,), (data,), vx.IMPORT_TYPE_HOST)
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
         hand = vx.CreateImageFromHandle(c, vx.DF_IMAGE_U8, addr, data, vx.IMPORT_TYPE_HOST)
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
         hand = vx.CreateImageFromHandle(c, vx.DF_IMAGE_RGB, (addr, addr, addr), (data, data, data), vx.IMPORT_TYPE_HOST)
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
 
         assert vx.QueryImage(img, vx.IMAGE_ATTRIBUTE_WIDTH, 'vx_uint32') == (vx.SUCCESS, 640)
         assert vx.SetImageAttribute(img, vx.IMAGE_ATTRIBUTE_SPACE, vx.COLOR_SPACE_BT601_525, 'vx_enum') == vx.SUCCESS
         assert vx.QueryImage(img, vx.IMAGE_ATTRIBUTE_SPACE, 'vx_enum') == (vx.SUCCESS, vx.COLOR_SPACE_BT601_525)
 
-        assert vx.GetContext(img) == c
+        assert vx.GetContext(vx.reference(img)) == c
 
         r = vx.rectangle_t(10, 20, 30, 40)
         s = vx.ComputeImagePatchSize(img, r, 0)
@@ -99,15 +99,15 @@ class TestVX(object):
         c = vx.CreateContext()
         assert vx.LoadKernels(c, "openvx-extras") == vx.SUCCESS
         kernel = vx.GetKernelByName(c, "org.khronos.openvx.sobel_3x3")
-        assert vx.GetStatus(c) == vx.SUCCESS
-        assert vx.QueryReference(kernel, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_KERNEL)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(kernel), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_KERNEL)
         k = vx.GetKernelByEnum(c, vx.KERNEL_SOBEL_3x3)
         assert kernel == k
         s, i = vx.QueryKernel(kernel, vx.KERNEL_ATTRIBUTE_ENUM, 'vx_enum')
         assert i == vx.KERNEL_SOBEL_3x3
         vx.ReleaseKernel(k)
         param = vx.GetKernelParameterByIndex(kernel, 0)
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
 
         # FIXME:  vxAddKernel, vxAddParameterToKernel, vxFinalizeKernel, vxRemoveKernel
         # FIXME: assert vx.SetKernelAttribute(kernel, vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, 7, 'vx_size') == vx.SUCCESS
@@ -117,8 +117,8 @@ class TestVX(object):
     def test_graph(self):
         c = vx.CreateContext()
         g = vx.CreateGraph(c)
-        assert vx.GetStatus(c) == vx.SUCCESS
-        assert vx.QueryReference(g, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_GRAPH)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(g), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_GRAPH)
         assert vx.IsGraphVerified(g) == vx.false_e
         assert vx.QueryGraph(g, vx.GRAPH_ATTRIBUTE_NUMNODES, 'vx_uint32') == (vx.SUCCESS, 0)
 
@@ -134,9 +134,9 @@ class TestVX(object):
         p = vx.GetParameterByIndex(node, 0)
         assert vx.AddParameterToGraph(g, p) == vx.SUCCESS
         p2 = vx.GetGraphParameterByIndex(g, 0)
-        assert vx.SetGraphParameterByIndex(g, 0, dx) == vx.SUCCESS
+        assert vx.SetGraphParameterByIndex(g, 0, vx.reference(dx)) == vx.SUCCESS
         assert vx.VerifyGraph(g) != vx.SUCCESS
-        assert vx.SetGraphParameterByIndex(g, 0, img) == vx.SUCCESS
+        assert vx.SetGraphParameterByIndex(g, 0, vx.reference(img)) == vx.SUCCESS
         assert vx.VerifyGraph(g) == vx.SUCCESS
         assert vx.IsGraphVerified(g) == vx.true_e
 
@@ -155,7 +155,7 @@ class TestVX(object):
         assert vx.AssignNodeCallback(node, callback) == vx.SUCCESS
 
         img = vx.CreateVirtualImage(g, 640, 480, vx.DF_IMAGE_RGB)
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
 
         assert vx.ReleaseGraph(g) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
@@ -165,10 +165,10 @@ class TestVX(object):
         g = vx.CreateGraph(c)
 
         k = vx.GetKernelByEnum(c, vx.KERNEL_SOBEL_3x3)
-        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
         node = vx.CreateGenericNode(g, k)
-        assert vx.GetStatus(c) == vx.SUCCESS
-        assert vx.QueryReference(node, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_NODE)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(node), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_NODE)
         s = vx.SetNodeAttribute(node, vx.NODE_ATTRIBUTE_BORDER_MODE,
                                 vx.border_mode_t(vx.BORDER_MODE_CONSTANT, 42))
         assert s == vx.SUCCESS
@@ -193,18 +193,18 @@ class TestVX(object):
         node = vx.Sobel3x3Node(g, img, dx, dy)
 
         param = vx.GetParameterByIndex(node, 0)
-        assert vx.GetStatus(c) == vx.SUCCESS
-        assert vx.QueryReference(param, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_PARAMETER)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(param), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_PARAMETER)
         s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
         assert s == vx.SUCCESS
         assert v == img
 
-        assert vx.SetParameterByIndex(node, 0, dx) == vx.SUCCESS
+        assert vx.SetParameterByIndex(node, 0, vx.reference(dx)) == vx.SUCCESS
         s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
         assert s == vx.SUCCESS
         assert v == dx
 
-        assert vx.SetParameterByReference(param, dy) == vx.SUCCESS
+        assert vx.SetParameterByReference(param, vx.reference(dy)) == vx.SUCCESS
         s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
         assert s == vx.SUCCESS
         assert v == dy
@@ -215,8 +215,8 @@ class TestVX(object):
     def test_scalar(self):
         c = vx.CreateContext()
         scalar = vx.CreateScalar(c, vx.TYPE_INT16, 7)
-        assert vx.GetStatus(c) == vx.SUCCESS
-        assert vx.QueryReference(scalar, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_SCALAR)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(scalar), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_SCALAR)
         assert vx.QueryScalar(scalar, vx.SCALAR_ATTRIBUTE_TYPE, "vx_enum") == (vx.SUCCESS, vx.TYPE_INT16)
         assert vx.ReadScalarValue(scalar) == (vx.SUCCESS, 7)
         assert vx.WriteScalarValue(scalar, 42) == vx.SUCCESS
@@ -226,20 +226,20 @@ class TestVX(object):
 
     def test_reference(self):
         with raises(TypeError):
-            vx.QueryReference(vx.imagepatch_addressing_t(), vx.REF_ATTRIBUTE_TYPE, 'vx_enum')
+            vx.reference(vx.imagepatch_addressing_t())
 
     def test_delay(self):
         c = vx.CreateContext()
         img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_RGB)
-        delay = vx.CreateDelay(c, img, 3)
-        assert vx.GetStatus(c) == vx.SUCCESS
-        assert vx.QueryReference(delay, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_DELAY)
+        delay = vx.CreateDelay(c, vx.reference(img), 3)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(delay), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_DELAY)
         assert vx.QueryDelay(delay, vx.DELAY_ATTRIBUTE_SLOTS, 'vx_size') == (vx.SUCCESS, 3)
         ref0 = vx.GetReferenceFromDelay(delay, 0)
         ref1 = vx.GetReferenceFromDelay(delay, 1)
         ref2 = vx.GetReferenceFromDelay(delay, 2)
         g = vx.CreateGraph(c)
-        node = vx.Sobel3x3Node(g, vx.specialize(ref0), vx.specialize(ref1), vx.specialize(ref2))
+        node = vx.Sobel3x3Node(g, vx.from_reference(ref0), vx.from_reference(ref1), vx.from_reference(ref2))
 
         param = vx.GetParameterByIndex(node, 1)
         s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
