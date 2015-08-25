@@ -232,5 +232,3 @@ class VX(VXTypes):
         reference = self._reference(reference)
         return self._get_attribute(self._lib.vxQueryReference, reference, attribute, c_type, python_type)
 
-
-# FIXME: typecheck casts to vx_reference
