@@ -228,3 +228,29 @@ class TestVX(object):
         with raises(TypeError):
             vx.QueryReference(vx.imagepatch_addressing_t(), vx.REF_ATTRIBUTE_TYPE, 'vx_enum')
 
+    def test_delay(self):
+        c = vx.CreateContext()
+        img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_RGB)
+        delay = vx.CreateDelay(c, img, 3)
+        assert vx.GetStatus(c) == vx.SUCCESS
+        assert vx.QueryReference(delay, vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_DELAY)
+        assert vx.QueryDelay(delay, vx.DELAY_ATTRIBUTE_SLOTS, 'vx_size') == (vx.SUCCESS, 3)
+        ref0 = vx.GetReferenceFromDelay(delay, 0)
+        ref1 = vx.GetReferenceFromDelay(delay, 1)
+        ref2 = vx.GetReferenceFromDelay(delay, 2)
+        g = vx.CreateGraph(c)
+        node = vx.Sobel3x3Node(g, vx.specialize(ref0), vx.specialize(ref1), vx.specialize(ref2))
+
+        param = vx.GetParameterByIndex(node, 1)
+        s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
+        assert s == vx.SUCCESS
+        assert v == ref1
+        assert vx.AgeDelay(delay) == vx.SUCCESS
+        s, v = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, "vx_reference")
+        assert s == vx.SUCCESS
+        assert v == ref0
+
+        assert vx.ReleaseDelay(delay) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS
+
+

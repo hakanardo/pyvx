@@ -11,7 +11,7 @@ class VX(VXTypes):
                                  for s in ['vx_context', 'vx_image', 'vx_graph', 'vx_node', 'vx_scalar',
                                            'vx_delay', 'vx_lut', 'vx_distribution', 'vx_threshold', 'vx_kernel',
                                            'vx_matrix', 'vx_convolution', 'vx_pyramid', 'vx_remap', 'vx_array',
-                                           'vx_parameter']}
+                                           'vx_parameter', 'vx_reference']}
 
     def _get_attribute(self, func, ref, attribute, c_type, python_type):
         if self._ffi.typeof(c_type).kind != 'array':
@@ -35,6 +35,11 @@ class VX(VXTypes):
             value = self._ffi.new(c_type + '*', value)
         s = self._ffi.sizeof(self._ffi.typeof(value).item)
         return func(ref, attribute, value, s)
+
+    def _enum2ctype(self, data_type):
+        data_type_name = self._ffi.string(self._ffi.cast("enum vx_type_e", data_type))
+        assert data_type_name.startswith('VX_TYPE_')
+        return 'vx_' + data_type_name[8:].lower()
 
     # CONTEXT
     def ReleaseContext(self, context):
@@ -193,13 +198,8 @@ class VX(VXTypes):
 
     # SCALAR
 
-    def _new_scalar_value_ptr(self, data_type, value=None):
-        data_type_name = self._ffi.string(self._ffi.cast("enum vx_type_e", data_type))
-        assert data_type_name.startswith('VX_TYPE_')
-        return self._ffi.new('vx_%s *' % data_type_name[8:].lower(), value)
-
     def CreateScalar(self, context, data_type, value):
-        ptr = self._new_scalar_value_ptr(data_type, value)
+        ptr = self._ffi.new(self._enum2ctype(data_type) + '*', value)
         return self._lib.vxCreateScalar(context, data_type, ptr)
 
     def ReleaseScalar(self, scalar):
@@ -211,13 +211,13 @@ class VX(VXTypes):
 
     def ReadScalarValue(self, scalar):
         s, data_type = self.QueryScalar(scalar, self.SCALAR_ATTRIBUTE_TYPE, "vx_enum")
-        ptr = self._new_scalar_value_ptr(data_type)
+        ptr = self._ffi.new(self._enum2ctype(data_type) + '*')
         s = self._lib.vxReadScalarValue(scalar, ptr)
         return s, ptr[0]
 
     def WriteScalarValue(self, scalar, value):
         s, data_type = self.QueryScalar(scalar, self.SCALAR_ATTRIBUTE_TYPE, "vx_enum")
-        ptr = self._new_scalar_value_ptr(data_type, value)
+        ptr = self._ffi.new(self._enum2ctype(data_type) + '*', value)
         return self._lib.vxWriteScalarValue(scalar, ptr)
 
 
@@ -231,4 +231,23 @@ class VX(VXTypes):
     def QueryReference(self, reference, attribute, c_type, python_type=None):
         reference = self._reference(reference)
         return self._get_attribute(self._lib.vxQueryReference, reference, attribute, c_type, python_type)
+
+    def specialize(self, ref):
+        s, data_type = self.QueryReference(ref, self.REF_ATTRIBUTE_TYPE, 'vx_enum')
+        return self._ffi.cast(self._enum2ctype(data_type), ref)
+
+
+    # DELAY
+
+    def CreateDelay(self, context, exemplar, slots):
+        exemplar = self._reference(exemplar)
+        return self._lib.vxCreateDelay(context, exemplar, slots)
+
+    def ReleaseDelay(self, delay):
+        ref = self._ffi.new('vx_delay *', delay)
+        return self._lib.vxReleaseDelay(ref)
+
+    def QueryDelay(self, delay, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryDelay, delay, attribute, c_type, python_type)
+
 
