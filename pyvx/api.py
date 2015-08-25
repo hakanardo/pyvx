@@ -231,6 +231,27 @@ class VX(VXTypes):
     def RegisterLogCallback(self, context, callback, reentrant):
         def wrapper(context, ref, status, string):
             callback(context, ref, status, self._ffi.string(string))
-        callback = self._callback('vx_log_callback_f', callback, wrapper)
-        self._lib.vxRegisterLogCallback(context, callback, reentrant)
+        cb = self._callback('vx_log_callback_f', wrapper, context)
+        self._lib.vxRegisterLogCallback(context, cb, reentrant)
 
+
+    # LUT
+
+    def ReleaseLUT(self, lut):
+        ref = self._ffi.new('vx_lut *', lut)
+        return self._lib.vxReleaseLUT(ref)
+
+    def QueryLUT(self, lut, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryLUT, lut, attribute, c_type, python_type)
+
+    def AccessLUT(self, lut, ptr, usage):
+        if ptr is not None:
+            ptr = self._ffi.from_buffer(ptr)
+        ptr_p = self._ffi.new('void **', ptr)
+        status = self._lib.vxAccessLUT(lut, ptr_p, usage)
+        _, size = self.QueryLUT(lut, self.LUT_ATTRIBUTE_COUNT, 'vx_size')
+        return (status, self._ffi.buffer(ptr_p[0], size))
+
+    def CommitLUT(self, lut, ptr):
+        ptr = self._ffi.from_buffer(ptr)
+        return self._lib.vxCommitLUT(lut, ptr)

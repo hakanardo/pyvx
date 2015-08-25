@@ -262,3 +262,26 @@ class TestVX(object):
         vx.AddLogEntry(vx.reference(c), vx.FAILURE, "Test")
         assert callback.called
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_lut(self):
+        c = vx.CreateContext()
+        lut = vx.CreateLUT(c, vx.TYPE_UINT8, 256)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(lut), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_LUT)
+        assert vx.QueryLUT(lut, vx.LUT_ATTRIBUTE_COUNT, 'vx_size') == (vx.SUCCESS, 256)
+
+        s, data = vx.AccessLUT(lut, None, vx.READ_AND_WRITE)
+        assert s == vx.SUCCESS
+        data[1] = 'H'
+        assert vx.CommitLUT(lut, data) == vx.SUCCESS
+        s, data = vx.AccessLUT(lut, None, vx.READ_ONLY)
+        assert data[1] == 'H'
+        assert vx.CommitLUT(lut, data) == vx.SUCCESS
+
+        data = array('B', [0]) * 256
+        vx.AccessLUT(lut, data, vx.READ_ONLY)
+        assert data[1] == ord('H')
+        assert vx.CommitLUT(lut, data) == vx.SUCCESS
+
+        assert vx.ReleaseLUT(lut) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS
