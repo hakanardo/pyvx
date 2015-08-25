@@ -41,6 +41,11 @@ class VX(VXTypes):
         assert data_type_name.startswith('VX_TYPE_')
         return 'vx_' + data_type_name[8:].lower()
 
+    def _callback(self, ctype, callback, parent):
+        callback = self._ffi.callback(ctype)(callback)
+        keep_alive.setdefault(parent, []).append(callback)
+        return callback
+
     # CONTEXT
     def ReleaseContext(self, context):
         c = self._ffi.new('vx_context *', context)
@@ -155,8 +160,7 @@ class VX(VXTypes):
 
     def AssignNodeCallback(self, node, callback):
         if callback is not None:
-            callback = self._ffi.callback("vx_nodecomplete_f")(callback)
-            keep_alive.setdefault(node, []).append(callback)
+            callback = self._callback("vx_nodecomplete_f", callback, node)
         else:
             callback = self._ffi.NULL
         return self._lib.vxAssignNodeCallback(node, callback)
@@ -211,6 +215,7 @@ class VX(VXTypes):
     def QueryReference(self, reference, attribute, c_type, python_type=None):
         return self._get_attribute(self._lib.vxQueryReference, reference, attribute, c_type, python_type)
 
+
     # DELAY
 
     def ReleaseDelay(self, delay):
@@ -220,4 +225,12 @@ class VX(VXTypes):
     def QueryDelay(self, delay, attribute, c_type, python_type=None):
         return self._get_attribute(self._lib.vxQueryDelay, delay, attribute, c_type, python_type)
 
+
+    # LOG
+
+    def RegisterLogCallback(self, context, callback, reentrant):
+        def wrapper(context, ref, status, string):
+            callback(context, ref, status, self._ffi.string(string))
+        callback = self._callback('vx_log_callback_f', callback, wrapper)
+        self._lib.vxRegisterLogCallback(context, callback, reentrant)
 

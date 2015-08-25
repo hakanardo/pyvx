@@ -140,15 +140,13 @@ class TestVX(object):
         assert vx.VerifyGraph(g) == vx.SUCCESS
         assert vx.IsGraphVerified(g) == vx.true_e
 
-        class flags:
-            callback_called = False
         def callback(node):
-            flags.callback_called = True
+            callback.called = True
             return vx.SUCCESS
 
         assert vx.AssignNodeCallback(node, callback) == vx.SUCCESS
         assert vx.ProcessGraph(g) == vx.SUCCESS
-        assert flags.callback_called
+        assert callback.called
 
         assert vx.AssignNodeCallback(node, callback) != vx.SUCCESS
         assert vx.AssignNodeCallback(node, None) == vx.SUCCESS
@@ -254,3 +252,13 @@ class TestVX(object):
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
 
+    def test_log(self):
+        c = vx.CreateContext()
+        def callback(context, ref, status, string):
+            assert status == vx.FAILURE
+            assert string == "Test"
+            callback.called = True
+        vx.RegisterLogCallback(c, callback, vx.false_e)
+        vx.AddLogEntry(vx.reference(c), vx.FAILURE, "Test")
+        assert callback.called
+        assert vx.ReleaseContext(c) == vx.SUCCESS
