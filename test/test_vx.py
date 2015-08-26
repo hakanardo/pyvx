@@ -308,3 +308,14 @@ class TestVX(object):
 
         assert vx.ReleaseDistribution(distribution) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_threshold(self):
+        c = vx.CreateContext()
+        threshold = vx.CreateThreshold(c, vx.THRESHOLD_TYPE_BINARY, vx.TYPE_UINT8)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(threshold), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_THRESHOLD)
+        assert vx.QueryThreshold(threshold, vx.THRESHOLD_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.THRESHOLD_TYPE_BINARY)
+        assert vx.SetThresholdAttribute(threshold, vx.THRESHOLD_ATTRIBUTE_THRESHOLD_VALUE, 7, 'vx_int32') == vx.SUCCESS
+        assert vx.QueryThreshold(threshold, vx.THRESHOLD_ATTRIBUTE_THRESHOLD_VALUE, 'vx_int32') == (vx.SUCCESS, 7)
+        assert vx.ReleaseThreshold(threshold) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS

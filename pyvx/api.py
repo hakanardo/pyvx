@@ -277,3 +277,16 @@ class VX(VXTypes):
     def CommitDistribution(self, distribution, ptr):
         ptr = self._ffi.from_buffer(ptr)
         return self._lib.vxCommitDistribution(distribution, ptr)
+
+
+    # THRESHOLD
+
+    def ReleaseThreshold(self, threshold):
+        ref = self._ffi.new('vx_threshold *', threshold)
+        return self._lib.vxReleaseThreshold(ref)
+
+    def QueryThreshold(self, threshold, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryThreshold, threshold, attribute, c_type, python_type)
+
+    def SetThresholdAttribute(self, threshold, attribute, value, c_type=None):
+        return self._set_attribute(self._lib.vxSetThresholdAttribute, threshold, attribute, value, c_type)
