@@ -329,3 +329,13 @@ class VX(VXTypes):
     def ReadConvolutionCoefficients(self, conv, array):
         array = self._ffi.from_buffer(array)
         return self._lib.vxReadConvolutionCoefficients(conv, array)
+
+
+    # PYRAMID
+
+    def ReleasePyramid(self, pyramid):
+        ref = self._ffi.new('vx_pyramid *', pyramid)
+        return self._lib.vxReleasePyramid(ref)
+
+    def QueryPyramid(self, pyramid, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryPyramid, pyramid, attribute, c_type, python_type)

@@ -354,3 +354,20 @@ class TestVX(object):
 
         assert vx.ReleaseConvolution(convolution) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_pyramid(self):
+        c = vx.CreateContext()
+        pyramid = vx.CreatePyramid(c, 4, vx.SCALE_PYRAMID_HALF, 640, 480, vx.DF_IMAGE_U8)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(pyramid), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_PYRAMID)
+        assert vx.QueryPyramid(pyramid, vx.PYRAMID_ATTRIBUTE_WIDTH, 'vx_uint32') == (vx.SUCCESS, 640)
+        img = vx.GetPyramidLevel(pyramid, 1)
+        assert img
+        assert vx.QueryImage(img, vx.IMAGE_ATTRIBUTE_WIDTH, 'vx_uint32') == (vx.SUCCESS, 320)
+
+        g = vx.CreateGraph(c)
+        p = vx.CreateVirtualPyramid(g, 3, vx.SCALE_PYRAMID_HALF, 0, 0, vx.DF_IMAGE_VIRT)
+        assert vx.ReleasePyramid(p) == vx.SUCCESS
+
+        assert vx.ReleasePyramid(pyramid) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS
