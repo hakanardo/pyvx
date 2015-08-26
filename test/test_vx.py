@@ -319,3 +319,19 @@ class TestVX(object):
         assert vx.QueryThreshold(threshold, vx.THRESHOLD_ATTRIBUTE_THRESHOLD_VALUE, 'vx_int32') == (vx.SUCCESS, 7)
         assert vx.ReleaseThreshold(threshold) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_matrix(self):
+        c = vx.CreateContext()
+        matrix = vx.CreateMatrix(c, vx.TYPE_INT32, 3, 3)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(matrix), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_MATRIX)
+        assert vx.QueryMatrix(matrix, vx.MATRIX_ATTRIBUTE_COLUMNS, 'vx_size') == (vx.SUCCESS, 3)
+
+        data = array('i', [42]) * 9
+        assert vx.WriteMatrix(matrix, data) == vx.SUCCESS
+        data = array('i', [0]) * 9
+        assert vx.ReadMatrix(matrix, data) == vx.SUCCESS
+        assert data[0] == 42
+
+        assert vx.ReleaseMatrix(matrix) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS

@@ -290,3 +290,21 @@ class VX(VXTypes):
 
     def SetThresholdAttribute(self, threshold, attribute, value, c_type=None):
         return self._set_attribute(self._lib.vxSetThresholdAttribute, threshold, attribute, value, c_type)
+
+
+    # MATRIX
+
+    def ReleaseMatrix(self, matrix):
+        ref = self._ffi.new('vx_matrix *', matrix)
+        return self._lib.vxReleaseMatrix(ref)
+
+    def QueryMatrix(self, matrix, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryMatrix, matrix, attribute, c_type, python_type)
+
+    def ReadMatrix(self, mat, array):
+        array = self._ffi.from_buffer(array)
+        return self._lib.vxReadMatrix(mat, array)
+
+    def WriteMatrix(self, mat, array):
+        array = self._ffi.from_buffer(array)
+        return self._lib.vxWriteMatrix(mat, array)
