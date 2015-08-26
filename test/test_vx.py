@@ -335,3 +335,22 @@ class TestVX(object):
 
         assert vx.ReleaseMatrix(matrix) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_convolution(self):
+        c = vx.CreateContext()
+        convolution = vx.CreateConvolution(c, 3, 3)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(convolution), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_CONVOLUTION)
+        assert vx.QueryConvolution(convolution, vx.CONVOLUTION_ATTRIBUTE_ROWS, 'vx_size') == (vx.SUCCESS, 3)
+
+        data = array('i', [42]) * 9
+        assert vx.WriteConvolutionCoefficients(convolution, data) == vx.SUCCESS
+        data = array('i', [0]) * 9
+        assert vx.ReadConvolutionCoefficients(convolution, data) == vx.SUCCESS
+        assert data[0] == 42
+
+        assert vx.SetConvolutionAttribute(convolution, vx.CONVOLUTION_ATTRIBUTE_SCALE, 8, 'vx_uint32') == vx.SUCCESS
+        assert vx.QueryConvolution(convolution, vx.CONVOLUTION_ATTRIBUTE_SCALE, 'vx_uint32') == (vx.SUCCESS, 8)
+
+        assert vx.ReleaseConvolution(convolution) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS

@@ -308,3 +308,24 @@ class VX(VXTypes):
     def WriteMatrix(self, mat, array):
         array = self._ffi.from_buffer(array)
         return self._lib.vxWriteMatrix(mat, array)
+
+
+    # CONVOLUTION
+
+    def ReleaseConvolution(self, convolution):
+        ref = self._ffi.new('vx_convolution *', convolution)
+        return self._lib.vxReleaseConvolution(ref)
+
+    def QueryConvolution(self, convolution, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryConvolution, convolution, attribute, c_type, python_type)
+
+    def SetConvolutionAttribute(self, convolution, attribute, value, c_type=None):
+        return self._set_attribute(self._lib.vxSetConvolutionAttribute, convolution, attribute, value, c_type)
+
+    def WriteConvolutionCoefficients(self, conv, array):
+        array = self._ffi.from_buffer(array)
+        return self._lib.vxWriteConvolutionCoefficients(conv, array)
+
+    def ReadConvolutionCoefficients(self, conv, array):
+        array = self._ffi.from_buffer(array)
+        return self._lib.vxReadConvolutionCoefficients(conv, array)
