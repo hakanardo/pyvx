@@ -371,3 +371,14 @@ class TestVX(object):
 
         assert vx.ReleasePyramid(pyramid) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_remap(self):
+        c = vx.CreateContext()
+        remap = vx.CreateRemap(c, 640, 480, 320, 240)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(remap), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_REMAP)
+        assert vx.QueryRemap(remap, vx.REMAP_ATTRIBUTE_DESTINATION_HEIGHT, 'vx_uint32') == (vx.SUCCESS, 240)
+        assert vx.SetRemapPoint(remap, 10, 15, 20.5, 30.5) == vx.SUCCESS
+        assert vx.GetRemapPoint(remap, 10, 15) == (vx.SUCCESS, 20.5, 30.5)
+        assert vx.ReleaseRemap(remap) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS

@@ -339,3 +339,19 @@ class VX(VXTypes):
 
     def QueryPyramid(self, pyramid, attribute, c_type, python_type=None):
         return self._get_attribute(self._lib.vxQueryPyramid, pyramid, attribute, c_type, python_type)
+
+
+    # REMAP
+
+    def ReleaseRemap(self, remap):
+        ref = self._ffi.new('vx_remap *', remap)
+        return self._lib.vxReleaseRemap(ref)
+
+    def QueryRemap(self, remap, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryRemap, remap, attribute, c_type, python_type)
+
+    def GetRemapPoint(self, table, dst_x, dst_y):
+        src_x = self._ffi.new('vx_float32 *')
+        src_y = self._ffi.new('vx_float32 *')
+        status = self._lib.vxGetRemapPoint(table, dst_x, dst_y, src_x, src_y)
+        return status, src_x[0], src_y[0]
