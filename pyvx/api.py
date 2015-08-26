@@ -255,3 +255,25 @@ class VX(VXTypes):
     def CommitLUT(self, lut, ptr):
         ptr = self._ffi.from_buffer(ptr)
         return self._lib.vxCommitLUT(lut, ptr)
+
+
+    # DISTRIBUTION
+
+    def ReleaseDistribution(self, distribution):
+        ref = self._ffi.new('vx_distribution *', distribution)
+        return self._lib.vxReleaseDistribution(ref)
+
+    def QueryDistribution(self, distribution, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryDistribution, distribution, attribute, c_type, python_type)
+
+    def AccessDistribution(self, distribution, ptr, usage):
+        if ptr is not None:
+            ptr = self._ffi.from_buffer(ptr)
+        ptr_p = self._ffi.new('void **', ptr)
+        status = self._lib.vxAccessDistribution(distribution, ptr_p, usage)
+        _, size = self.QueryDistribution(distribution, self.DISTRIBUTION_ATTRIBUTE_SIZE, 'vx_size')
+        return (status, self._ffi.buffer(ptr_p[0], size))
+
+    def CommitDistribution(self, distribution, ptr):
+        ptr = self._ffi.from_buffer(ptr)
+        return self._lib.vxCommitDistribution(distribution, ptr)

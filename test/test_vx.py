@@ -285,3 +285,26 @@ class TestVX(object):
 
         assert vx.ReleaseLUT(lut) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_distribution(self):
+        c = vx.CreateContext()
+        distribution = vx.CreateDistribution(c, 8, 0, 16)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(distribution), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_DISTRIBUTION)
+        assert vx.QueryDistribution(distribution, vx.DISTRIBUTION_ATTRIBUTE_BINS, 'vx_size') == (vx.SUCCESS, 8)
+
+        s, data = vx.AccessDistribution(distribution, None, vx.READ_AND_WRITE)
+        assert s == vx.SUCCESS
+        data[:4] = 'HHHH'
+        assert vx.CommitDistribution(distribution, data) == vx.SUCCESS
+        s, data = vx.AccessDistribution(distribution, None, vx.READ_ONLY)
+        assert data[:4] == 'HHHH'
+        assert vx.CommitDistribution(distribution, data) == vx.SUCCESS
+
+        data = array('I', [0]) * 256
+        vx.AccessDistribution(distribution, data, vx.READ_ONLY)
+        assert data[0] == sum(ord('H') * i for i in [2**24 + 2**16 + 2**8 + 1])
+        assert vx.CommitDistribution(distribution, data) == vx.SUCCESS
+
+        assert vx.ReleaseDistribution(distribution) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS
