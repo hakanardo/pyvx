@@ -355,3 +355,37 @@ class VX(VXTypes):
         src_y = self._ffi.new('vx_float32 *')
         status = self._lib.vxGetRemapPoint(table, dst_x, dst_y, src_x, src_y)
         return status, src_x[0], src_y[0]
+
+
+    # ARRAY
+
+    def ReleaseArray(self, array):
+        ref = self._ffi.new('vx_array *', array)
+        return self._lib.vxReleaseArray(ref)
+
+    def QueryArray(self, array, attribute, c_type, python_type=None):
+        return self._get_attribute(self._lib.vxQueryArray, array, attribute, c_type, python_type)
+
+    def FormatArrayPointer(self, ptr, index, stride):
+        return buffer(ptr, index * stride)
+
+    def ArrayItem(self, type, ptr, index, stride):
+        return self._ffi.cast(type + '*', self._ffi.from_buffer(self.FormatArrayPointer(ptr, index, stride)))
+
+    def AddArrayItems(self, arr, count, ptr, stride):
+        if not isinstance(ptr, self._ffi.CData):
+            ptr = self._ffi.from_buffer(ptr)
+        return self._lib.vxAddArrayItems(arr, count, ptr, stride)
+
+    def AccessArrayRange(self, arr, start, end, stride, ptr, usage):
+        if ptr is not None:
+            ptr = self._ffi.from_buffer(ptr)
+        ptr_p = self._ffi.new('void **', ptr)
+        stride_p = self._ffi.new('vx_size *', stride)
+        status = self._lib.vxAccessArrayRange(arr, start, end, stride_p, ptr_p, usage)
+        _, item_size = self.QueryArray(arr, self.ARRAY_ATTRIBUTE_ITEMSIZE, 'vx_size')
+        return (status, stride_p[0], self._ffi.buffer(ptr_p[0], item_size * (end - start + 1)))
+
+    def CommitArrayRange(self, arr, start, end, ptr):
+        ptr = self._ffi.from_buffer(ptr)
+        return self._lib.vxCommitArrayRange(arr, start, end, ptr)

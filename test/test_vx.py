@@ -382,3 +382,42 @@ class TestVX(object):
         assert vx.GetRemapPoint(remap, 10, 15) == (vx.SUCCESS, 20.5, 30.5)
         assert vx.ReleaseRemap(remap) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_array(self):
+        c = vx.CreateContext()
+        arr = vx.CreateArray(c, vx.TYPE_COORDINATES2D, 64)
+        assert vx.GetStatus(vx.reference(c)) == vx.SUCCESS
+        assert vx.QueryReference(vx.reference(arr), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_ARRAY)
+        assert vx.QueryArray(arr, vx.ARRAY_ATTRIBUTE_CAPACITY, 'vx_size') == (vx.SUCCESS, 64)
+        s, size = vx.QueryArray(arr, vx.ARRAY_ATTRIBUTE_ITEMSIZE, 'vx_size')
+
+        data = array('B', [0]) * size * 10
+        d = vx.ArrayItem('vx_coordinates2d_t', data, 0, size)
+        d.x, d.y, d[1].x, d[1].y = 1, 2, 3, 4
+        assert vx.AddArrayItems(arr, 10, data, size) == vx.SUCCESS
+        assert vx.AddArrayItems(arr, 10, d, size) == vx.SUCCESS
+        assert vx.QueryArray(arr, vx.ARRAY_ATTRIBUTE_NUMITEMS, 'vx_size') == (vx.SUCCESS, 20)
+        assert vx.TruncateArray(arr, 15) == vx.SUCCESS
+        assert vx.QueryArray(arr, vx.ARRAY_ATTRIBUTE_NUMITEMS, 'vx_size') == (vx.SUCCESS, 15)
+
+        status, stride, ptr = vx.AccessArrayRange(arr, 0, 14, None, None, vx.READ_AND_WRITE)
+        assert status == vx.SUCCESS
+        d0 = vx.ArrayItem('vx_coordinates2d_t', ptr, 0, stride)
+        d1 = vx.ArrayItem('vx_coordinates2d_t', ptr, 1, stride)
+        assert (d0.x, d0.y, d1.x, d1.y) == (1, 2, 3, 4)
+        d1.y = 42
+        assert vx.CommitArrayRange(arr, 0, 14, ptr) == vx.SUCCESS
+
+        data = array('B', [0]) * size * 15 * 2
+        status, stride, ptr = vx.AccessArrayRange(arr, 0, 14, size*2, data, vx.READ_AND_WRITE)
+        assert stride == size*2
+        d = vx.ArrayItem('vx_coordinates2d_t', data, 0, size)
+        assert (d.x, d.y, d[2].x, d[2].y) == (1, 2, 3, 42)
+        assert vx.CommitArrayRange(arr, 0, 14, ptr) == vx.SUCCESS
+
+        g = vx.CreateGraph(c)
+        a = vx.CreateVirtualArray(g, vx.TYPE_KEYPOINT, 64)
+        assert vx.ReleaseArray(a) == vx.SUCCESS
+
+        assert vx.ReleaseArray(arr) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS
