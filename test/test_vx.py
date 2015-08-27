@@ -424,3 +424,46 @@ class TestVX(object):
 
         assert vx.ReleaseArray(arr) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_user_kernel(self):
+        c = vx.CreateContext()
+
+        def func(node, parameters, num):
+            func.called = True
+            assert num == 2
+            return vx.SUCCESS
+
+        def validate_input(node, index):
+            validate_input.called = True
+            assert index == 0
+            return vx.SUCCESS
+
+        def validate_output(node, index, meta):
+            validate_output.called = True
+            assert index == 1
+            return vx.SUCCESS
+
+        enum = vx.KERNEL_BASE(vx.ID_DEFAULT, 7) + 1
+        kernel = vx.AddKernel(c, "org.test.hello", enum, func, 2, validate_input, validate_output, None, None)
+        assert vx.GetStatus(vx.reference(kernel)) == vx.SUCCESS
+        assert vx.AddParameterToKernel(kernel, 0, vx.INPUT, vx.TYPE_IMAGE, vx.PARAMETER_STATE_REQUIRED) == vx.SUCCESS
+        assert vx.AddParameterToKernel(kernel, 1, vx.OUTPUT, vx.TYPE_IMAGE, vx.PARAMETER_STATE_REQUIRED) == vx.SUCCESS
+        assert vx.SetKernelAttribute(kernel, vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, 42, 'vx_size') == vx.SUCCESS
+        assert vx.FinalizeKernel(kernel) == vx.SUCCESS
+
+        g = vx.CreateGraph(c)
+        img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_U8)
+        virt = vx.CreateVirtualImage(g, 0, 0, vx.DF_IMAGE_VIRT)
+        node = vx.CreateGenericNode(g, kernel)
+        vx.SetParameterByIndex(node, 0, vx.reference(img))
+        vx.SetParameterByIndex(node, 1, vx.reference(virt))
+
+        assert vx.VerifyGraph(g) == vx.SUCCESS
+        assert validate_input.called
+        assert validate_output.called
+        # assert vx.QueryImage(virt, vx.IMAGE_ATTRIBUTE_WIDTH, 'vx_uint32') == (vx.SUCCESS, 320)
+        assert vx.ProcessGraph(g) == vx.SUCCESS
+        assert func.called == True
+
+        assert vx.ReleaseGraph(g) == vx.SUCCESS
+        assert vx.ReleaseContext(c) == vx.SUCCESS

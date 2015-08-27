@@ -128,6 +128,20 @@ class VX(VXTypes):
     def SetKernelAttribute(self, kernel, attribute, value, c_type=None):
         return self._set_attribute(self._lib.vxSetKernelAttribute, kernel, attribute, value, c_type)
 
+    def AddKernel(self, context, name, enumeration, func_ptr, numParams, input, output, init, deinit):
+        func_ptr = self._callback("vx_kernel_f", func_ptr, context)
+        input = self._callback("vx_kernel_input_validate_f", input, context)
+        output = self._callback("vx_kernel_output_validate_f", output, context)
+        if init is None:
+            init = self._ffi.NULL
+        else:
+            init = self._callback("vx_kernel_initialize_f", init, context)
+        if deinit is None:
+            deinit = self._ffi.NULL
+        else:
+            deinit = self._callback("vx_kernel_deinitialize_f", deinit, context)
+        return self._lib.vxAddKernel(context, name, enumeration, func_ptr, numParams, input, output, init, deinit)
+
 
     # GRAPH
 

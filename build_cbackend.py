@@ -38,6 +38,7 @@ ffi.cdef(types)
 ffi.cdef('''
     char *_get_FMT_REF(void);
     char *_get_FMT_SIZE(void);
+    int _get_KERNEL_BASE(int vendor, int lib);
 ''')
 
 # vx_kernels.h
@@ -61,6 +62,7 @@ ffi.set_source("pyvx.backend.%s" % name, """
     #include <VX/vx.h>
     char *_get_FMT_REF(void) {return VX_FMT_REF;}
     char *_get_FMT_SIZE(void) {return VX_FMT_SIZE;}
+    int _get_KERNEL_BASE(int vendor, int lib) {return VX_KERNEL_BASE(vendor, lib);}
                """,
                include_dirs=[os.path.join(openvx_install, 'include')],
                library_dirs=[os.path.join(openvx_install, 'bin')],
