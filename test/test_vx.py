@@ -112,9 +112,6 @@ class TestVX(object):
         k = vx.GetKernelByName(c, "org.khronos.extra.edge_trace")
         assert vx.GetStatus(vx.reference(k)) == vx.SUCCESS
 
-        # FIXME:  vxAddKernel, vxAddParameterToKernel, vxFinalizeKernel, vxRemoveKernel
-        # FIXME: assert vx.SetKernelAttribute(kernel, vx.KERNEL_ATTRIBUTE_LOCAL_DATA_SIZE, 7, 'vx_size') == vx.SUCCESS
-
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
     def test_graph(self):
@@ -431,16 +428,44 @@ class TestVX(object):
         def func(node, parameters, num):
             func.called = True
             assert num == 2
+            input, output = vx.from_reference(parameters[0]), vx.from_reference(parameters[0])
+            _, r = vx.GetValidRegionImage(input)
+            _, addr, indata = vx.AccessImagePatch(input, r, 0, None, None, vx.READ_ONLY)
+            _, addr, outdata = vx.AccessImagePatch(output, r, 0, None, None, vx.WRITE_ONLY)
+            outdata[0], outdata[100] = indata[100], indata[0]
+            vx.CommitImagePatch(output, r, 0, addr, outdata)
+            vx.CommitImagePatch(input, r, 0, addr, indata)
             return vx.SUCCESS
 
         def validate_input(node, index):
             validate_input.called = True
             assert index == 0
-            return vx.SUCCESS
+            param = vx.GetParameterByIndex(node, index)
+            image = vx.QueryParameter(param, vx.PARAMETER_ATTRIBUTE_REF, 'vx_image')[1]
+            if vx.QueryImage(image, vx.IMAGE_ATTRIBUTE_FORMAT, 'vx_df_image') == (vx.SUCCESS, vx.DF_IMAGE_U8):
+                s = vx.SUCCESS
+            else:
+                s = vx.ERROR_INVALID_VALUE
+            vx.ReleaseImage(image)
+            vx.ReleaseParameter(param)
+            return s
 
         def validate_output(node, index, meta):
             validate_output.called = True
             assert index == 1
+            param0 = vx.GetParameterByIndex(node, 0)
+            input = vx.QueryParameter(param0, vx.PARAMETER_ATTRIBUTE_REF, 'vx_image')[1]
+            param1 = vx.GetParameterByIndex(node, index)
+            output = vx.QueryParameter(param1, vx.PARAMETER_ATTRIBUTE_REF, 'vx_image')[1]
+            _, width = vx.QueryImage(input, vx.IMAGE_ATTRIBUTE_WIDTH, 'vx_uint32')
+            _, height = vx.QueryImage(input, vx.IMAGE_ATTRIBUTE_HEIGHT, 'vx_uint32')
+            vx.SetMetaFormatAttribute(meta, vx.IMAGE_ATTRIBUTE_WIDTH, width, 'vx_uint32')
+            vx.SetMetaFormatAttribute(meta, vx.IMAGE_ATTRIBUTE_HEIGHT, height, 'vx_uint32')
+            vx.SetMetaFormatAttribute(meta, vx.IMAGE_ATTRIBUTE_FORMAT, vx.DF_IMAGE_U8, 'vx_df_image')
+            vx.ReleaseImage(input)
+            vx.ReleaseImage(output)
+            vx.ReleaseParameter(param0)
+            vx.ReleaseParameter(param1)
             return vx.SUCCESS
 
         enum = vx.KERNEL_BASE(vx.ID_DEFAULT, 7) + 1
@@ -453,7 +478,15 @@ class TestVX(object):
 
         g = vx.CreateGraph(c)
         img = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_U8)
+        _, r = vx.GetValidRegionImage(img)
+        assert r.start_x == 0
+        assert r.end_x == 640
+        _, addr, data = vx.AccessImagePatch(img, r, 0, None, None, vx.WRITE_ONLY)
+        data[0], data[100] = 'HI'
+        assert vx.CommitImagePatch(img, r, 0, addr, data) == vx.SUCCESS
+
         virt = vx.CreateVirtualImage(g, 0, 0, vx.DF_IMAGE_VIRT)
+        # virt = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_U8)
         node = vx.CreateGenericNode(g, kernel)
         vx.SetParameterByIndex(node, 0, vx.reference(img))
         vx.SetParameterByIndex(node, 1, vx.reference(virt))
@@ -461,9 +494,23 @@ class TestVX(object):
         assert vx.VerifyGraph(g) == vx.SUCCESS
         assert validate_input.called
         assert validate_output.called
-        # assert vx.QueryImage(virt, vx.IMAGE_ATTRIBUTE_WIDTH, 'vx_uint32') == (vx.SUCCESS, 320)
+        assert vx.QueryImage(virt, vx.IMAGE_ATTRIBUTE_WIDTH, 'vx_uint32') == (vx.SUCCESS, 640)
+        assert vx.QueryImage(virt, vx.IMAGE_ATTRIBUTE_HEIGHT, 'vx_uint32') == (vx.SUCCESS, 480)
         assert vx.ProcessGraph(g) == vx.SUCCESS
         assert func.called == True
+
+        _, addr, data = vx.AccessImagePatch(virt, r, 0, None, None, vx.READ_ONLY)
+        assert data[0], data[100] == 'IH'
+        vx.CommitImagePatch(virt, r, 0, addr, data)
+
+        img2 = vx.CreateImage(c, 640, 480, vx.DF_IMAGE_U16)
+        vx.SetParameterByIndex(node, 0, vx.reference(img2))
+        assert vx.VerifyGraph(g) == vx.ERROR_INVALID_VALUE
+
+
+        enum = vx.KERNEL_BASE(vx.ID_DEFAULT, 7) + 2
+        kernel = vx.AddKernel(c, "org.test.hello2", enum, func, 2, validate_input, validate_output, None, None)
+        assert vx.RemoveKernel(kernel) == vx.SUCCESS
 
         assert vx.ReleaseGraph(g) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS

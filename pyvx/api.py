@@ -42,7 +42,7 @@ class VX(VXTypes):
         return 'vx_' + data_type_name[8:].lower()
 
     def _callback(self, ctype, callback, parent):
-        callback = self._ffi.callback(ctype)(callback)
+        callback = self._ffi.callback(ctype)(callback) # FIXME: set error appropreately
         keep_alive.setdefault(parent, []).append(callback)
         return callback
 
@@ -141,6 +141,9 @@ class VX(VXTypes):
         else:
             deinit = self._callback("vx_kernel_deinitialize_f", deinit, context)
         return self._lib.vxAddKernel(context, name, enumeration, func_ptr, numParams, input, output, init, deinit)
+
+    def SetMetaFormatAttribute(self, meta, attribute, value, c_type=None):
+        return self._set_attribute(self._lib.vxSetMetaFormatAttribute, meta, attribute, value, c_type)
 
 
     # GRAPH
