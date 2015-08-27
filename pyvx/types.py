@@ -1,7 +1,13 @@
 from pyvx._auto import _VXAuto
+from pyvx import __backend_version__
 
 class VXTypes(_VXAuto):
     def __init__(self, backend):
+        if backend.ffi.string(backend.lib._get_backend_version()) != __backend_version__:
+            raise ImportError("Backend version missmatch. Please recompile it using:\n\n" +
+                              "    python -mpyvx.build_cbackend %s %s\n" % (backend.ffi.string(backend.lib._get_backend_name()),
+                                                                            backend.ffi.string(backend.lib._get_backend_install_path())))
+
         _VXAuto.__init__(self, backend.ffi, backend.lib)
         self.SCALE_PYRAMID_HALF = 0.5
         self.SCALE_PYRAMID_ORB = 0.8408964
