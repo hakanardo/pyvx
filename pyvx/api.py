@@ -41,8 +41,8 @@ class VX(VXTypes):
         assert data_type_name.startswith('VX_TYPE_')
         return 'vx_' + data_type_name[8:].lower()
 
-    def _callback(self, ctype, callback, parent):
-        callback = self._ffi.callback(ctype)(callback) # FIXME: set error appropreately
+    def _callback(self, ctype, callback, parent, error):
+        callback = self._ffi.callback(ctype, error=error)(callback)
         keep_alive.setdefault(parent, []).append(callback)
         return callback
 
@@ -129,17 +129,17 @@ class VX(VXTypes):
         return self._set_attribute(self._lib.vxSetKernelAttribute, kernel, attribute, value, c_type)
 
     def AddKernel(self, context, name, enumeration, func_ptr, numParams, input, output, init, deinit):
-        func_ptr = self._callback("vx_kernel_f", func_ptr, context)
-        input = self._callback("vx_kernel_input_validate_f", input, context)
-        output = self._callback("vx_kernel_output_validate_f", output, context)
+        func_ptr = self._callback("vx_kernel_f", func_ptr, context, self.FAILURE)
+        input = self._callback("vx_kernel_input_validate_f", input, context, self.FAILURE)
+        output = self._callback("vx_kernel_output_validate_f", output, context, self.FAILURE)
         if init is None:
             init = self._ffi.NULL
         else:
-            init = self._callback("vx_kernel_initialize_f", init, context)
+            init = self._callback("vx_kernel_initialize_f", init, context, self.FAILURE)
         if deinit is None:
             deinit = self._ffi.NULL
         else:
-            deinit = self._callback("vx_kernel_deinitialize_f", deinit, context)
+            deinit = self._callback("vx_kernel_deinitialize_f", deinit, context, self.FAILURE)
         return self._lib.vxAddKernel(context, name, enumeration, func_ptr, numParams, input, output, init, deinit)
 
     def SetMetaFormatAttribute(self, meta, attribute, value, c_type=None):
@@ -177,7 +177,7 @@ class VX(VXTypes):
 
     def AssignNodeCallback(self, node, callback):
         if callback is not None:
-            callback = self._callback("vx_nodecomplete_f", callback, node)
+            callback = self._callback("vx_nodecomplete_f", callback, node, self.ACTION_ABANDON)
         else:
             callback = self._ffi.NULL
         return self._lib.vxAssignNodeCallback(node, callback)
@@ -248,7 +248,7 @@ class VX(VXTypes):
     def RegisterLogCallback(self, context, callback, reentrant):
         def wrapper(context, ref, status, string):
             callback(context, ref, status, self._ffi.string(string))
-        cb = self._callback('vx_log_callback_f', wrapper, context)
+        cb = self._callback('vx_log_callback_f', wrapper, context, None)
         self._lib.vxRegisterLogCallback(context, cb, reentrant)
 
 

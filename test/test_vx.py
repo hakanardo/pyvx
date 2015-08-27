@@ -148,9 +148,15 @@ class TestVX(object):
         assert vx.ProcessGraph(g) == vx.SUCCESS
         assert callback.called
 
+        def callback(node):
+            raise TypeError('Escaping from callback')
+            return vx.SUCCESS
+
         assert vx.AssignNodeCallback(node, callback) != vx.SUCCESS
         assert vx.AssignNodeCallback(node, None) == vx.SUCCESS
         assert vx.AssignNodeCallback(node, callback) == vx.SUCCESS
+        assert vx.VerifyGraph(g) == vx.SUCCESS
+        assert vx.ProcessGraph(g) != vx.SUCCESS
 
         img = vx.CreateVirtualImage(g, 640, 480, vx.DF_IMAGE_RGB)
         assert vx.GetStatus(vx.reference(img)) == vx.SUCCESS
