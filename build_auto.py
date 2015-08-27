@@ -14,7 +14,7 @@ for n in dir(lib):
         fd.write("        self.%s = lib.%s\n" % (n[3:], n))
 fd.write("\n\n")
 
-api = open("cdefs/vx_api.h").read() +  open("cdefs/vx_nodes.h").read()
+api = open("pyvx/cdefs/vx_api.h").read() +  open("pyvx/cdefs/vx_nodes.h").read()
 for entry in api.split('/*!'):
     if 'VX_API_ENTRY' not in entry:
         continue

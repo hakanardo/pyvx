@@ -4,7 +4,7 @@ python:
 install:
 - sudo apt-get update -qq
 - pip install -r requirements.txt
-- python build_cbackend.py sample test/openvx_sample/
+- python -mpyvx.build_cbackend --default sample test/openvx_sample/
 script:
 - make -C test
 deploy:

@@ -80,6 +80,22 @@ def build(name, openvx_install, default):
     assert backend.ffi.string(backend.lib._get_backend_version()) == __backend_version__
     assert backend.ffi.string(backend.lib._get_backend_name()) == name
     assert backend.ffi.string(backend.lib._get_backend_install_path()) == openvx_install
+
+    if default:
+        fd = open(os.path.join('pyvx', 'default.py'), 'w')
+        fd.write("""
+from pyvx.api import VX
+import pyvx.backend.%s as backend
+vx = VX(backend)
+        """ % name)
+        fd.close()
+
+        from pyvx.default import backend
+        assert backend.ffi.string(backend.lib._get_backend_version()) == __backend_version__
+        assert backend.ffi.string(backend.lib._get_backend_name()) == name
+        assert backend.ffi.string(backend.lib._get_backend_install_path()) == openvx_install
+
+
     print
     print "Succesfully built backend pyvx.backend.%s in %s" % (name, mydir)
     print
