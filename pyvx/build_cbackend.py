@@ -8,6 +8,16 @@ def build(name, openvx_install, default):
     pwd = os.getcwd()
     os.chdir(os.path.dirname(mydir))
 
+    hdr = os.path.join(openvx_install, 'include', 'VX', 'vx.h')
+    if not os.path.exists(hdr):
+        print "ERROR: Can't find header", hdr
+        exit(-1)
+
+    lib = os.path.join(openvx_install, 'bin', 'libopenvx.so')
+    if not os.path.exists(lib):
+        print "ERROR: Can't find lib", lib
+        exit(-1)
+
     defs= dict(VX_API_ENTRY='', VX_API_CALL='', VX_CALLBACK='', VX_MAX_KERNEL_NAME='256')
     if os.name == 'nt':
         defs['VX_API_CALL'] = '__stdcall'
@@ -82,12 +92,8 @@ def build(name, openvx_install, default):
     assert backend.ffi.string(backend.lib._get_backend_install_path()) == openvx_install
 
     if default:
-        fd = open(os.path.join('pyvx', 'default.py'), 'w')
-        fd.write("""
-from pyvx.api import VX
-import pyvx.backend.%s as backend
-vx = VX(backend)
-        """ % name)
+        fd = open(os.path.join('pyvx', '_default.py'), 'w')
+        fd.write("import pyvx.backend.%s as backend\n" % name)
         fd.close()
 
         from pyvx.default import backend
