@@ -145,6 +145,16 @@ class VX(VXTypes):
     def SetMetaFormatAttribute(self, meta, attribute, value, c_type=None):
         return self._set_attribute(self._lib.vxSetMetaFormatAttribute, meta, attribute, value, c_type)
 
+    def LoadKernels(self, context, module):
+        s = self._lib.vxLoadKernels(context, module)
+        if s == self.SUCCESS:
+            return s
+        try:
+            exec "import %s as mod" % module
+        except ImportError:
+            return self.FAILURE
+        return mod.PublishKernels(context, self)
+
 
     # GRAPH
 

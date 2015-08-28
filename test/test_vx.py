@@ -520,3 +520,12 @@ class TestVX(object):
 
         assert vx.ReleaseGraph(g) == vx.SUCCESS
         assert vx.ReleaseContext(c) == vx.SUCCESS
+
+    def test_module(self):
+        c = vx.CreateContext()
+        assert vx.LoadKernels(c, "test.module") == vx.SUCCESS
+        kernel = vx.GetKernelByName(c, "org.test.module")
+        assert vx.GetStatus(vx.reference(kernel)) == vx.SUCCESS
+        assert vx.QueryKernel(kernel, vx.KERNEL_ATTRIBUTE_PARAMETERS, 'vx_uint32') == (vx.SUCCESS, 1)
+        assert vx.ReleaseContext(c) == vx.SUCCESS
+
