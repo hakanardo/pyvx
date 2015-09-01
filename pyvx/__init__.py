@@ -15,4 +15,4 @@ class ImportVX(object):
         return vx
 
 import sys
-sys.meta_path = [ImportVX()]
+sys.meta_path.append(ImportVX())
