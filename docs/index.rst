@@ -62,7 +62,7 @@ availible as :mod:`pyvx.backend.name` in python. One of the backends should
 be marked as the default backend using the --default switch.
 
 There is a `sample bakcend implementation`_ from Khronos. To use it as the
-default backend:
+default backend on a 64 bit linux system:
 
 .. code-block:: bash
 
