@@ -20,32 +20,22 @@ it lives on the try1 branch of pyvx).
 Status
 ======
 
-The C-like Python API :ref:`pyvx.api` wraps the entire `OpenVX`_ standard version 1.0.1.
-
-This is currently only a prof of
-concept. Most of the OpenVX functionality is still missing. Some small examples are working. See the `demo`_ directory.
-A handful of nodes are implemented as well as graph optimizations to do dead code elimination and to merge strictly
-element-wise nodes. Contributions are welcome.
+The C-like Python API :mod:`pyvx.api` wraps the entire `OpenVX`_ standard
+version 1.0.1. The pythonic interface :mod:`pyvx.pythonic` is still work in
+progress. Some small examples are working. See the `demo`_ directory.
 
 .. _`demo`: https://github.com/hakanardo/pyvx/tree/master/demo
 
 Installation
 ============
 
-Before installing, make sure all dependencies are installed (the package
-will install anyway, but some functionality will be missing):
-
-.. code-block:: bash
-
-  apt-get install vlc libvlc-dev freeglut3-dev
-
 Then there are a few different ways to install PyVX:
 
 * Use pip:
 
-.. code-block:: bash
+    .. code-block:: bash
 
-    pip install pyvx
+        sudo pip install pyvx
 
 * or get the source code via the `Python Package Index`__.
 
@@ -53,59 +43,56 @@ Then there are a few different ways to install PyVX:
 
 * or get it from `Github`_:
 
+    .. code-block:: bash
+
+      git clone https://github.com/hakanardo/pyvx.git
+      cd pyvx
+      sudo python setup.py install
+
+This will install the frontend and the python API. You will also need one or
+several openvx backend implementations. For each backend you need to build
+some backend specific wrappers:
+
 .. code-block:: bash
 
-  git clone https://github.com/hakanardo/pyvx.git
-  cd pyvx
-  python setup.py install
+  sudo python -mpyvx.build_cbackend [--default] name /path/to/openvx/install/
 
-This will install the backend and the python API. If you also want the C API
-which allows you to compile `OpenVX`_ programs written in C and have them use 
-PyVx as their backend you also need to:
+This will make the openvx backend installed in /path/to/openvx/install/
+availible as :mod:`pyvx.backend.name` in python. One of the backends should
+be marked as the default backend using the --default switch.
+
+There is a `sample bakcend implementation`_ from Khronos. To use it as the
+default backend:
 
 .. code-block:: bash
 
-  sudo python -mpyvx.capi build /usr/local/
+    cd /usr/local/src
+    wget https://www.khronos.org/registry/vx/sample/openvx_sample_1.0.1.tar.bz2
+    tar xf openvx_sample_1.0.1.tar.bz2
+    cd openvx_sample
+    python Build.py --os Linux
+    python -mpyvx.build_cbackend --default sample /usr/local/src/openvx_sample/install/Linux/x64/Release/
 
-This will install `libopenvx.so*` into `/usr/local/lib` and place the
-`OpenVX`_ headers in `/usr/local/include/VX`.
 
 .. _`Github`: https://github.com/hakanardo/pyvx
+.. _`sample bakcend implementation`:  https://www.khronos.org/registry/vx/
 
 Modules
 =======
 
 The main modules of PyVX are:
 
-:mod:`pyvx.vx`
+:mod:`pyvx.default`
+    Exportes an instance of :class:`pyvx.api.VX` with the default backend as
+    *vx*.
+
+:mod:`pyvx.api`
     C-like Python API following the `OpenVX`_ API as strictly as possible.
 
 :mod:`pyvx.pythonic`
     A more python friendly version of the `OpenVX`_ API.
 
-:mod:`pyvx.capi`
-    A specification of a C API that is used generate a shared
-    library and a header file  that embeds python and calls the ``pyvx.vx``
-    functions. This aims to provide the C API as it is specified by the `OpenVX`_ standard.
-
-:mod:`pyvx.nodes`
-    The implementation of the different processing nodes.
-
-:mod:`pyvx.optimize`
-    Graph optimizations that are executed on the graphs during the verification step.
-
-:mod:`pyvx.codegen`
-    Code generation tools.
-
-.. automodule:: pyvx.vx
-   :members:
-.. automodule:: pyvx.pythonic
-   :members:
-.. automodule:: pyvx.capi
-   :members:
-.. automodule:: pyvx.nodes
-   :members:
-.. automodule:: pyvx.codegen
+.. automodule:: pyvx.api
    :members:
 
 Comments and bugs
