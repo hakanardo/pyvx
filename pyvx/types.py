@@ -8,7 +8,7 @@ class VXTypes(_VXAuto):
                               "    python -mpyvx.build_cbackend %s %s\n" % (backend.ffi.string(backend.lib._get_backend_name()),
                                                                             backend.ffi.string(backend.lib._get_backend_install_path())))
 
-        _VXAuto.__init__(self, backend.ffi, backend.lib)
+        _VXAuto.__init__(self, backend)
         self.SCALE_PYRAMID_HALF = 0.5
         self.SCALE_PYRAMID_ORB = 0.8408964
         self.FMT_REF = self._ffi.string(self._lib._get_FMT_REF())

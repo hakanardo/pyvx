@@ -71,8 +71,15 @@ def build(name, openvx_install, default):
         nodes = nodes.replace(k, v)
     ffi.cdef(nodes)
 
+    # vxu.h
+    vxu = open(os.path.join(mydir, "cdefs", "vxu.h")).read()
+    for k, v in defs.items():
+        vxu = vxu.replace(k, v)
+    ffi.cdef(vxu)
+
     ffi.set_source("pyvx.backend.%s" % name, """
         #include <VX/vx.h>
+        #include <VX/vxu.h>
         char *_get_FMT_REF(void) {return VX_FMT_REF;}
         char *_get_FMT_SIZE(void) {return VX_FMT_SIZE;}
         int _get_KERNEL_BASE(int vendor, int lib) {return VX_KERNEL_BASE(vendor, lib);}
@@ -83,7 +90,7 @@ def build(name, openvx_install, default):
                    include_dirs=[os.path.join(openvx_install, 'include')],
                    library_dirs=[os.path.join(openvx_install, 'bin')],
                    extra_link_args=['-Wl,-rpath=' + os.path.abspath(os.path.join(openvx_install, 'bin'))],
-                   libraries=['openvx'])
+                   libraries=['openvx', 'vxu'])
     ffi.compile()
 
     exec "import pyvx.backend.%s as backend" % name

@@ -1,4 +1,4 @@
-from pyvx.api import VX
+from pyvx.api import VX, VXU
 try:
     from pyvx._default import backend
 except ImportError:
@@ -6,4 +6,4 @@ except ImportError:
                       "    python -mpyvx.build_cbackend --default name /path/to/openvx/install\n" +
                       "")
 vx = VX(backend)
-        
+vxu = VXU(backend)

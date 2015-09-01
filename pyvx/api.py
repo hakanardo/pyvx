@@ -1,4 +1,5 @@
 from weakref import WeakKeyDictionary
+from pyvx._auto import _VXUAuto
 from pyvx.types import VXTypes
 
 keep_alive = WeakKeyDictionary()
@@ -416,3 +417,6 @@ class VX(VXTypes):
     def CommitArrayRange(self, arr, start, end, ptr):
         ptr = self._ffi.from_buffer(ptr)
         return self._lib.vxCommitArrayRange(arr, start, end, ptr)
+
+class VXU(_VXUAuto):
+    pass
