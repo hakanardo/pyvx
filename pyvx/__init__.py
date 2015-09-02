@@ -6,13 +6,19 @@ import sys
 class ImportVX(object):
 
     def find_module(self, fullname, path=None):
-        if fullname == 'pyvx.vx':
+        if fullname in ['pyvx.vx', 'pyvx.vxu']:
             return self
         return None
 
     def load_module(self, name):
-        from pyvx.default import vx
-        return vx
+        if name == 'pyvx.vx':
+            from pyvx.default import vx
+            return vx
+        elif name == 'pyvx.vxu':
+            from pyvx.default import vxu
+            return vxu
+        else:
+            raise ImportError
 
 import sys
 sys.meta_path.append(ImportVX())

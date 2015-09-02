@@ -1,3 +1,77 @@
+"""
+:mod:`pyvx.vx` --- C-like Python API
+==========================================
+
+This module provides the functions specified by the `OpenVX`_ standard.
+Please refer to the `OpenVX speficication`_ for a description of the API.
+The API is provided in form of two classes, :class:`pyvx.api.VX` that
+provide the vxXxx functions as methods and :class:`pyvx.api.VXU` that
+provide the vxuXxx functions. They are instanciated with a backend as the
+single parameter, for example
+
+.. code-block:: python
+
+    from pyvx.backend import sample
+    from pyvx.api import VX, VXU
+    vx = VX(sample)
+    vxu = VXU(sample)
+
+Instances using the default backend can be constructed using
+
+.. code-block:: python
+
+    from pyvx.default import vx, vxu
+
+For backwards compatibility this can also be achieved using
+
+.. code-block:: python
+
+    from pyvx import vx, vxu
+
+The instance names vx and vxu is used instead of a vx/vxu prefix on all
+symbols. The initial example on page 12 of the specification would in python
+look like this:
+
+.. code-block:: python
+
+    from pyvx.default import vx
+
+    context = vx.CreateContext()
+    images = [
+        vx.CreateImage(context, 640, 480, vx.DF_IMAGE_UYVY),
+        vx.CreateImage(context, 640, 480, vx.DF_IMAGE_S16),
+        vx.CreateImage(context, 640, 480, vx.DF_IMAGE_U8),
+    ]
+    graph = vx.CreateGraph(context)
+    virts = [
+        vx.CreateVirtualImage(graph, 0, 0, vx.DF_IMAGE_VIRT),
+        vx.CreateVirtualImage(graph, 0, 0, vx.DF_IMAGE_VIRT),
+        vx.CreateVirtualImage(graph, 0, 0, vx.DF_IMAGE_VIRT),
+        vx.CreateVirtualImage(graph, 0, 0, vx.DF_IMAGE_VIRT),
+    ]
+    vx.ChannelExtractNode(graph, images[0], vx.CHANNEL_Y, virts[0])
+    vx.Gaussian3x3Node(graph, virts[0], virts[1])
+    vx.Sobel3x3Node(graph, virts[1], virts[2], virts[3])
+    vx.MagnitudeNode(graph, virts[2], virts[3], images[1])
+    vx.PhaseNode(graph, virts[2], virts[3], images[2])
+    status = vx.VerifyGraph(graph)
+    print status
+    if status == vx.SUCCESS:
+        status = vx.ProcessGraph(graph)
+    else:
+        print("Verification failed.")
+    vx.ReleaseContext(context)
+
+For a compact example on how to call all the functions in the API check
+out `test_vx.py`_.
+
+.. _`OpenVX`: https://www.khronos.org/openvx
+.. _`OpenVX speficication`: https://www.khronos.org/registry/vx/specs/OpenVX_1.0_Provisional_Specifications.zip
+.. _`test_vx.py`: https://github.com/hakanardo/pyvx/tree/master/test/test_vx.py
+
+
+"""
+
 from weakref import WeakKeyDictionary
 from pyvx._auto import _VXUAuto
 from pyvx.types import VXTypes
@@ -5,6 +79,76 @@ from pyvx.types import VXTypes
 keep_alive = WeakKeyDictionary()
 
 class VX(VXTypes):
+    """
+    This class provides all the vxXxx functions specified by the `OpenVX`_
+    standard as methods (see :mod:`pyvx.api`). The API is kept as
+    close as possible to the C API, but the few changes listed below were
+    made. Mostly due to the usage of pointers in C.
+
+        * The vx prefix is removed for each function name. The instance name
+          forms a similar role in python.
+
+        * The *ReleaseXxx* and *RemoveNode* functions take a normal object (as
+          returned by the
+          corresponding CreateXxx) as argument and not a pointer to a pointer.
+
+        * Out arguments passed in as a pointer are returned instead. The
+          returned tuple will contain the original return value as it's
+          first value and following it, the output arguments in the same
+          order as they apear in the C signature.
+
+        * In/Out arguemnts are passed in as values and then returned in the
+          same manner as the out arguments.
+
+        * Any python object implementing the buffer interface can be passed
+          instead of pointers to blocks of data. This includes both
+          *array.array* and *numpy.ndarray* objects.
+
+        * Python buffer objects are returned instead of pointers to blocks
+          of data.
+
+        * *QueryXxx* functions have the signature
+            .. code-block:: python
+
+                (status, value) = vx.QueryXxx(self, context, attribute, c_type, python_type=None)
+
+          where *c_type* is a string specifying the type of the attribute,
+          for example "vx_uint32", and *python_type* can be set to *str* for
+          string-valued attributes.
+
+        * *SetXxxAttribute* functions have the signature
+            .. code-block:: python
+
+                status = vx.SetXxxAttribute(context, attribute, value, c_type=None)
+
+          where *c_type* is a string specifying the type of the attribute,
+          for example "vx_uint32".
+
+        * *CreateUniformImage* have the signature
+            .. code-block:: python
+
+                image = vx.CreateUniformImage(context, width, height, color, value, c_type)
+
+            where value is a python *int* and *c_type* a string specifying
+            it's type. For example "vx_uint32".
+
+        * Normal python functions can be used insteda of function pointers.
+
+        * *LoadKernels* can load python modules if it is passed a string that
+          is the name of an importable python module. In that case it will
+          import *PublishKernels* from it and call
+          *PublishKernels(context, vx)*.
+
+        * *CreateScalar* and *WriteScalarValue* take a python int as value.
+
+        * Objects are not implicitly casted to/from references. Use
+          :func:`VX.reference` and :func:`VX.from_reference` instead.
+
+        * The typedefed structures called vx_xxx_t can be allocated using
+          vx.xx_t(...). See :class:`pyvx.types.VXTypes` which is a
+          supercalss of VX.
+
+    """
 
     def __init__(self, backend):
         VXTypes.__init__(self, backend)
@@ -232,11 +376,18 @@ class VX(VXTypes):
     # REFERENCE
 
     def reference(self, reference):
+        """
+        Cast the object *reference* into a "vx_reference" object.
+        """
         if self._ffi.typeof(reference) not in self._reference_types:
             raise TypeError("Can't cast %r to vx_reference" % reference)
         return self._ffi.cast('vx_reference', reference)
 
     def from_reference(self, ref):
+        """
+        Cast the "vx_reference" object *ref* into it's specific type (i.e.
+        "vx_image" or "vx_graqph" or ...).
+        """
         s, data_type = self.QueryReference(ref, self.REF_ATTRIBUTE_TYPE, 'vx_enum')
         return self._ffi.cast(self._enum2ctype(data_type), ref)
 
@@ -419,4 +570,7 @@ class VX(VXTypes):
         return self._lib.vxCommitArrayRange(arr, start, end, ptr)
 
 class VXU(_VXUAuto):
+    """
+    See :mod:`pyvx.api`
+    """
     pass

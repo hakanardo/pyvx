@@ -1,5 +1,5 @@
 from array import array
-from pyvx.default import vx
+from pyvx.default import vx, vxu
 from py.test import raises
 
 class TestVX(object):
@@ -532,5 +532,7 @@ class TestVX(object):
     def test_import_magic(self):
         from pyvx import vx as tst
         assert tst is vx
+        from pyvx import vxu as tst
+        assert tst is vxu
 
 
