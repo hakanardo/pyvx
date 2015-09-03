@@ -1,5 +1,5 @@
 from array import array
-from pyvx.default import vx, vxu
+from pyvx import vx, vxu
 from py.test import raises
 
 class TestVX(object):
