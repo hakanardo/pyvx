@@ -529,10 +529,3 @@ class TestVX(object):
         assert vx.QueryKernel(kernel, vx.KERNEL_ATTRIBUTE_PARAMETERS, 'vx_uint32') == (vx.SUCCESS, 1)
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
-    def test_import_magic(self):
-        from pyvx import vx as tst
-        assert tst is vx
-        from pyvx import vxu as tst
-        assert tst is vxu
-
-

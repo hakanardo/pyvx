@@ -4,18 +4,16 @@ import re
 
 assert '256' == str(lib.VX_MAX_KERNEL_NAME) # Hardcoded in build_cbackend
 
-fd = open(os.path.join('pyvx', '_auto.py'), 'w')
-fd.write("class _VXAuto(object):\n")
-fd.write("    def __init__(self, backend):\n")
-fd.write("        self._lib = lib = backend.lib\n")
-fd.write("        self._ffi = ffi = backend.ffi\n")
+vx_fd = open(os.path.join('pyvx', '_auto_vx.py'), 'w')
+vx_fd.write("from pyvx.backend import lib, ffi\n")
 for n in dir(lib):
     if n[:3].upper() == 'VX_':
-        fd.write("        self.%s = lib.%s\n" % (n[3:], n))
-fd.write("\n\n")
+        vx_fd.write("%s = lib.%s\n" % (n[3:], n))
+
+vxu_fd = open(os.path.join('pyvx', '_auto_vxu.py'), 'w')
+vxu_fd.write("from pyvx.backend import lib, ffi\n")
 
 api = open("pyvx/cdefs/vx_api.h").read() + open("pyvx/cdefs/vx_nodes.h").read() + open("pyvx/cdefs/vxu.h").read()
-vxu_methods = ''
 for entry in api.split('/*!'):
     if 'VX_API_ENTRY' not in entry:
         continue
@@ -44,22 +42,17 @@ for entry in api.split('/*!'):
     else:
         name = fullname[2:]
 
-    method = """
-    def %s(self, %s):
-        '''
+    func = """
+def %s(%s):
+    '''
 %s
-        '''
-        return self._lib.%s(%s)
+    '''
+    return lib.%s(%s)
     """ % (name, args, doc, fullname, args)
     if fullname[:3] == 'vxu':
-        vxu_methods += method
+        vxu_fd.write(func)
     else:
-        fd.write(method)
+        vx_fd.write(func)
 
-fd.write("\n\nclass _VXUAuto(object):\n")
-fd.write("    def __init__(self, backend):\n")
-fd.write("        self._lib = backend.lib\n")
-fd.write("        self._ffi = backend.ffi\n")
-fd.write(vxu_methods)
 
 

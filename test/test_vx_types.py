@@ -1,9 +1,5 @@
 import os
-
-from pyvx.backend import sample
-from pyvx.types import VXTypes
-
-vx = VXTypes(sample)
+import pyvx.types as vx
 
 class TestVxTypes(object):
     def test_imagepatch_addressing_t(self):
@@ -39,7 +35,7 @@ class TestVxTypes(object):
     def test_kernel_info_t(self):
         i = vx.kernel_info_t(7, "hello")
         assert i.enumeration == 7
-        assert vx._ffi.string(i.name) == "hello"
+        assert vx.ffi.string(i.name) == "hello"
 
     def test_border_mode_t(self):
         b = vx.border_mode_t(vx.BORDER_MODE_CONSTANT, 42)

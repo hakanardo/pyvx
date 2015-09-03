@@ -7,6 +7,7 @@ mydir = os.path.dirname(os.path.abspath(__file__))
 def build(name, openvx_install, default):
     pwd = os.getcwd()
     os.chdir(os.path.dirname(mydir))
+    assert name != 'default'
 
     hdr = os.path.join(openvx_install, 'include', 'VX', 'vx.h')
     if not os.path.exists(hdr):
@@ -99,11 +100,11 @@ def build(name, openvx_install, default):
     assert backend.ffi.string(backend.lib._get_backend_install_path()) == openvx_install
 
     if default:
-        fd = open(os.path.join('pyvx', '_default.py'), 'w')
-        fd.write("import pyvx.backend.%s as backend\n" % name)
+        fd = open(os.path.join('pyvx', 'backend', '_default.py'), 'w')
+        fd.write("from pyvx.backend.%s import ffi, lib\n" % name)
         fd.close()
 
-        from pyvx.default import backend
+        import pyvx.backend as backend
         assert backend.ffi.string(backend.lib._get_backend_version()) == __backend_version__
         assert backend.ffi.string(backend.lib._get_backend_name()) == name
         assert backend.ffi.string(backend.lib._get_backend_install_path()) == openvx_install
