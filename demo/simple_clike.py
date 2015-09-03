@@ -1,4 +1,4 @@
-from pyvx.default import vx
+from pyvx import vx
 
 context = vx.CreateContext()
 images = [
