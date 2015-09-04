@@ -5,7 +5,7 @@ class Lib(object):
         return 42
 
     def __getattr__(self, item):
-        return None
+        return -1
 
     def _get_backend_version(self):
         return pyvx.__backend_version__
