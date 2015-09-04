@@ -1,6 +1,10 @@
 from array import array
-from pyvx import vx, vxu
+
 from py.test import raises
+
+from pyvx import vx
+import pyvx
+
 
 class TestVX(object):
     def test_context(self):
@@ -529,3 +533,20 @@ class TestVX(object):
         assert vx.QueryKernel(kernel, vx.KERNEL_ATTRIBUTE_PARAMETERS, 'vx_uint32') == (vx.SUCCESS, 1)
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
+    def test_use_backend(self):
+        for l in xrange(2):
+            pyvx.use_backend("mock_backend")
+            from pyvx import vx
+            assert vx.CreateContext() == 42
+
+            from test import mock_backend2
+            pyvx.use_backend(mock_backend2)
+            from pyvx import vx
+            assert vx.CreateContext() == 7
+
+            with raises(ImportError):
+                pyvx.use_backend("none_excistant")
+
+            pyvx.use_backend("_default")
+            from pyvx import vx
+            assert not isinstance(vx.CreateContext(), int)
