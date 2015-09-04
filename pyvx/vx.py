@@ -2,39 +2,16 @@
 :mod:`pyvx.vx` --- C-like Python API
 ==========================================
 
-This module provides the functions specified by the `OpenVX`_ standard.
-Please refer to the `OpenVX speficication`_ for a description of the API.
-The API is provided in form of two classes, :class:`pyvx.api.VX` that
-provide the vxXxx functions as methods and :class:`pyvx.api.VXU` that
-provide the vxuXxx functions. They are instanciated with a backend as the
-single parameter, for example
+The functions specified by the `OpenVX`_ standard are provided in form of two
+modules,  :mod:`pyvx.vx` that provide the vxXxxfunctions and :class:`pyvx.vxu`
+that provide the vxuXxx functions. Pleaserefer to the `OpenVX speficication`_
+for a description of the API. The modulenames vx and vxu is used instead of a
+vx/vxu prefix on all symbols. The initialexample on page 12 of the
+specification would in python look like this:
 
 .. code-block:: python
 
-    from pyvx.backend import sample
-    from pyvx.api import VX, VXU
-    vx = VX(sample)
-    vxu = VXU(sample)
-
-Instances using the default backend can be constructed using
-
-.. code-block:: python
-
-    from pyvx.default import vx, vxu
-
-For backwards compatibility this can also be achieved using
-
-.. code-block:: python
-
-    from pyvx import vx, vxu
-
-The instance names vx and vxu is used instead of a vx/vxu prefix on all
-symbols. The initial example on page 12 of the specification would in python
-look like this:
-
-.. code-block:: python
-
-    from pyvx.default import vx
+    from pyvx import vx
 
     context = vx.CreateContext()
     images = [
@@ -73,14 +50,14 @@ The API is kept as
 close as possible to the C API, but the few changes listed below were
 made. Mostly due to the usage of pointers in C.
 
-    * The vx prefix is removed for each function name. The instance name
+    * The vx prefix is removed for each function name. The module name
       forms a similar role in python.
 
     * The *ReleaseXxx* and *RemoveNode* functions take a normal object (as
       returned by the
       corresponding CreateXxx) as argument and not a pointer to a pointer.
 
-    * Out arguments passed in as a pointer are returned instead. The
+    * Out arguments passed in as pointers are returned instead. The
       returned tuple will contain the original return value as it's
       first value and following it, the output arguments in the same
       order as they apear in the C signature.
@@ -120,21 +97,20 @@ made. Mostly due to the usage of pointers in C.
         where value is a python *int* and *c_type* a string specifying
         it's type. For example "vx_uint32".
 
-    * Normal python functions can be used insteda of function pointers.
+    * Normal python functions can be used instead of function pointers.
 
     * *LoadKernels* can load python modules if it is passed a string that
       is the name of an importable python module. In that case it will
       import *PublishKernels* from it and call
-      *PublishKernels(context, vx)*.
+      *PublishKernels(context)*.
 
     * *CreateScalar* and *WriteScalarValue* take a python int as value.
 
     * Objects are not implicitly casted to/from references. Use
-      :func:`VX.reference` and :func:`VX.from_reference` instead.
+      :func:`pyvx.vx.reference` and :func:`pyvx.vx.from_reference` instead.
 
     * The typedefed structures called vx_xxx_t can be allocated using
-      vx.xx_t(...). See :class:`pyvx.types.VXTypes` which is a
-      supercalss of VX.
+      vx.xxx_t(...). See below.
 
 """
 

@@ -86,18 +86,24 @@ The main modules of PyVX are:
     Exportes an instance of :class:`pyvx.api.VX` with the default backend as
     *vx* and an instance of :class:`pyvx.api.VXU` as *vxu*.
 
-:mod:`pyvx.api`
-    C-like Python API following the `OpenVX`_ API as strictly as possible.
+:mod:`pyvx.vx`
+    C-like Python API following the `OpenVX`_ vx API as strictly as possible.
+
+:mod:`pyvx.vxu`
+    C-like Python API following the `OpenVX`_ vxu API as strictly as possible.
 
 :mod:`pyvx.pythonic`
     A more python friendly version of the `OpenVX`_ API.
 
-.. automodule:: pyvx.api
+.. automodule:: pyvx.vx
    :members:
-   :special-members:
 
 .. automodule:: pyvx.types
    :members:
+
+.. automodule:: pyvx.vxu
+   :members:
+
 
 Comments and bugs
 =================
