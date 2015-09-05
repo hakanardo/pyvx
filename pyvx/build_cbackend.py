@@ -1,5 +1,9 @@
-import os, re, sys
+import os
+import re
+import sys
+
 from cffi import FFI
+
 from pyvx import __backend_version__
 
 mydir = os.path.dirname(os.path.abspath(__file__))
@@ -11,12 +15,12 @@ def build(name, openvx_install, default):
 
     hdr = os.path.join(openvx_install, 'include', 'VX', 'vx.h')
     if not os.path.exists(hdr):
-        print "ERROR: Can't find header", hdr
+        print("ERROR: Can't find header", hdr)
         exit(-1)
 
     lib = os.path.join(openvx_install, 'bin', 'libopenvx.so')
     if not os.path.exists(lib):
-        print "ERROR: Can't find lib", lib
+        print("ERROR: Can't find lib", lib)
         exit(-1)
 
     defs= dict(VX_API_ENTRY='', VX_API_CALL='', VX_CALLBACK='', VX_MAX_KERNEL_NAME='256')
@@ -41,7 +45,7 @@ def build(name, openvx_install, default):
         types = types.replace(k, v)
 
     types = re.subn(r'(#define\s+[^\s]+)\s.*', r'\1 ...', types)[0] # Remove specifics from #defines
-    types = re.subn(r'(\/\*.*?\*\/)', r'', types)[0] # Remove some one line comments
+    types = re.subn(r'(/\*.*?\*/)', r'', types)[0] # Remove some one line comments
     types = re.subn(r'=.*,', r'= ...,', types)[0] # Remove specifics from enums
     types = re.subn(r'\[\s*[^\s]+?.*?\]', r'[...]', types)[0] # Remove specific array sizes
 
@@ -101,18 +105,18 @@ def build(name, openvx_install, default):
         fd.close()
 
         import pyvx.backend as backend
-        assert backend.ffi.string(backend.lib._get_backend_version()) == __backend_version__
-        assert backend.ffi.string(backend.lib._get_backend_name()) == name
-        assert backend.ffi.string(backend.lib._get_backend_install_path()) == openvx_install
+        assert backend.ffi.string(backend.lib._get_backend_version()).decode("utf8") == __backend_version__
+        assert backend.ffi.string(backend.lib._get_backend_name()).decode("utf8") == name
+        assert backend.ffi.string(backend.lib._get_backend_install_path()).decode("utf8") == openvx_install
 
-    exec "import pyvx.backend.%s as backend" % name
-    assert backend.ffi.string(backend.lib._get_backend_version()) == __backend_version__
-    assert backend.ffi.string(backend.lib._get_backend_name()) == name
-    assert backend.ffi.string(backend.lib._get_backend_install_path()) == openvx_install
+    exec("import pyvx.backend.%s as backend" % name)
+    assert backend.ffi.string(backend.lib._get_backend_version()).decode("utf8") == __backend_version__
+    assert backend.ffi.string(backend.lib._get_backend_name()).decode("utf8") == name
+    assert backend.ffi.string(backend.lib._get_backend_install_path()).decode("utf8") == openvx_install
 
-    print
-    print "Succesfully built backend pyvx.backend.%s in %s" % (name, mydir)
-    print
+    print()
+    print("Succesfully built backend pyvx.backend.%s in %s" % (name, mydir))
+    print()
 
 
 if __name__ == '__main__':
@@ -124,4 +128,4 @@ if __name__ == '__main__':
         name, openvx_install = args
         build(name, openvx_install, default)
     else:
-        print "Usage: %s [--default] <name> <openvx install path>" % sys.argv[0]
+        print("Usage: %s [--default] <name> <openvx install path>" % sys.argv[0])

@@ -114,8 +114,11 @@ made. Mostly due to the usage of pointers in C.
 
 """
 
-from pyvx.types import *
 from weakref import WeakKeyDictionary
+import sys
+
+from pyvx.types import *
+
 keep_alive = WeakKeyDictionary()
 
 _reference_types = {ffi.typeof(s)
@@ -134,7 +137,7 @@ def _get_attribute(func, ref, attribute, c_type, python_type):
         status = func(ref, attribute, val, ffi.sizeof(c_type))
 
     if python_type is str:
-        val = ffi.string(val)
+        val = ffi.string(val).decode("utf8")
     elif python_type is not None:
         val = python_type(val)
 
@@ -257,11 +260,14 @@ def SetMetaFormatAttribute(meta, attribute, value, c_type=None):
     return _set_attribute(lib.vxSetMetaFormatAttribute, meta, attribute, value, c_type)
 
 def LoadKernels(context, module):
-    s = lib.vxLoadKernels(context, module)
+    if sys.version_info > (3,) and not isinstance(module, bytes):
+        s = lib.vxLoadKernels(context, bytes(module, "utf8"))
+    else:
+        s = lib.vxLoadKernels(context, module)
     if s == SUCCESS:
         return s
     try:
-        exec "import %s as mod" % module
+        exec("import %s as mod" % module)
     except ImportError:
         return FAILURE
     return mod.PublishKernels(context)
@@ -512,7 +518,10 @@ def QueryArray(array, attribute, c_type, python_type=None):
     return _get_attribute(lib.vxQueryArray, array, attribute, c_type, python_type)
 
 def FormatArrayPointer(ptr, index, stride):
-    return buffer(ptr, index * stride)
+    if sys.version_info > (3,):
+        return memoryview(ptr)[index * stride:]
+    else:
+        return buffer(ptr, index * stride)
 
 def ArrayItem(type, ptr, index, stride):
     return ffi.cast(type + '*', ffi.from_buffer(FormatArrayPointer(ptr, index, stride)))

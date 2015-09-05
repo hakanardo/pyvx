@@ -9,6 +9,11 @@ __backend_version__ = '1.0.1-2'
 
 _default_backend_name = '_default'
 
+import sys
+if sys.version_info > (3,):
+    from importlib import reload
+
+
 def use_backend(backend):
     """
     Specifies which backend to use. It is typically called before any other
@@ -36,7 +41,7 @@ def use_backend(backend):
     :param backend:
     :return:
     """
-    import pyvx, sys
+    import pyvx
     pyvx._default_backend_name = backend
     for n in ['backend', '_auto_vx', '_auto_vxu', 'types', 'vx', 'vxu', 'pythonic']:
         n = 'pyvx.' + n

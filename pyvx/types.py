@@ -1,7 +1,7 @@
 from pyvx import __backend_version__
 from pyvx._auto_vx import *
 
-if ffi.string(lib._get_backend_version()) != __backend_version__:
+if ffi.string(lib._get_backend_version()).decode("utf8") != __backend_version__:
     raise ImportError("Backend version missmatch. Please recompile it using:\n\n" +
                       "    python -mpyvx.build_cbackend %s %s\n" % (ffi.string(lib._get_backend_name()),
                                                                     ffi.string(lib._get_backend_install_path())))

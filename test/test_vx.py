@@ -16,7 +16,7 @@ class TestVX(object):
         assert isinstance(v, int)
         s, v = vx.QueryContext(c, vx.CONTEXT_ATTRIBUTE_IMPLEMENTATION, 'vx_char[VX_MAX_IMPLEMENTATION_NAME]', str)
         assert s == vx.SUCCESS
-        assert isinstance(v, str)
+        assert isinstance(v, unicode)
 
         s = vx.SetContextAttribute(c, vx.CONTEXT_ATTRIBUTE_IMMEDIATE_BORDER_MODE,
                                       vx.border_mode_t(vx.BORDER_MODE_CONSTANT, 42))
@@ -51,7 +51,7 @@ class TestVX(object):
         assert vx.GetStatus(vx.reference(const)) == vx.SUCCESS
 
         addr = vx.imagepatch_addressing_t(640, 480, 1, 640, vx.SCALE_UNITY, vx.SCALE_UNITY, 1, 1)
-        data = array('B', [42]) * (640 * 480)
+        data = array('B', [0x42]) * (640 * 480)
         hand = vx.CreateImageFromHandle(c, vx.DF_IMAGE_U8, (addr,), (data,), vx.IMPORT_TYPE_HOST)
         assert vx.GetStatus(vx.reference(hand)) == vx.SUCCESS
         hand = vx.CreateImageFromHandle(c, vx.DF_IMAGE_U8, addr, data, vx.IMPORT_TYPE_HOST)
@@ -70,25 +70,25 @@ class TestVX(object):
         status, addr, ptr = vx.AccessImagePatch(img, r, 0, None, None, vx.READ_AND_WRITE)
         assert status == vx.SUCCESS
         assert addr.dim_x == addr.dim_y == 20
-        ptr[0] = 'H'
+        ptr[0] = b'H'
         assert vx.CommitImagePatch(img, r, 0, addr, ptr) == vx.SUCCESS
         status, addr, ptr = vx.AccessImagePatch(img, r, 0, None, None, vx.READ_AND_WRITE)
         assert status == vx.SUCCESS
-        assert ptr[0] == 'H'
+        assert ptr[0] == b'H'
         pixel = vx.FormatImagePatchAddress1d(ptr, 0, addr)
-        assert pixel[0] == 'H'
+        assert pixel[0] == b'H'
         assert vx.CommitImagePatch(img, r, 0, addr, ptr) == vx.SUCCESS
 
         assert 7 not in data
         addr = vx.imagepatch_addressing_t(20, 20, 1, 20, vx.SCALE_UNITY, vx.SCALE_UNITY, 1, 1)
         rdata = array('B', [0]) * (20 * 20)
         status, addr, ptr = vx.AccessImagePatch(hand, r, 0, addr, rdata, vx.READ_AND_WRITE)
-        assert rdata[1] == 42
+        assert rdata[1] == 0x42
         rdata[1] = 7
         pixel = vx.FormatImagePatchAddress1d(ptr, 1, addr)
-        assert pixel[0] == chr(7)
+        assert pixel[0] == b'\x07'
         pixel = vx.FormatImagePatchAddress2d(ptr, 0, 0, addr)
-        assert pixel[0] == chr(42)
+        assert pixel[0] == b'\x42'
         assert vx.CommitImagePatch(hand, r, 0, addr, ptr) == vx.SUCCESS
         assert data[11 + 20*640] == 7
 
@@ -101,7 +101,7 @@ class TestVX(object):
 
     def test_kernel(self):
         c = vx.CreateContext()
-        kernel = vx.GetKernelByName(c, "org.khronos.openvx.sobel_3x3")
+        kernel = vx.GetKernelByName(c, b"org.khronos.openvx.sobel_3x3")
         assert vx.GetStatus(vx.reference(kernel)) == vx.SUCCESS
         assert vx.QueryReference(vx.reference(kernel), vx.REF_ATTRIBUTE_TYPE, 'vx_enum') == (vx.SUCCESS, vx.TYPE_KERNEL)
         k = vx.GetKernelByEnum(c, vx.KERNEL_SOBEL_3x3)
@@ -113,7 +113,7 @@ class TestVX(object):
         assert vx.GetStatus(vx.reference(param)) == vx.SUCCESS
 
         assert vx.LoadKernels(c, "openvx-extras") == vx.SUCCESS
-        k = vx.GetKernelByName(c, "org.khronos.extra.edge_trace")
+        k = vx.GetKernelByName(c, b"org.khronos.extra.edge_trace")
         assert vx.GetStatus(vx.reference(k)) == vx.SUCCESS
 
         assert vx.ReleaseContext(c) == vx.SUCCESS
@@ -266,10 +266,10 @@ class TestVX(object):
         c = vx.CreateContext()
         def callback(context, ref, status, string):
             assert status == vx.FAILURE
-            assert string == "Test"
+            assert string == b"Test"
             callback.called = True
         vx.RegisterLogCallback(c, callback, vx.false_e)
-        vx.AddLogEntry(vx.reference(c), vx.FAILURE, "Test")
+        vx.AddLogEntry(vx.reference(c), vx.FAILURE, b"Test")
         assert callback.called
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
@@ -282,10 +282,10 @@ class TestVX(object):
 
         s, data = vx.AccessLUT(lut, None, vx.READ_AND_WRITE)
         assert s == vx.SUCCESS
-        data[1] = 'H'
+        data[1] = b'H'
         assert vx.CommitLUT(lut, data) == vx.SUCCESS
         s, data = vx.AccessLUT(lut, None, vx.READ_ONLY)
-        assert data[1] == 'H'
+        assert data[1] == b'H'
         assert vx.CommitLUT(lut, data) == vx.SUCCESS
 
         data = array('B', [0]) * 256
@@ -305,10 +305,10 @@ class TestVX(object):
 
         s, data = vx.AccessDistribution(distribution, None, vx.READ_AND_WRITE)
         assert s == vx.SUCCESS
-        data[:4] = 'HHHH'
+        data[:4] = b'HHHH'
         assert vx.CommitDistribution(distribution, data) == vx.SUCCESS
         s, data = vx.AccessDistribution(distribution, None, vx.READ_ONLY)
-        assert data[:4] == 'HHHH'
+        assert data[:4] == b'HHHH'
         assert vx.CommitDistribution(distribution, data) == vx.SUCCESS
 
         data = array('I', [0]) * 256
@@ -479,7 +479,7 @@ class TestVX(object):
             return vx.SUCCESS
 
         enum = vx.KERNEL_BASE(vx.ID_DEFAULT, 7) + 1
-        kernel = vx.AddKernel(c, "org.test.hello", enum, func, 2, validate_input, validate_output, None, None)
+        kernel = vx.AddKernel(c, b"org.test.hello", enum, func, 2, validate_input, validate_output, None, None)
         assert vx.GetStatus(vx.reference(kernel)) == vx.SUCCESS
         assert vx.AddParameterToKernel(kernel, 0, vx.INPUT, vx.TYPE_IMAGE, vx.PARAMETER_STATE_REQUIRED) == vx.SUCCESS
         assert vx.AddParameterToKernel(kernel, 1, vx.OUTPUT, vx.TYPE_IMAGE, vx.PARAMETER_STATE_REQUIRED) == vx.SUCCESS
@@ -492,7 +492,7 @@ class TestVX(object):
         assert r.start_x == 0
         assert r.end_x == 640
         _, addr, data = vx.AccessImagePatch(img, r, 0, None, None, vx.WRITE_ONLY)
-        data[0], data[100] = 'HI'
+        data[0], data[100] = b'H', b'I'
         assert vx.CommitImagePatch(img, r, 0, addr, data) == vx.SUCCESS
 
         virt = vx.CreateVirtualImage(g, 0, 0, vx.DF_IMAGE_VIRT)
@@ -519,7 +519,7 @@ class TestVX(object):
 
 
         enum = vx.KERNEL_BASE(vx.ID_DEFAULT, 7) + 2
-        kernel = vx.AddKernel(c, "org.test.hello2", enum, func, 2, validate_input, validate_output, None, None)
+        kernel = vx.AddKernel(c, b"org.test.hello2", enum, func, 2, validate_input, validate_output, None, None)
         assert vx.RemoveKernel(kernel) == vx.SUCCESS
 
         assert vx.ReleaseGraph(g) == vx.SUCCESS
@@ -528,13 +528,13 @@ class TestVX(object):
     def test_module(self):
         c = vx.CreateContext()
         assert vx.LoadKernels(c, "test.module") == vx.SUCCESS
-        kernel = vx.GetKernelByName(c, "org.test.module")
+        kernel = vx.GetKernelByName(c, b"org.test.module")
         assert vx.GetStatus(vx.reference(kernel)) == vx.SUCCESS
         assert vx.QueryKernel(kernel, vx.KERNEL_ATTRIBUTE_PARAMETERS, 'vx_uint32') == (vx.SUCCESS, 1)
         assert vx.ReleaseContext(c) == vx.SUCCESS
 
     def test_use_backend(self):
-        for l in xrange(2):
+        for l in range(2):
             pyvx.use_backend("mock_backend")
             from pyvx import vx
             assert vx.CreateContext() == 42
