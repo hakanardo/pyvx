@@ -19,7 +19,7 @@ vx.Sobel3x3Node(graph, virts[1], virts[2], virts[3])
 vx.MagnitudeNode(graph, virts[2], virts[3], images[1])
 vx.PhaseNode(graph, virts[2], virts[3], images[2])
 status = vx.VerifyGraph(graph)
-print status
+
 if status == vx.SUCCESS:
     status = vx.ProcessGraph(graph)
 else:

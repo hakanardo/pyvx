@@ -267,7 +267,9 @@ def LoadKernels(context, module):
     if s == SUCCESS:
         return s
     try:
-        exec("import %s as mod" % module)
+        d = {}
+        exec("import %s as mod" % module, d)
+        mod = d['mod']
     except ImportError:
         return FAILURE
     return mod.PublishKernels(context)

@@ -1,10 +1,13 @@
 from array import array
+import sys
 
 from py.test import raises
 
 from pyvx import vx
 import pyvx
 
+if sys.version_info > (3,):
+    unicode = str
 
 class TestVX(object):
     def test_context(self):

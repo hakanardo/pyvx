@@ -1,5 +1,7 @@
 import os
+
 import pyvx.types as vx
+
 
 class TestVxTypes(object):
     def test_imagepatch_addressing_t(self):
@@ -33,9 +35,9 @@ class TestVxTypes(object):
         assert p.max == 8
 
     def test_kernel_info_t(self):
-        i = vx.kernel_info_t(7, "hello")
+        i = vx.kernel_info_t(7, b"hello")
         assert i.enumeration == 7
-        assert vx.ffi.string(i.name) == "hello"
+        assert vx.ffi.string(i.name) == b"hello"
 
     def test_border_mode_t(self):
         b = vx.border_mode_t(vx.BORDER_MODE_CONSTANT, 42)
@@ -65,6 +67,6 @@ class TestVxTypes(object):
 
     def test_fmt_ref_size(self):
         if os.name != 'nt':
-            assert vx.FMT_REF == "%p"
-            assert vx.FMT_SIZE == "%zu"
+            assert vx.FMT_REF == b"%p"
+            assert vx.FMT_SIZE == b"%zu"
 

@@ -36,7 +36,7 @@ def kernel_info_t(enumeration, name):
     s.enumeration = enumeration
     assert len(name) < MAX_KERNEL_NAME
     s.name[0:len(name)] = name
-    s.name[len(name)] = '\0'
+    s.name[len(name)] = b'\0'
     return s
 
 

@@ -1,5 +1,7 @@
 import threading
+
 from pyvx import vx
+
 
 class VXError(Exception): # FIXME: use different exceptions for different errors
     pass
@@ -21,7 +23,7 @@ class attribute(object):
         return val
 
     def __set__(self, instance, value):
-        print "set",  instance, value
+        print("set",  instance, value) # FXIME
 
 class VxObjectMeta(type):
 
@@ -35,11 +37,12 @@ class VxObjectMeta(type):
         cls = type.__new__(cls, name, bases, attrs)
         return cls
 
+VxBase = VxObjectMeta('VxBase', (), {})
+
 def _query_ref(reference, attribute, c_type, python_type=None):
     return vx.QueryReference(vx.reference(reference), attribute, c_type, python_type)
 
-class Reference(object):
-    __metaclass__ = VxObjectMeta
+class Reference(VxBase):
     count = attribute('vx_uint32', vx.REF_ATTRIBUTE_COUNT, _query_ref)
     type = attribute('vx_enum', vx.REF_ATTRIBUTE_TYPE, _query_ref)
 
