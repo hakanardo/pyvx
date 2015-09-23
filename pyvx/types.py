@@ -1,10 +1,14 @@
 from pyvx import __backend_version__
 from pyvx._auto_vx import *
+import sys
 
-if ffi.string(lib._get_backend_version()).decode("utf8") != __backend_version__:
+if ffi.string(lib._get_backend_version()) != __backend_version__:
+    print(ffi.string(lib._get_backend_version()).__class__)
+    print(ffi.string(lib._get_backend_name()).decode("utf8"))
     raise ImportError("Backend version missmatch. Please recompile it using:\n\n" +
-                      "    python -mpyvx.build_cbackend %s %s\n" % (ffi.string(lib._get_backend_name()),
-                                                                    ffi.string(lib._get_backend_install_path())))
+                      "    %s -mpyvx.build_cbackend %s %s\n" % (sys.executable,
+                                                                ffi.string(lib._get_backend_name()).decode("utf8"),
+                                                                ffi.string(lib._get_backend_install_path()).decode("utf8")))
 
 SCALE_PYRAMID_HALF = 0.5
 SCALE_PYRAMID_ORB = 0.8408964

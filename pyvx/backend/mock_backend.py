@@ -11,20 +11,20 @@ class Lib(object):
         return pyvx.__backend_version__
 
     def _get_backend_name(self):
-        return "mock"
+        return b"mock"
 
     def _get_backend_install_path(self):
-        return "nowhere"
+        return b"nowhere"
 
     def _get_FMT_REF(self):
-        return ""
+        return b""
 
     def _get_FMT_SIZE(self):
-        return ""
+        return b""
 
 class Ffi(object):
     def string(self, obj):
-        return str(obj)
+        return bytes(obj)
 
     def typeof(self, obj):
         return None

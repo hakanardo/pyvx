@@ -91,7 +91,7 @@ def build(name, openvx_install, default):
         char *_get_backend_version() {return "%s";}
         char *_get_backend_name() {return "%s";}
         char *_get_backend_install_path() {return "%s";}
-                   """ % (__backend_version__, name, openvx_install),
+                   """ % (__backend_version__.decode("utf8"), name, openvx_install),
                    include_dirs=[os.path.join(openvx_install, 'include')],
                    library_dirs=[os.path.join(openvx_install, 'bin')],
                    extra_link_args=['-Wl,-rpath=' + os.path.abspath(os.path.join(openvx_install, 'bin'))],
@@ -105,18 +105,20 @@ def build(name, openvx_install, default):
         fd.close()
 
         import pyvx.backend as backend
-        assert backend.ffi.string(backend.lib._get_backend_version()).decode("utf8") == __backend_version__
+        assert backend.ffi.string(backend.lib._get_backend_version()) == __backend_version__
         assert backend.ffi.string(backend.lib._get_backend_name()).decode("utf8") == name
         assert backend.ffi.string(backend.lib._get_backend_install_path()).decode("utf8") == openvx_install
 
-    exec("import pyvx.backend.%s as backend" % name)
-    assert backend.ffi.string(backend.lib._get_backend_version()).decode("utf8") == __backend_version__
+    names = {}
+    exec("import pyvx.backend.%s as backend" % name, names)
+    backend = names['backend']
+    assert backend.ffi.string(backend.lib._get_backend_version()) == __backend_version__
     assert backend.ffi.string(backend.lib._get_backend_name()).decode("utf8") == name
     assert backend.ffi.string(backend.lib._get_backend_install_path()).decode("utf8") == openvx_install
 
-    print()
+    print('')
     print("Succesfully built backend pyvx.backend.%s in %s" % (name, mydir))
-    print()
+    print('')
 
 
 if __name__ == '__main__':
